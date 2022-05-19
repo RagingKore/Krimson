@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson", "src\Krimson\Krimson.csproj", "{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Tests", "tests\Krimson.Tests\Krimson.Tests.csproj", "{2F46B9EB-412C-4828-BCAB-011048510ADF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F46B9EB-412C-4828-BCAB-011048510ADF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F46B9EB-412C-4828-BCAB-011048510ADF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F46B9EB-412C-4828-BCAB-011048510ADF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F46B9EB-412C-4828-BCAB-011048510ADF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
