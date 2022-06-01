@@ -16,13 +16,12 @@ class InFlightMessageCounter {
     public static implicit operator long(InFlightMessageCounter self) => self.Count;
 }
 
-
 [PublicAPI]
 public class KrimsonProducer : IAsyncDisposable {
     public static KrimsonProducerBuilder Builder => new();
 
-    static readonly TimeSpan DisposeTimeout      = TimeSpan.FromSeconds(90);
-    static readonly TimeSpan FlushTimeout        = TimeSpan.FromSeconds(60);
+    static readonly TimeSpan DisposeTimeout      = TimeSpan.FromSeconds(120);
+    static readonly TimeSpan FlushTimeout        = TimeSpan.FromSeconds(90);
     static readonly TimeSpan TransientErrorDelay = TimeSpan.FromSeconds(1);
 
     // static ManualResetEventSlim Gatekeeper { get; } = new(true);
@@ -33,13 +32,14 @@ public class KrimsonProducer : IAsyncDisposable {
         IDynamicSerializer serializer,
         string? defaultTopic = null
     ) {
-        ProducerName = configuration.ClientId;
-        Intercept    = intercept;
-        Topic        = defaultTopic;
+        ClientId  = configuration.ClientId;
+        Intercept = intercept;
+        Topic     = defaultTopic;
         
         Client = new ProducerBuilder<byte[], object?>(configuration)
             .SetValueSerializer(serializer)
-            .SetErrorHandler((_, err) => Intercept(new OnConfluentProducerError(ProducerName, new KafkaException(err))))
+            .SetLogHandler((pdr, log) => Intercept(new ConfluentProducerLog(ClientId, pdr.GetInstanceName(), log)))
+            .SetErrorHandler((pdr, err) => Intercept(new ConfluentProducerError(ClientId, pdr.GetInstanceName(), err)))
             .Build();
 
         InFlightMessageCounter = new();
@@ -50,62 +50,110 @@ public class KrimsonProducer : IAsyncDisposable {
     Intercept              Intercept              { get; }
     InFlightMessageCounter InFlightMessageCounter { get; }
 
-    public string  ProducerName { get; }
-    public string? Topic        { get; }
+    public string  ClientId { get; }
+    public string? Topic    { get; }
 
     public long InFlightMessages => InFlightMessageCounter;
 
-    public void Produce(ProducerRequest request,  Action<ProducerResult> onResponse) {
+    public void Produce(ProducerRequest request,  Action<ProducerResult> onResult) {
         Ensure.NotNull(request, nameof(request));
-        Ensure.NotNull(onResponse, nameof(onResponse));
+        Ensure.NotNull(onResult, nameof(onResult));
 
         // Gatekeeper.Wait(); // might be flushing...
 
         InFlightMessageCounter.Increment();
         
         // try to set default topic if missing
-        request = request.Topic switch {
-            null when Topic is null => throw new("Please provide a destination topic."),
-            null                    => request with { Topic = Topic },
-            _                       => request
-        };
+        request = EnsureTopicIsSet(request, Topic);
 
-        Intercept(new OnProduce(ProducerName, request));
+        Intercept(new BeforeProduce(ClientId, request));
         
         while (true) {
             try {
-                Client.Produce(
-                    request.Topic, CreateDeserializedMessage(request, ProducerName), report => {
-                        InFlightMessageCounter.Decrement();
-
-                        var result = ProducerResult.From(request.RequestId, report);
-
-                        Intercept(new OnProduceResult(ProducerName, result));
-
-                        try { 
-                            onResponse(result); 
-                        }
-                        catch (Exception userException) {
-                            Intercept(new OnProduceResultUserException(ProducerName, result, userException));
-                        }
-                    }
-                );
+                var message = CreateKafkaMessage(request, ClientId);
+                Client.Produce(request.Topic, message, DeliveryHandler());
             }
-            catch (KafkaException ex) {
-                if (ex.Error.IsFatal) {
+            // catch (ProduceException<byte[], object?> pex) {
+            //     if (pex.IsTerminal()) {
+            //         InFlightMessageCounter.Decrement();
+            //         throw;
+            //     }
+            //
+            //     // An immediate failure of the produce call is most often caused by the
+            //     // local message queue being full, and appropriate response to that is
+            //     // to retry. (ErrorCode.Local_QueueFull)
+            //
+            //     Client.Poll(TransientErrorDelay);
+            //
+            //     continue;
+            // }
+            catch (KafkaException kex) {
+                if (kex.IsTerminal()) {
                     InFlightMessageCounter.Decrement();
                     throw;
                 }
-                
+
                 // An immediate failure of the produce call is most often caused by the
                 // local message queue being full, and appropriate response to that is
                 // to retry. (ErrorCode.Local_QueueFull)
-                
-                Client.Poll(TransientErrorDelay); 
+
+                Client.Poll(TransientErrorDelay);
+
                 continue;
             }
-            
+
             break;
+        }
+
+        Action<DeliveryReport<byte[], object?>> DeliveryHandler() =>
+            report => {
+                try {
+                    var result = ProducerResult.From(request.RequestId, report);
+
+                    Intercept(new ProducerResultReceived(ClientId, result));
+
+                    try {
+                        onResult(result);
+                    }
+                    catch (Exception uex) {
+                        Intercept(new ProducerResultError(ClientId, request.RequestId, report, uex));
+                    }
+
+                    InFlightMessageCounter.Decrement();
+                }
+                catch (Exception ex) {
+                    Intercept(new ProducerResultError(ClientId, request.RequestId, report, ex));
+                }
+            };
+        
+        // Action<DeliveryReport<byte[], object?>> DeliveryHandler(ProducerRequest producerRequest, Action<ProducerResult> onUserResultHandler) =>
+        //     report => {
+        //         try {
+        //             InFlightMessageCounter.Decrement();
+        //
+        //             var result = ProducerResult.From(producerRequest.RequestId, report);
+        //
+        //             Intercept(new OnProduceResult(ClientId, result));
+        //
+        //             try {
+        //                 onUserResultHandler(result);
+        //             }
+        //             catch (Exception userException) {
+        //                 Intercept(new OnProduceResultUserException(ClientId, result, userException));
+        //             }
+        //         }
+        //         catch (Exception ex) {
+        //             Intercept(new OnProduceResultException(ClientId, report, ex));
+        //         }
+        //     };
+        static ProducerRequest EnsureTopicIsSet(ProducerRequest request, string? defaultTopic) {
+            return request.Topic switch {
+                null when defaultTopic is null => throw new("Please provide a destination topic."),
+                null => request with {
+                    Topic = defaultTopic
+                },
+                _ => request
+            };
         }
     }
     
@@ -121,14 +169,14 @@ public class KrimsonProducer : IAsyncDisposable {
             Produce(
                 request,
                 result => {
-                    if (result.DeliveryFailed) {
+                    if (result.Success)
+                        tcs.TrySetResult(result);
+                    else {
                         if (throwOnError)
                             tcs.TrySetException(result.Exception!);
                         else
                             tcs.TrySetResult(result);
                     }
-                    else
-                        tcs.TrySetResult(result);
                 }
             );
         }
@@ -138,44 +186,60 @@ public class KrimsonProducer : IAsyncDisposable {
 
         return await tcs.Task;
     }
+    
+    // public ValueTask Flush(CancellationToken cancellationToken = default) {
+    //     while (true) {
+    //         try {
+    //             var pending = Client.Flush(FlushTimeout);
+    //
+    //             if (pending == 0 && InFlightMessageCounter == 0)
+    //                 break;
+    //             
+    //             if (cancellationToken.IsCancellationRequested)
+    //                 break;
+    //         }
+    //         catch (KafkaException kex) {
+    //             if (kex.Error.IsFatal)
+    //                 throw;
+    //         }
+    //
+    //         Client.Poll(TransientErrorDelay);
+    //     }
+    //     
+    //     return ValueTask.CompletedTask;
+    // }
 
-    /// <summary>
-    /// Forcefully blocks sends until it has finished flushing and attempts to use internal in-flight count
-    /// to ensure that absolutely all messages were flushed.
-    /// </summary>
-    public ValueTask Flush(CancellationToken cancellationToken = default) {
+    public void Flush(CancellationToken cancellationToken = default) {
         while (true) {
             try {
                 var pending = Client.Flush(FlushTimeout);
 
                 if (pending == 0 && InFlightMessageCounter == 0)
                     break;
-                
+
                 if (cancellationToken.IsCancellationRequested)
                     break;
             }
-            catch (KafkaException kex) {
-                if (kex.Error.IsFatal)
-                    throw;
+            catch (KafkaException kex) when (!kex.IsTerminal()) {
+                var temp_wtf = kex.Error;
             }
 
             Client.Poll(TransientErrorDelay);
         }
-        
-        return ValueTask.CompletedTask;
     }
-
+    
     public virtual async ValueTask DisposeAsync() {
         // let's cancel after 90 seconds as a failsafe
         // since by sometimes and by some unknown reason
         // disposing actually locks forever
         using var cancellator = new CancellationTokenSource(DisposeTimeout);
 
-        await Flush(cancellator.Token).ConfigureAwait(false);
+        // await Flush(cancellator.Token).ConfigureAwait(false);
+        await Task.Run(() => Flush(cancellator.Token));
         await Task.Run(() => Client.Dispose(), cancellator.Token);
     }
 
-    public static Message<byte[], object?> CreateDeserializedMessage(ProducerRequest request, string producerName) {
+    public static Message<byte[], object?> CreateKafkaMessage(ProducerRequest request, string producerName) {
         // enrich
         request.Headers[HeaderKeys.ProducerName] = producerName;
         request.Headers[HeaderKeys.RequestId]    = request.RequestId.ToString();

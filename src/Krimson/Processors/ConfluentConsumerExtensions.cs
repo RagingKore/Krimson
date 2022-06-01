@@ -4,50 +4,77 @@ using static System.TimeSpan;
 
 namespace Krimson.Processors;
 
+
+public delegate void OnPartitionEndReached(TopicPartitionOffset position);
+
 static class ConfluentConsumerExtensions {
     static readonly TimeSpan DefaultRequestTimeout = FromSeconds(10);
 
-    public static IAsyncEnumerable<KrimsonRecord> Records<TValue>(this IConsumer<byte[], TValue> consumer, CancellationToken cancellationToken = default) {
+    public static IAsyncEnumerable<KrimsonRecord> Records<TValue>(this IConsumer<byte[], TValue> consumer, OnPartitionEndReached partitionEndReached, CancellationToken cancellationToken = default) {
         return Consume().ToAsyncEnumerable();
 
         IEnumerable<KrimsonRecord> Consume() {
             while (!cancellationToken.IsCancellationRequested) {
                 var result = TryConsume(() => consumer.Consume(cancellationToken));
 
+                if (result.HasCaughtUp) {
+                    try {
+                        partitionEndReached(result.ConsumeResult.TopicPartitionOffset);
+                    }
+                    catch (Exception) {
+                        // TODO SS: consider logging this error for debug
+                    }
+
+                    continue;
+                }
+                
                 if (result.Continue)
-                    continue; // IsPartitionEOF
+                    continue; // transient error
 
                 if (result.Break)
                     yield break; // OperationCanceledException
 
-                yield return KrimsonRecord.From(result.Result);
+                yield return KrimsonRecord.From(result.ConsumeResult);
             }
         }
 
+        // TODO SS: add oneof or something for a more interesting and clean functional solution
         // because we can't use a try-catch and we simply want to break when/if
         // * Cancellation is requested
         // * OperationCanceledException is thrown
         // * Fatal KafkaException is thrown
-        static (ConsumeResult<byte[], TValue> Result, bool Continue, bool Break) TryConsume(Func<ConsumeResult<byte[], TValue>?> consume) {
+        static (ConsumeResult<byte[], TValue> ConsumeResult, bool Continue, bool Break, bool HasCaughtUp) TryConsume(Func<ConsumeResult<byte[], TValue>?> consume) {
             try {
                 var result = consume();
 
-                if (result is not null && !result.IsPartitionEOF)
-                    return (result, false, false);
-
-                return (null, true, false)!;
+                if (result is not null)
+                    return result.IsPartitionEOF 
+                        ? (result, false, false, true) 
+                        : (result, false, false, false);
+                
+                return (null, true, false, false)!;
             }
-            catch (KafkaException ex) when (!ex.Error.IsFatal) {
-                return (null, true, false)!;
+            catch (KafkaException kex) when (kex.IsTransient()) {
+                return (null, true, false, false)!;
             }
             catch (OperationCanceledException) {
-                return (null, false, true)!;
+                return (null, false, true, false)!;
             }
         }
     }
 
-    public static void TrackPosition<TValue>(this IConsumer<byte[], TValue> consumer, TopicPartitionOffset position) =>
-        consumer.StoreOffset(new TopicPartitionOffset(position.Topic, position.Partition, position.Offset + 1));
+    public static IAsyncEnumerable<KrimsonRecord> Records<TValue>(this IConsumer<byte[], TValue> consumer, CancellationToken cancellationToken = default) {
+        return Records(consumer, _ => { }, cancellationToken);
+    }
+    
+    public static void TrackPosition<TValue>(this IConsumer<byte[], TValue> consumer, TopicPartitionOffset position) {
+        try {
+            consumer.StoreOffset(new TopicPartitionOffset(position.Topic, position.Partition, position.Offset + 1));
+        }
+        catch (KafkaException kex) when (kex.IsTransient()) {
+            // only throw on terminal error
+        }
+    }
 
     public static void TrackPosition<TValue>(this IConsumer<byte[], TValue> consumer, KrimsonRecord record) => TrackPosition(consumer, record.Position);
 
@@ -118,8 +145,9 @@ static class ConfluentConsumerExtensions {
         try {
             return consumer.Commit();
         }
-        catch (KafkaException ex) when (!ex.Error.IsFatal) {
-            // only throw if it is indeed a fatal error
+        //catch (KafkaException kex) when (kex.IsTransient() || kex.Error.Code == ErrorCode.Local_NoOffset) {
+        catch (KafkaException kex) when(kex.IsTransient()) {
+            // only throw on terminal error
             return new();
         }
     }
@@ -140,8 +168,8 @@ static class ConfluentConsumerExtensions {
         try {
             consumer.Close();
         }
-        catch (KafkaException ex) when (!ex.Error.IsFatal) {
-            // only throw if it is indeed a fatal error
+        catch (KafkaException kex) when (kex.IsTransient()) {
+            // only throw on terminal error
         }
 
         return gap;

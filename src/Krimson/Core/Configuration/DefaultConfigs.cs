@@ -25,8 +25,9 @@ public static class DefaultConfigs {
             AutoOffsetReset             = Earliest,          // always read from the earliest position instead of the latest one
             EnablePartitionEof          = true,              // enable message marker to signal that the consumer has caught up
             SessionTimeoutMs            = 45000,             // allows for better handling of transient networks issues
-            HeartbeatIntervalMs         = 15000,             // 1/3 of session timeout
-            PartitionAssignmentStrategy = CooperativeSticky  // enable incremental rebalancing to avoid stop-the-world rebalances
+            // HeartbeatIntervalMs         = 15000,             // 1/3 of session timeout
+            PartitionAssignmentStrategy = CooperativeSticky, // enable incremental rebalancing to avoid stop-the-world rebalances
+            // Debug                       = "consumer,cgrp,topic,fetch"
         };
 
     public static ProducerConfig DefaultProducerConfig =>
@@ -36,6 +37,7 @@ public static class DefaultConfigs {
             EnableIdempotence    = true, // there are no reasons to not want it enabled
             LingerMs             = 5,    // the default is now 5, funny
             DeliveryReportFields = "all" // default
+            , EnableGaplessGuarantee = true
         };
 
     public static SchemaRegistryConfig DefaultSchemaRegistryConfig =>

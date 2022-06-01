@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+<!--    <PackageReference Include="Grpc.AspNetCore" Version="2.46.0" />-->
+    <PackageReference Include="Google.Protobuf" Version="3.21.1" />
+    <PackageReference Include="Grpc.Tools" Version="2.46.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="messages.proto">
+<!--      <GrpcServices>None</GrpcServices>-->
+<!--      <Access>Public</Access>-->
+<!--      <ProtoCompile>True</ProtoCompile>-->
+<!--      <CompileOutputs>True</CompileOutputs>-->
+<!--      <OutputDir>obj/Release/net6.0/</OutputDir>-->
+<!--      <Generator>MSBuild:Compile</Generator>-->
+<!--      <Link>Messages\*.proto</Link>-->
+    </Protobuf>
+    <Protobuf Include="telemetry.proto">
+<!--      <GrpcServices>None</GrpcServices>-->
+<!--      <Access>Public</Access>-->
+<!--      <ProtoCompile>True</ProtoCompile>-->
+<!--      <CompileOutputs>True</CompileOutputs>-->
+<!--      <OutputDir>obj\Release/net6.0/</OutputDir>-->
+<!--      <Generator>MSBuild:Compile</Generator>-->
+    </Protobuf>
+  </ItemGroup>
+
+</Project>

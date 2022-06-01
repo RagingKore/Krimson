@@ -4,28 +4,26 @@ namespace Krimson.Producers;
 
 [PublicAPI]
 public record ProducerResult {
-    public Guid                               RequestId { get; private init; }
-    public DateTimeOffset                     Timestamp { get; private init; }
-    public RecordId                           RecordId  { get; private init; } = RecordId.None;
-    public ProduceException<byte[], object?>? Exception { get; private init; }
+    static readonly Error NoError = new Error(ErrorCode.NoError);
 
-    public bool DeliveryFailed  => Exception is not null;
-    public bool RecordPersisted => RecordId != RecordId.None;
+    public Guid                               RequestId         { get; private init; }
+    public DateTimeOffset                     Timestamp         { get; private init; }
+    public RecordId                           RecordId          { get; private init; } = RecordId.None;
+    public PersistenceStatus                  PersistenceStatus { get; private init; }
+    public Error                              Error             { get; private init; } = NoError;
+    public ProduceException<byte[], object?>? Exception         { get; private init; }
 
+    //public bool DeliveryFailed => !Error.IsUseless();
+    public bool Success        => Error.IsUseless();
+    
     public static ProducerResult From(Guid requestId, DeliveryReport<byte[], object?> report) {
-        return report.Error.IsError switch {
-            true => new() {
-                RequestId = requestId,
-                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(report.Timestamp.UnixTimestampMs),
-                Exception = new(
-                    new(report.Error.Code, $"{(report.Error.IsFatal ? "Fatal Error " : "")}{report.Error.Reason}", report.Error.IsFatal), report
-                )
-            },
-            false => new() {
-                RequestId = requestId,
-                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(report.Timestamp.UnixTimestampMs),
-                RecordId  = RecordId.From(report.TopicPartitionOffset)
-            }
+        return new() {
+            RequestId         = requestId,
+            Timestamp         = DateTimeOffset.FromUnixTimeMilliseconds(report.Timestamp.UnixTimestampMs),
+            RecordId          = report.Error.IsError ? RecordId.None : RecordId.From(report.TopicPartitionOffset),
+            PersistenceStatus = report.Status,
+            Error             = report.Error,
+            Exception         = report.Error.IsError ? new(report.Error, report) : null
         };
     }
 }

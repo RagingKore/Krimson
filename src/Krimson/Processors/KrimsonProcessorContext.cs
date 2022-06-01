@@ -1,4 +1,5 @@
 using Krimson.Producers;
+using Microsoft.Extensions.Logging;
 
 namespace Krimson.Processors;
 

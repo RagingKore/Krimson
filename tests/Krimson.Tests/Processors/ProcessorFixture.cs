@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,10 @@ using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Tests.Messages;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Serilog.Events;
+using Serilog.Exceptions;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -21,31 +26,54 @@ using static Google.Protobuf.WellKnownTypes.Timestamp;
 using static System.Linq.Enumerable;
 using static System.Reflection.BindingFlags;
 using static System.TimeSpan;
+using ILogger = Serilog.ILogger;
 
 namespace Krimson.Tests.Processors;
 
 [PublicAPI]
 public sealed class KrimsonProcessorFixture : IDisposable {
+
+    static KrimsonProcessorFixture() {
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "test");
+        //
+        // Serilog.Log.Logger = new LoggerConfiguration()
+        //     .MinimumLevel.Debug()
+        //     .MinimumLevel.Override("ConfluentProducerLogger", LogEventLevel.Information)
+        //     .MinimumLevel.Override("ConfluentProcessorLogger", LogEventLevel.Information)
+        //     .Enrich.FromLogContext()
+        //     .Enrich.WithThreadId()
+        //     .Enrich.WithExceptionDetails()
+        //     .WriteTo.XunitOutput(XunitOutputSink = new())
+        //     .CreateLogger();
+    }
+
     static readonly MessageTemplateTextFormatter LogFormatter = new(
         "[{Timestamp:HH:mm:ss.fff} {Level:u3}] ({ThreadId:000}) {SourceContext}{NewLine}{Message}{NewLine}{Exception}"
     );
-
-    static KrimsonProcessorFixture() => Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "test");
 
     public KrimsonProcessorFixture() {
         CreatedTopics = new();
 
         Serilog.Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("ConfluentProducerLogger", LogEventLevel.Information)
+            .MinimumLevel.Override("ConfluentProcessorLogger", LogEventLevel.Information)
+            .Enrich.FromLogContext()
+            .Enrich.WithThreadId()
+            .Enrich.WithExceptionDetails()
             .WriteTo.XunitOutput(XunitOutputSink = new())
             .CreateLogger();
+
+        LoggerFactory = new NullLoggerFactory();
     }
 
     ClientConnection      ClientConnection { get; set; }
     IAdminClient          AdminClient      { get; set; }
     ISchemaRegistryClient SchemaRegistry   { get; set; }
+    ILoggerFactory        LoggerFactory    { get; set; }
     
-    List<string>          CreatedTopics        { get; }
-    XunitOutputSinkProxy  XunitOutputSink      { get; }
+    List<string>          CreatedTopics    { get; }
+    XunitOutputSinkProxy  XunitOutputSink  { get; }
 
     public ILogger Log { get; private set; } = null!;
 
@@ -60,7 +88,7 @@ public sealed class KrimsonProcessorFixture : IDisposable {
             AdminClient.Dispose();
         }
         catch (Exception ex) {
-            Serilog.Log.Warning(ex, "Disposed suddenly");
+            Serilog.Log.Warning(ex, "disposed suddenly");
         }
         finally {
             Serilog.Log.CloseAndFlush();
@@ -74,7 +102,8 @@ public sealed class KrimsonProcessorFixture : IDisposable {
             .As<XunitTest>(AssertionExtensions.As<TestOutputHelper>(output)!.GetType().GetField("test", NonPublic | Instance)!.GetValue(output)!)
             .DisplayName;
 
-        Log = Serilog.Log.ForContext("SourceContext", $"{typeof(T).Name}.{testName}");
+        Log           = Serilog.Log.ForContext("SourceContext", $"{typeof(T).Name}.{testName}");
+        LoggerFactory = new LoggerFactory().AddSerilog(Log);
         
         return this;
     }
@@ -121,9 +150,9 @@ public sealed class KrimsonProcessorFixture : IDisposable {
         return this;
     }
 
-    public string GetUniqueProcessorName(string name = "test-processor") => $"{name}.{Guid.NewGuid().ToString("N").Substring(32 - 5, 5)}".ToLowerInvariant();
-    public string GetInputTopicName(string testProcessorName)            => $"{testProcessorName}.input.tst".ToLowerInvariant();
-    public string GetOutputTopicName(string testProcessorName)           => $"{testProcessorName}.output.tst".ToLowerInvariant();
+    public string GenerateUniqueProcessorName()                => $"{Guid.NewGuid().ToString("N").Substring(32 - 5, 5)}-processor".ToLowerInvariant();
+    public string GetInputTopicName(string testProcessorName)  => $"{testProcessorName}.input.tst".ToLowerInvariant();
+    public string GetOutputTopicName(string testProcessorName) => $"{testProcessorName}.output.tst".ToLowerInvariant();
     
     public async ValueTask<string> CreateTestTopic(string topic, int partitions) {
         var topicCreated = false;
@@ -138,7 +167,7 @@ public sealed class KrimsonProcessorFixture : IDisposable {
 
         CreatedTopics.Add(topic);
 
-        Log.Information("Test Topic Created: {TopicName}", topic);
+        Log.Information("test topic created: {TopicName}", topic);
 
         return topic;
     }
@@ -155,46 +184,38 @@ public sealed class KrimsonProcessorFixture : IDisposable {
         await using var producer = KrimsonProducer.Builder
             .Connection(ClientConnection)
             .SchemaRegistry(SchemaRegistry)
-            .ProducerName(topic)
+            .ClientId(topic)
             .Topic(topic)
+            .LoggerFactory(LoggerFactory)
+            .EnableDebug()
+            //.UseJson()
             .Create();
 
         var requests = Range(1, numberOfMessages).Select(CreateProducerMessage).ToArray();
-        var ids      = new List<RecordId>();
+        var ids      = new ConcurrentBag<RecordId>();
         var failed   = false;
         
         foreach (var message in requests) {
             producer.Produce(message, result => {
-                if (!result.DeliveryFailed)
+                if (result.Success)
                     ids.Add(result.RecordId);
-                else {
+                else
                     failed = true;
-                    Log.Error(
-                        result.Exception,
-                        "Failed to send {NumberOfMessages} test messages in: {Elapsed}",
-                        numberOfMessages, MicroProfiler.GetElapsedHumanReadable(start)
-                    );
-                }
             });
         }
 
-        await producer.Flush();
+        producer.Flush();
 
-        if (!failed) {
-            Log.Information(
-                "Sent {NumberOfMessages} test messages in: {Elapsed}",
-                ids.Count, MicroProfiler.GetElapsedHumanReadable(start)
-            );
-        }
-        
-        if(ids.Count != numberOfMessages) {
-            Log.Fatal(
-                "Only sent {SentMessagesCount}/{NumberOfMessages} test messages in: {Elapsed}",
-                ids.Count, numberOfMessages, MicroProfiler.GetElapsedHumanReadable(start)
-            );
+        if(failed || ids.Count != numberOfMessages) {
+            throw new($"only sent {ids.Count}/{numberOfMessages} test messages in: {MicroProfiler.GetElapsedHumanReadable(start)}");
         }
 
-        return ids;
+        Log.Information(
+            "sent {NumberOfMessages} test messages in: {Elapsed}",
+            ids.Count, MicroProfiler.GetElapsedHumanReadable(start)
+        );
+
+        return ids.ToList();
 
         ProducerRequest CreateProducerMessage(int order) {
             var id = Guid.NewGuid();
@@ -214,7 +235,7 @@ public sealed class KrimsonProcessorFixture : IDisposable {
     }
 
     public async Task<(IReadOnlyCollection<KrimsonRecord> ProcessedRecords, IReadOnlyCollection<SubscriptionTopicGap> SubscriptionGap)> ProcessMessages(
-        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> buildProcessor, int numberOfMessages, bool produceOutput = false, int timeout = 30
+        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> buildProcessor, int numberOfMessages, bool produceOutput = false, int timeout = 120
     ) {
         var cancellator = new CancellationTokenSource(FromSeconds(timeout));
         var processed   = new List<KrimsonRecord>();
@@ -240,6 +261,8 @@ public sealed class KrimsonProcessorFixture : IDisposable {
                 .Connection(ClientConnection)
                 .SchemaRegistry(SchemaRegistry)
                 .Process<KrimsonTestMessage>(TestMessageHandler)
+                .LoggerFactory(LoggerFactory)
+                //.UseJson()
                 .Create();
 
             var gap = await processor

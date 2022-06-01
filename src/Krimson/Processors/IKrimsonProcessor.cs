@@ -1,8 +1,8 @@
 namespace Krimson.Processors;
 
 public interface IKrimsonProcessor {
-    string                 ProcessorName    { get; }
-    string                 SubscriptionName { get; }
+    string                 ClientId    { get; }
+    string                 GroupId { get; }
     string[]               Topics           { get; }
     KrimsonProcessorStatus Status           { get; }
 

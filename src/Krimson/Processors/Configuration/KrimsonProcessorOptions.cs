@@ -4,6 +4,8 @@ using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.SchemaRegistry;
 using Krimson.SchemaRegistry.Protobuf;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Krimson.Processors.Configuration;
 
@@ -15,10 +17,11 @@ public record KrimsonProcessorOptions {
         Interceptors          = new();
         ConsumerConfiguration = DefaultConfigs.DefaultConsumerConfig;
         ProducerConfiguration = DefaultConfigs.DefaultProducerConfig;
-        RegistryFactory       = () => new CachedSchemaRegistryClient(DefaultConfigs.DefaultSchemaRegistryConfig);
+        RegistryConfiguration = DefaultConfigs.DefaultSchemaRegistryConfig;
+        RegistryFactory       = () => new CachedSchemaRegistryClient(RegistryConfiguration);
         DeserializerFactory   = registry => new ProtobufDynamicDeserializer(registry);
         SerializerFactory     = registry => new ProtobufDynamicSerializer(registry);
-        //Tasks                 = 1;
+        LoggerFactory         = new NullLoggerFactory();
     }
 
     public string[]                                          InputTopics           { get; init; }
@@ -27,8 +30,9 @@ public record KrimsonProcessorOptions {
     public InterceptorCollection                             Interceptors          { get; init; }
     public ConsumerConfig                                    ConsumerConfiguration { get; init; }
     public ProducerConfig                                    ProducerConfiguration { get; init; }
+    public SchemaRegistryConfig                              RegistryConfiguration { get; init; }
     public Func<ISchemaRegistryClient>                       RegistryFactory       { get; init; }
     public Func<ISchemaRegistryClient, IDynamicDeserializer> DeserializerFactory   { get; init; }
     public Func<ISchemaRegistryClient, IDynamicSerializer>   SerializerFactory     { get; init; }
-    //public int                                               Tasks                 { get; init; }
+    public ILoggerFactory                                    LoggerFactory         { get; init; }
 }

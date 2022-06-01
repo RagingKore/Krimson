@@ -36,6 +36,7 @@ public record RecordId : IComparable<RecordId>, IComparable {
     }
     
     public override string ToString() => Value;
+    // public override string ToString() => $"{Topic}:{Partition}@{Position}";
 
     public static implicit operator string(RecordId self)  => self.Value;
     public static implicit operator RecordId(string value) => From(value);

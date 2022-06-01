@@ -16,46 +16,29 @@ public class MessageKey : IEquatable<MessageKey> {
     public ReadOnlyMemory<byte> Bytes { get; }
     public Type                 Type  { get; }
     public string               Value { get; }
-
-    public static MessageKey From(Guid messageKey) {
-        Ensure.NotEmptyGuid(messageKey, nameof(messageKey));
-        return new(messageKey.ToByteArray(), typeof(Guid), messageKey.ToString("N"));
-    }
-
+    
     public static MessageKey From(string messageKey) {
         Ensure.NotNullOrWhiteSpace(messageKey, nameof(messageKey));
 
-        return !Guid.TryParse(messageKey, out var guid)
-            ? new(Encoding.UTF8.GetBytes(messageKey), typeof(string), messageKey)
-            : From(guid);
+        return new(Encoding.UTF8.GetBytes(messageKey), typeof(string), messageKey);
     }
 
     public static MessageKey From(ulong messageKey) => From(messageKey.ToString());
 
     public static MessageKey From(ReadOnlyMemory<byte> messageKey) {
-        if (messageKey.IsEmpty)
-            return None;
-
-        MessageKey key;
+        if (messageKey.IsEmpty) return None;
 
         try {
-            key = new(messageKey, typeof(Guid), new Guid(messageKey.Span).ToString("N"));
+            return new(messageKey, typeof(string), Encoding.UTF8.GetString(messageKey.Span));
         }
         catch (Exception) {
             try {
-                key = new(messageKey, typeof(string), Encoding.UTF8.GetString(messageKey.Span));
+                return new(messageKey, typeof(ReadOnlyMemory<byte>), Empty);
             }
-            catch (Exception) {
-                try {
-                    key = new(messageKey, typeof(ReadOnlyMemory<byte>), Empty);
-                }
-                catch (Exception ex) {
-                    throw new("Invalid message key!", ex);
-                }
+            catch (Exception ex) {
+                throw new InvalidCastException("Invalid message key!", ex);
             }
         }
-
-        return key;
     }
 
     public override string ToString() => Value;
@@ -63,7 +46,6 @@ public class MessageKey : IEquatable<MessageKey> {
     public static implicit operator MessageKey(long value)                 => From((ulong)value);
     public static implicit operator MessageKey(ulong value)                => From(value);
     public static implicit operator MessageKey(string value)               => From(value);
-    public static implicit operator MessageKey(Guid value)                 => From(value);
     public static implicit operator MessageKey(ReadOnlySpan<byte> value)   => From(new ReadOnlyMemory<byte>(value.ToArray()));
     public static implicit operator MessageKey(ReadOnlyMemory<byte> value) => From(value);
 

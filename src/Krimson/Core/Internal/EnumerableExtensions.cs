@@ -32,4 +32,15 @@ static class EnumerableExtensions {
 
     [DebuggerStepThrough]
     public static bool None<TSource>(this IEnumerable<TSource>? source, Func<TSource, bool> predicate) => !source?.Any(predicate) ?? false;
+
+    [DebuggerStepThrough]
+    public static IEnumerable<T> Concat<T>(this T source, IEnumerable<T> collection) {
+        return new[] {
+            source
+        }.Concat(collection);
+    }
+}
+
+public static class CollectionExtensions {
+    
 }
