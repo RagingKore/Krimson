@@ -1,0 +1,22 @@
+version: '3.8'
+
+networks:
+  default:
+    name: krimson-network
+    
+services:
+
+  tests:
+    container_name: krimson
+    image: krimson
+    #platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+#    environment:
+#      ASPNETCORE_ENVIRONMENT: 'Development'
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+      - kafka-ui

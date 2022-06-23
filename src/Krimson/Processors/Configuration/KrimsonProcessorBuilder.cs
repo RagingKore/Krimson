@@ -314,9 +314,12 @@ public record KrimsonProcessorBuilder {
         Ensure.NotNullOrWhiteSpace(Options.ProducerConfiguration.BootstrapServers, nameof(Options.ProducerConfiguration.BootstrapServers));
         Ensure.NotNullOrWhiteSpace(Options.RegistryConfiguration.Url, nameof(Options.RegistryConfiguration.Url));
         Ensure.NotNullOrEmpty(Options.InputTopics, nameof(InputTopic));
+        Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
+        Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
+
         Ensure.Valid(Options.Router, nameof(Options.Router), router => router.HasRoutes);
 
-        return new(Options with { });
+        return new KrimsonProcessor(Options with { });
     }
 
     // not yet

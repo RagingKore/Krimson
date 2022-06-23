@@ -12,3 +12,8 @@ message PowerConsumption {
     google.protobuf.DoubleValue kwh = 2;
     google.protobuf.Timestamp timestamp = 3;
 }
+
+message PowerCost {
+    google.protobuf.DoubleValue price = 2;
+    google.protobuf.Timestamp timestamp = 3;
+}

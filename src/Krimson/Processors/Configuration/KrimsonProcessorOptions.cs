@@ -3,7 +3,6 @@ using Confluent.Kafka.Admin;
 using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.SchemaRegistry;
-using Krimson.SchemaRegistry.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -19,8 +18,8 @@ public record KrimsonProcessorOptions {
         ProducerConfiguration = DefaultConfigs.DefaultProducerConfig;
         RegistryConfiguration = DefaultConfigs.DefaultSchemaRegistryConfig;
         RegistryFactory       = () => new CachedSchemaRegistryClient(RegistryConfiguration);
-        DeserializerFactory   = registry => new ProtobufDynamicDeserializer(registry);
-        SerializerFactory     = registry => new ProtobufDynamicSerializer(registry);
+        // DeserializerFactory   = registry => new ProtobufDynamicDeserializer(registry);
+        // SerializerFactory     = registry => new ProtobufDynamicSerializer(registry);
         LoggerFactory         = new NullLoggerFactory();
     }
 

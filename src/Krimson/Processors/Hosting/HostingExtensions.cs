@@ -19,62 +19,37 @@ public static class HostingExtensions {
         Ensure.NotNull(build, nameof(build));
         Ensure.Positive(tasks, nameof(tasks));
 
-        for (var i = 0; i < tasks; i++) {
-            RegisterProcessor(i);
-            RegisterWorker(i);
+        for (var i = 1; i <= tasks; i++) {
+            var order = i;
+            services.AddSingleton(ctx => AddWorker(ctx, order));
         }
 
         return services;
 
-        void RegisterProcessor(int order)
-            => services.AddSingleton(
-                ctx => {
-                    var builder = KrimsonProcessor.Builder
-                        .ReadSettings(ctx.GetRequiredService<IConfiguration>())
-                        .With(x => build(ctx, x));
+        IHostedService AddWorker(IServiceProvider ctx, int order) {
+            var builder = KrimsonProcessor.Builder
+                .ReadSettings(ctx.GetRequiredService<IConfiguration>())
+                .With(x => build(ctx, x));
 
-                    if (tasks > 1) {
-                        builder = builder
-                            .GroupId(builder.Options.ConsumerConfiguration.GroupId)
-                            .ClientId($"{builder.Options.ConsumerConfiguration.ClientId}-{order + 1:000}");
-                    }
+            if (order > 1) {
+                builder = builder
+                    .GroupId(builder.Options.ConsumerConfiguration.GroupId)
+                    .ClientId($"{builder.Options.ConsumerConfiguration.ClientId}-{order:000}");
+            }
 
-                    return new KrimsonProcessorRegistration(order, builder);
-                }
+            var processor = builder.Create();
+        
+            return new KrimsonWorkerService(
+                processor, ctx, ct => initialize?.Invoke(ctx, ct) ?? Task.CompletedTask
             );
-
-        void RegisterWorker(int order)
-            => services.AddSingleton<IHostedService>(
-                ctx => {
-                    var processor = ResolveProcessor(ctx, order);
-                    var lifetime  = ctx.GetRequiredService<IHostApplicationLifetime>();
-
-                    var logger = ctx
-                        .GetRequiredService<ILoggerFactory>()
-                        .CreateLogger(processor.ClientId);
-                    
-                    return new KrimsonWorkerService(
-                        lifetime, logger, processor,
-                        ct => initialize?.Invoke(ctx, ct) ?? Task.CompletedTask
-                    );
-                }
-            );
-
-        static KrimsonProcessor ResolveProcessor(IServiceProvider serviceProvider, int order) {
-            return serviceProvider
-                .GetServices<KrimsonProcessorRegistration>()
-                .OrderBy(x => x.Order)
-                .ToArray()[order]
-                .Builder.Create();
         }
     }
 
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
         int tasks,
-        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
-        Func<IServiceProvider, CancellationToken, Task>? initialize = null
-    ) => AddKrimsonProcessor(services, build, tasks, initialize);
+        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build
+    ) => AddKrimsonProcessor(services, build, tasks, null);
     
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
@@ -85,15 +60,12 @@ public static class HostingExtensions {
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
         int tasks,
-        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
-        Func<IServiceProvider, CancellationToken, Task>? initialize = null
-    ) =>
-        AddKrimsonProcessor(services, tasks, (_, builder) => build(builder), initialize);
+        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build
+    ) => AddKrimsonProcessor(services, tasks, (_, builder) => build(builder));
 
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
         Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
-    ) =>
-        AddKrimsonProcessor(services, (_, builder) => build(builder), initialize);
+    ) => AddKrimsonProcessor(services, (_, builder) => build(builder), initialize);
 }

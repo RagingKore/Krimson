@@ -1,10 +1,8 @@
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
-using Confluent.SchemaRegistry.Serdes;
 using Krimson.Interceptors;
 using Krimson.Producers.Interceptors;
 using Krimson.SchemaRegistry;
-using Krimson.SchemaRegistry.Protobuf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -79,10 +77,6 @@ public record KrimsonProducerBuilder {
                 SerializerFactory = Ensure.NotNull(getSerializer, nameof(getSerializer))
             }
         };
-    }
-
-    public KrimsonProducerBuilder UseProtobuf(Action<ProtobufSerializerConfig>? configure = null) {
-        return Serializer(registry => new ProtobufDynamicSerializer(registry, ProtobufDynamicSerializer.DefaultConfig.With(x => configure?.Invoke(x))));
     }
 
     public KrimsonProducerBuilder Topic(string? topic) {
@@ -165,15 +159,14 @@ public record KrimsonProducerBuilder {
         Ensure.NotNullOrWhiteSpace(Options.ProducerConfiguration.ClientId, nameof(ClientId));
         Ensure.NotNullOrWhiteSpace(Options.ProducerConfiguration.BootstrapServers, nameof(Options.ProducerConfiguration.BootstrapServers));
         Ensure.NotNullOrWhiteSpace(Options.RegistryConfiguration.Url, nameof(Options.RegistryConfiguration.Url));
-        
-        //var logger = Options.LoggerFactory.CreateLogger<KrimsonProducer>();
-        
+        Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
+  
         var interceptors = Options.Interceptors
             .Prepend(new KrimsonProducerLogger())
             .Prepend(new ConfluentProducerLogger())
             .WithLoggerFactory(Options.LoggerFactory);
 
-        return new(
+        return new KrimsonProducer(
             Options.ProducerConfiguration,
             interceptors.Intercept,
             Options.SerializerFactory(Options.RegistryFactory()),

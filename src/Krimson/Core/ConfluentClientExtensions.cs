@@ -18,15 +18,11 @@ public static class ConfluentClientExtensions {
     ///     corresponding instance.
     /// </remarks>
     public static string GetInstanceName(this IClient client) {
-        string? name = null;
-
         try {
-            name = client.Name;
+            return client.Name;
         }
         catch (Exception) {
-            // ignored
+            return client.GetType().Name.Kebaberize(); //"unknown";
         }
-
-        return name ?? client.GetType().Name.Kebaberize();
     }
 }

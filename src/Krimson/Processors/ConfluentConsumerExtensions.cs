@@ -1,64 +1,68 @@
 using System.Runtime.CompilerServices;
 using Confluent.Kafka;
+using OneOf.Types;
 using static System.TimeSpan;
 
 namespace Krimson.Processors;
 
 
 public delegate void OnPartitionEndReached(TopicPartitionOffset position);
+public delegate void OnConsumeException(ConsumeException exception);
+
+class ConsumeResult<TValue> : OneOfBase<ConsumeResult<byte[], TValue>, None, Exception, TopicPartitionOffset> {
+    ConsumeResult(OneOf<ConsumeResult<byte[], TValue>, None, Exception, TopicPartitionOffset> input) : base(input) { }
+    
+    public static implicit operator ConsumeResult<TValue>(ConsumeResult<byte[], TValue> _) => new ConsumeResult<TValue>(_);
+    public static implicit operator ConsumeResult<TValue>(None _)                          => new ConsumeResult<TValue>(_);
+    public static implicit operator ConsumeResult<TValue>(Exception _)                     => new ConsumeResult<TValue>(_);
+    public static implicit operator ConsumeResult<TValue>(TopicPartitionOffset _)          => new ConsumeResult<TValue>(_);
+    
+    public static explicit operator ConsumeResult<byte[], TValue>(ConsumeResult<TValue> _) => _.AsT0;
+    public static explicit operator None(ConsumeResult<TValue> _)                          => _.AsT1;
+    public static explicit operator Exception(ConsumeResult<TValue> _)                     => _.AsT2;
+    public static explicit operator TopicPartitionOffset(ConsumeResult<TValue> _)          => _.AsT3;
+}
 
 static class ConfluentConsumerExtensions {
     static readonly TimeSpan DefaultRequestTimeout = FromSeconds(10);
 
     public static IAsyncEnumerable<KrimsonRecord> Records<TValue>(this IConsumer<byte[], TValue> consumer, OnPartitionEndReached partitionEndReached, CancellationToken cancellationToken = default) {
         return Consume().ToAsyncEnumerable();
-
+        
         IEnumerable<KrimsonRecord> Consume() {
             while (!cancellationToken.IsCancellationRequested) {
                 var result = TryConsume(() => consumer.Consume(cancellationToken));
 
-                if (result.HasCaughtUp) {
-                    try {
-                        partitionEndReached(result.ConsumeResult.TopicPartitionOffset);
-                    }
-                    catch (Exception) {
-                        // TODO SS: consider logging this error for debug
-                    }
-
+                if (result.Value is ConsumeResult<byte[], TValue> consumeResult) {
+                    yield return KrimsonRecord.From(consumeResult);
                     continue;
                 }
                 
-                if (result.Continue)
-                    continue; // transient error
+                if (result.Value is OperationCanceledException)
+                    yield break;
 
-                if (result.Break)
-                    yield break; // OperationCanceledException
+                if (result.Value is ConsumeException cex) {
+                    if (cex.IsTerminal())
+                        throw cex;
+                        
+                    continue;
+                }
 
-                yield return KrimsonRecord.From(result.ConsumeResult);
+                if (result.Value is TopicPartitionOffset position)
+                    partitionEndReached(position);
             }
         }
-
-        // TODO SS: add oneof or something for a more interesting and clean functional solution
-        // because we can't use a try-catch and we simply want to break when/if
-        // * Cancellation is requested
-        // * OperationCanceledException is thrown
-        // * Fatal KafkaException is thrown
-        static (ConsumeResult<byte[], TValue> ConsumeResult, bool Continue, bool Break, bool HasCaughtUp) TryConsume(Func<ConsumeResult<byte[], TValue>?> consume) {
+        
+        static ConsumeResult<TValue> TryConsume(Func<ConsumeResult<byte[], TValue>?> consume) {
             try {
                 var result = consume();
 
-                if (result is not null)
-                    return result.IsPartitionEOF 
-                        ? (result, false, false, true) 
-                        : (result, false, false, false);
-                
-                return (null, true, false, false)!;
+                return result is not null 
+                    ? result.IsPartitionEOF ? result.TopicPartitionOffset : result 
+                    : new None();
             }
-            catch (KafkaException kex) when (kex.IsTransient()) {
-                return (null, true, false, false)!;
-            }
-            catch (OperationCanceledException) {
-                return (null, false, true, false)!;
+            catch (Exception ex) {
+                return ex;
             }
         }
     }

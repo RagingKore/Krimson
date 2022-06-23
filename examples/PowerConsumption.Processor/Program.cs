@@ -2,8 +2,13 @@ using Krimson.Examples.Messages.Telemetry;
 using Krimson.Processors;
 using Krimson.Processors.Hosting;
 using Krimson.SchemaRegistry.Protobuf;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton(
+    ctx => new MongoClient("").GetDatabase("telemetry")
+);
 
 builder.Services.AddKrimsonProcessor(
     tasks: 6,

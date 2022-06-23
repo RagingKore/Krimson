@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
+using System.Runtime.Serialization;
 
 namespace Krimson.SchemaRegistry;
 
 public static class SchemaRegistry {
-    
     /// <summary>
     /// Serialization format:
     ///       byte 0:           A magic byte that identifies this as a message with
@@ -17,7 +17,7 @@ public static class SchemaRegistry {
             return BinaryPrimitives.ReadInt32BigEndian(data.Slice(1, 4).Span);
         }
         catch (Exception ex) {
-            throw new("Failed to parse Confluent Platform Schema Id!", ex);
+            throw new SerializationException("Failed to parse Confluent Platform Schema Id!", ex);
         }
     }
 }

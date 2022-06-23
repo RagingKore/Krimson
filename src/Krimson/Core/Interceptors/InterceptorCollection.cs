@@ -133,10 +133,12 @@ public record InterceptorCollection : IReadOnlyCollection<InterceptorModule> {
 
         return Interceptors
             .Aggregate(
-                new InterceptorCollection() {
+                new InterceptorCollection {
                     LoggerFactory = loggerFactory,
                     Logger        = loggerFactory.CreateLogger(nameof(Interceptors))
-                }, (seed, interceptor) => seed.Append(interceptor.With(x => x.SetLoggerFactory(seed.LoggerFactory))));
+                }, 
+                (seed, interceptor) => seed.Append(interceptor.With(x => x.SetLoggerFactory(seed.LoggerFactory)))
+            );
     }
     
     public int Count => Interceptors.Count;

@@ -4,14 +4,18 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+<!--    <LangVersion>preview</LangVersion>-->
+<!--    <EnablePreviewFeatures>True</EnablePreviewFeatures>-->
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Krimson.Application\Krimson.Application.csproj" />
+    <ProjectReference Include="..\..\src\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
+    <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
     <ProjectReference Include="..\Device.Contracts\Device.Contracts.csproj" />
   </ItemGroup>
 

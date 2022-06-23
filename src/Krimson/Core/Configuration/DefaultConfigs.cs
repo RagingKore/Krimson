@@ -9,12 +9,13 @@ namespace Krimson;
 [PublicAPI]
 public static class DefaultConfigs {
     public static readonly ClientConfig DefaultClientConfig = new() {
-        BootstrapServers      = "localhost:9092",          // ready for docker
-        ReconnectBackoffMaxMs = 10000 * 2,                 // 2x the default to allow for better handling of transient networks issues
-        LogConnectionClose    = false,                     // documented as providing false alarms
-        SocketKeepaliveEnable = true,                      // seems to help with network issues
-        SaslMechanism         = SaslMechanism.Plain,       // default
-        SecurityProtocol      = SecurityProtocol.Plaintext // default
+        BootstrapServers      = "localhost:9092",           // ready for docker
+        ReconnectBackoffMaxMs = 10000 * 2,                  // 2x the default to allow for better handling of transient networks issues
+        LogConnectionClose    = false,                      // documented as providing false alarms
+        SocketKeepaliveEnable = true,                       // seems to help with network issues
+        SaslMechanism         = SaslMechanism.Plain,        // default
+        SecurityProtocol      = SecurityProtocol.Plaintext, // default
+        BrokerAddressFamily   = BrokerAddressFamily.V4      // cause V6 will just create chaos
     };
 
     public static ConsumerConfig DefaultConsumerConfig =>
@@ -37,7 +38,7 @@ public static class DefaultConfigs {
             EnableIdempotence    = true, // there are no reasons to not want it enabled
             LingerMs             = 5,    // the default is now 5, funny
             DeliveryReportFields = "all" // default
-            , EnableGaplessGuarantee = true
+            //, EnableGaplessGuarantee = true
         };
 
     public static SchemaRegistryConfig DefaultSchemaRegistryConfig =>

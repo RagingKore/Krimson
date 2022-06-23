@@ -40,5 +40,5 @@ public class KrimsonProcessorRouter {
 
     public bool CanRoute(string messageTypeName) => Handlers.ContainsKey(messageTypeName);
     public bool CanRoute(Type messageType)       => CanRoute(messageType.FullName!);
-    public bool CanRoute(KrimsonRecord record)     => CanRoute(record.Value.GetType());
+    public bool CanRoute(KrimsonRecord record)   => CanRoute(record.Value.GetType());
 }

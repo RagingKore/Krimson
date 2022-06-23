@@ -17,7 +17,7 @@ public abstract class TestFixture : AsyncLifetime, ITestFixture {
 }
 
 public abstract class TestFixture<T> : TestFixture, ITestFixture<T> where T : ITestContext, new() {
-    public TestFixture(T context) : base(context) { }
+    protected TestFixture(T context) : base(context) { }
 
     public T Context => (T)((ITestFixture)this).TestContext!;
 }

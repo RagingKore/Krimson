@@ -32,7 +32,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         Registry = options.RegistryFactory();
 
         Intercept = options.Interceptors
-            .Prepend(new KrimsonProcessorLogger(){ Name = $"KrimsonProcessor({ClientId})"})
+            .Prepend(new KrimsonProcessorLogger { Name = $"KrimsonProcessor({ClientId})"})
             .Prepend(new ConfluentProcessorLogger())
             .WithLoggerFactory(options.LoggerFactory)
             .Intercept;
@@ -100,22 +100,9 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         Intercept(new ProcessorStarted(ClientId, GroupId, Topics));
 
         Status      = KrimsonProcessorStatus.Running;
-        OnStop      = onStop ?? ((_, _) => Task.CompletedTask);
+        OnStop      = onStop ?? ((_, _, _, _) => Task.CompletedTask);
         Cancellator = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         
-        //Cancellator.Token.Register(() => Stop().GetAwaiter().GetResult());
-        //
-        // ConsumeTask = Task.Run(async () => {
-        //     try {
-        //         await foreach (var record in Consumer.Records(position => Intercept(new PartitionEndReached(ClientId, position)), Cancellator.Token)) {
-        //             await ProcessRecord(record, Cancellator.Token);
-        //         }
-        //     }
-        //     catch (Exception ex) {
-        //         await Stop(ex);
-        //     }
-        // });
-
         await Task.Yield();
 
         try {
@@ -209,60 +196,15 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
                 }
                 else {
                     // dont wait here, just let it flow...
+                    // this will trigger the cancellation of the token
+                    // to gracefully stop processing any other messages
+#pragma warning disable CS4014
                     Stop(result.Exception);
+#pragma warning restore CS4014
                 }
             }
         }
-
-//         void ProcessOutput(IReadOnlyCollection<ProducerRequest> messages) {
-//             var messageCount = messages.Count;
-//
-//             if (messageCount == 0) {
-//                 Consumer.TrackPosition(record);
-//                 Intercept(new InputProcessed(ClientId, record, messages));
-//                 return;
-//             }
-//
-//             var results       = new ConcurrentQueue<ProducerResult>();
-//             var alreadyFailed = false; //TODO SS: should not happen anymore... check it out later
-//
-//             foreach (var message in messages)
-//                 Producer.Produce(
-//                     message, result => {
-//                         Intercept(
-//                             new OutputProcessed(
-//                                 ClientId, Producer.ClientId, result,
-//                                 record, message
-//                             )
-//                         );
-//
-//                         if (result.Success) {
-//                             results.Enqueue(result);
-//
-//                             if (results.Count != messageCount)
-//                                 return;
-//
-//                             Consumer.TrackPosition(record);
-//
-//                             Intercept(new InputProcessed(ClientId, record, messages));
-//                         }
-//                         else {
-//                             if (alreadyFailed)
-//                                 return;
-//
-//                             alreadyFailed = true;
-//
-//                             // dont wait here, just let it flow...
-// #pragma warning disable CS4014
-//                             Stop(ExceptionDispatchInfo.Capture(result.Exception!));
-// #pragma warning restore CS4014
-//                         }
-//                     }
-//                 );
-//         }
-
     }
-
 
     async Task Stop(Exception? exception) {
         if (!Cancellator.IsCancellationRequested)
@@ -275,7 +217,9 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
             Intercept(
                 new ProcessorStopped(
                     ClientId, GroupId, Topics,
-                    new InvalidOperationException($"{ClientId} already {Status.ToString().ToLower()}. This should not happen! Investigate!", exception)
+                    new InvalidOperationException(
+                        $"{ClientId} already {Status.ToString().ToLower()}. This should not happen! Investigate!", exception
+                    )
                 )
             );
 
@@ -289,43 +233,22 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         IReadOnlyCollection<SubscriptionTopicGap> gap = Array.Empty<SubscriptionTopicGap>();
 
         try {
-            // using (Consumer)
-            // using (Registry)
-            // await using (Producer){
-            //     gap = await Consumer
-            //         .Stop()
-            //         .ConfigureAwait(false);
-            // }
-
+            // stop the consumer first since this will
+            // trigger flush by partitions revoked/lost
             gap = await Consumer
                 .Stop()
                 .ConfigureAwait(false);
             
+            // at this point disposing of the producer
+            // should not have to flush any message
+            // requests but maybe some internal ones
             await Producer
                 .DisposeAsync()
                 .ConfigureAwait(false);
             
+            // disposing as 
             Consumer.Dispose();
             Registry.Dispose();
-            
-            
-            // Producer.Flush();
-            // Consumer.CommitAll();
-
-            
-            // Producer.Flush();
-            // Consumer.CommitAll();
-            //
-            // gap = await Consumer
-            //     .Stop()
-            //     .ConfigureAwait(false);
-            //
-            // await Producer
-            //     .DisposeAsync()
-            //     .ConfigureAwait(false);
-
-            // Consumer.Dispose();
-            // Registry.Dispose();
         }
         catch (Exception vex) {
             vex = new Exception($"{ClientId} stopped violently! {vex.Message}", vex);
@@ -339,16 +262,11 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         Intercept(new ProcessorStopped(ClientId, GroupId, Topics, exception));
 
         try {
-            await OnStop(gap, exception)
+            await OnStop(ClientId, GroupId, gap, exception)
                 .ConfigureAwait(false);
         }
         catch (Exception ex) {
-            Intercept(
-                new ProcessorStoppedUserHandlingError(
-                    ClientId, GroupId, Topics,
-                    ex
-                )
-            ); // maybe remove it
+            Intercept(new ProcessorStoppedUserHandlingError(ClientId, GroupId, Topics, ex)); // maybe remove it
         }
     }
 }

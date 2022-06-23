@@ -1,6 +1,6 @@
-using Krimson.Application;
-using Krimson.Configuration;
 using Krimson.Producers;
+using Krimson.Producers.Hosting;
+using Krimson.SchemaRegistry.Protobuf;
 
 var builder = WebApplication.CreateBuilder(args);
 

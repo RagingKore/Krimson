@@ -4,9 +4,13 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+<!--    <LangVersion>preview</LangVersion>-->
+<!--    <EnablePreviewFeatures>True</EnablePreviewFeatures>-->
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.16.1" />
     <PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="4.2.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
@@ -15,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
+    <ProjectReference Include="..\..\src\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
     <ProjectReference Include="..\Device.Contracts\Device.Contracts.csproj" />
   </ItemGroup>
   

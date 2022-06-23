@@ -83,5 +83,3 @@ public record InputError(string Processor, KrimsonRecord Record, IReadOnlyCollec
 /// After attempting to send the output message
 /// </summary>
 public record OutputProcessed(string ProcessorName, string ProducerName, ProducerResult Result, KrimsonRecord Input, ProducerRequest Request) : InterceptorEvent;
-
-
