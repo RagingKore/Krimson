@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="Directory.Untestable.targets" Condition="'$(IsTestProject)' != 'true'" />
-</Project>

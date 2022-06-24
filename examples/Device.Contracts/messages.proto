@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package krimson.examples.messages.device.registry;
 
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
+//import "google/protobuf/wrappers.proto";
+//import "google/protobuf/any.proto";
 
 option csharp_namespace = "Krimson.Examples.Messages.Device.Registry";
 

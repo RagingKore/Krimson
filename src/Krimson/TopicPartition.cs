@@ -1,4 +1,4 @@
-namespace Krimson.Kafka; 
+namespace Krimson; 
 
 public record TopicPartition(Topic Topic, Partition Partition)
     : IComparable<TopicPartition>, IComparable {

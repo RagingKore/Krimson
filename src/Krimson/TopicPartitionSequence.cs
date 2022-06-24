@@ -1,4 +1,4 @@
-namespace Krimson.Kafka;
+namespace Krimson;
 
 [PublicAPI]
 public sealed record TopicPartitionSequence(Topic Topic, Partition Partition, long Sequence) : IComparable<TopicPartitionSequence>, IComparable {

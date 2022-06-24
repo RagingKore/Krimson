@@ -1,4 +1,4 @@
-namespace Krimson.Kafka; 
+namespace Krimson; 
 
 public record Topic(string Name)
     : IComparable<Topic>, IComparable {

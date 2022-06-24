@@ -1,4 +1,4 @@
-namespace Krimson.Kafka; 
+namespace Krimson; 
 
 public sealed record Partition(int Value) : IComparable<Partition>, IComparable {
     public static readonly Partition Any  = new(-1);

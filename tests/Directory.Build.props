@@ -1,18 +1,15 @@
 <Project>
-  
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <Deterministic>true</Deterministic>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <!--    <LangVersion>preview</LangVersion>-->
+    <!--    <EnablePreviewFeatures>True</EnablePreviewFeatures>-->
   </PropertyGroup>
-  
-  <ItemGroup>
-    <Using Include="Krimson"/>
-  </ItemGroup>
-  
 </Project>

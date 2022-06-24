@@ -20,6 +20,7 @@ public sealed class ConfluentProcessorLogger : InterceptorModule {
 
         On<ConfluentConsumerError>(
             evt => {
+                // sanity check
                 var logLevel = evt.Error.IsUseless()
                     ? LogLevel.Debug
                     : evt.Error.IsTerminal()
