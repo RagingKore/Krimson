@@ -195,3 +195,44 @@ public class KrimsonProducer : IAsyncDisposable {
         }.With(x => x.Key = request.Key, when: request.HasKey);
     }
 }
+
+
+public static class KrimsonProducerExtensions {
+    public static Task<ProducerResult> Produce(this KrimsonProducer producer, object message, MessageKey key) {
+        var req = ProducerRequest.Builder
+            .Message(message)
+            .Key(key)
+            .Create();
+        
+        return producer.Produce(req);
+    }
+    
+    public static Task<ProducerResult> Produce(this KrimsonProducer producer, object message, MessageKey key, string topic) {
+        var req = ProducerRequest.Builder
+            .Message(message)
+            .Key(key)
+            .Topic(topic)
+            .Create();
+        
+        return producer.Produce(req);
+    }
+    
+    public static void Produce(this KrimsonProducer producer, object message, MessageKey key, Action<ProducerResult> onResult) {
+        var req = ProducerRequest.Builder
+            .Message(message)
+            .Key(key)
+            .Create();
+        
+        producer.Produce(req, onResult);
+    }
+    
+    public static void Produce(this KrimsonProducer producer, object message, MessageKey key, string topic, Action<ProducerResult> onResult) {
+        var req = ProducerRequest.Builder
+            .Message(message)
+            .Key(key)
+            .Topic(topic)
+            .Create();
+        
+        producer.Produce(req, onResult);
+    }
+}

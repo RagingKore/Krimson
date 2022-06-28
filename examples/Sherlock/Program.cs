@@ -2,30 +2,55 @@
 
 using System.Collections.Concurrent;
 using Confluent.Kafka;
+using FluentAssertions;
 using Humanizer;
+using Krimson;
+using Krimson.Examples.Messages.Telemetry;
 using Krimson.Processors;
 using Krimson.Producers;
 using Krimson.SchemaRegistry.Protobuf;
+using Microsoft.Extensions.Logging;
 using Nito.AsyncEx.Synchronous;
 using Serilog;
+using Serilog.Exceptions;
+using Serilog.Sinks.SystemConsole.Themes;
 using static System.String;
 using static System.Threading.Tasks.Task;
+using ILogger = Serilog.ILogger;
+
+const string LogOutputTemplate = "[{Timestamp:HH:mm:ss.fff} {Level:u3}] ({ThreadId:000}) {SourceContext}{NewLine}{Message}{NewLine}{Exception}";
 
 await Run();
 
 static async Task Run() {
-    const int    processorTasks               = 16;
-    const int    inputMessagesCount           = 1_056_000;
+    const int    processorTasks               = 1;
+    const int    inputMessagesCount           = 100;
     const int    inputBatchSize               = 10;
     const int    processorMaxInFlightMessages = 10000;
     const string inputTopic                   = "krimson.sherlock.input";
-    const int    inputTopicPartitions         = 16;
+    const int    inputTopicPartitions         = 1;
     const string outputTopic                  = "krimson.sherlock.output";
-    const int    outputTopicPartitions        = 16;
+    const int    outputTopicPartitions        = 1;
     const int    timeout                      = 120_000;
     const int    startTaskDelay               = 3000;
     const int    runs                         = 1;
 
+    Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Debug()
+        //.MinimumLevel.Override(nameof(Fixie), LogEventLevel.Verbose)
+        .Enrich.WithProperty("SourceContext", "Krimson.Sherlock")
+        .Enrich.FromLogContext()
+        .Enrich.WithThreadId()
+        .Enrich.WithExceptionDetails()
+        .WriteTo.Logger(
+            logger => logger
+                //.Filter.ByExcluding(Matching.FromSource(nameof(Fixie)))
+                .WriteTo.Console(theme: AnsiConsoleTheme.Literate, outputTemplate: LogOutputTemplate, applyThemeToRedirectedOutput: true)
+        )
+        .CreateLogger();
+
+    var loggerFactory = new LoggerFactory().AddSerilog();
+    
     var logger = Log.ForContext("SourceContext", "Krimson.Sherlock");
 
     /*
@@ -33,13 +58,14 @@ static async Task Run() {
      */
 
     // app.Configuration
-    var connection = new ClientConnection {
-        BootstrapServers = null,
-        Username         = null,
-        Password         = null,
-        SecurityProtocol = SecurityProtocol.Plaintext,
-        SaslMechanism    = SaslMechanism.Gssapi
-    };
+    // var connection = new ClientConnection {
+    //     BootstrapServers = null,
+    //     Username         = null,
+    //     Password         = null,
+    //     SecurityProtocol = SecurityProtocol.Plaintext,
+    //     SaslMechanism    = SaslMechanism.Gssapi
+    // };
+    var connection = new ClientConnection();
 
     for (var run = 1; run <= runs; run++)
         await ExecuteTest(
@@ -48,7 +74,7 @@ static async Task Run() {
             outputTopic, outputTopicPartitions,
             inputMessagesCount, inputBatchSize,
             processorTasks, processorMaxInFlightMessages,
-            timeout, startTaskDelay, logger
+            timeout, startTaskDelay, logger, loggerFactory
         );
 
     logger.Information("*** {Runs} test run(s) completed ***", runs);
@@ -67,7 +93,7 @@ static async Task ExecuteTest(
     int processorMaxInFlightMessages,
     int timeout,
     int startTaskDelay,
-    ILogger logger
+    ILogger logger, ILoggerFactory loggerFactory
 ) {
     var subscription = $"krimson-{DateTime.UtcNow.Millisecond}";
 
@@ -124,7 +150,7 @@ static async Task ExecuteTest(
             outputTopic,
             processorMaxInFlightMessages,
             cancellator,
-            logger
+            logger,loggerFactory
         );
 
         tasks.Add(task);
@@ -173,7 +199,7 @@ static async Task ExecuteTest(
         outputTopic,
         processorMaxInFlightMessages,
         new CancellationTokenSource(10000),
-        logger
+        logger, loggerFactory
     );
 
     if (messages.Any())
@@ -195,7 +221,7 @@ static async Task ExecuteTest(
         .ToDictionary(x => x.Key, x => x.Select(z => (z.Id, (InputMessage)z.Value!)));
 
     foreach (var entry in messagesByPartition)
-        FluentAssertions.AssertionExtensions.Should(entry.Value).BeInAscendingOrder(x => x.Id.Position);
+        entry.Value.Should().BeInAscendingOrder(x => x.Id.Position);
 
     //Check.That(entry.Value).IsInAscendingOrder();
 }
@@ -224,11 +250,18 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
     var batchOrder = 1;
 
     for (var i = 0; i < messageCount; i++) {
-        var inputMessage = new InputMessage(
-            i, batchId, batchOrder,
-            lorem.Text()
-        );
+        // var inputMessage = new InputMessage(
+        //     i, batchId, batchOrder,
+        //     lorem.Text()
+        // );
 
+        var inputMessage = new InputMessage {
+            Text        = lorem.Text(),
+            GlobalOrder = i,
+            BatchId     = batchId.ToString(),
+            BatchOrder  = batchOrder
+        };
+        
         var producerMessage = ProducerRequest.Builder
             .Message(inputMessage)
             .Key(inputMessage.BatchId)
@@ -284,16 +317,17 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
     string outputTopic,
     int maxInFlightMessages,
     CancellationTokenSource cancellator,
-    ILogger logger
+    ILogger logger, ILoggerFactory loggerFactory
 ) {
     var processedMessages = new ConcurrentBag<KrimsonRecord>();
-
+    
     var processor = KrimsonProcessor.Builder
         .ClientId($"krimson-sherlock-{processorId:00}")
         .GroupId(subscriptionName ?? "krimson-sherlock")
         .Connection(connection)
         .InputTopic(inputTopic)
         .OutputTopic(outputTopic)
+        .LoggerFactory(loggerFactory)
         .Process<InputMessage>(
             (message, ctx) => {
                 ctx.Output(message, ctx.Record.Key);
@@ -312,6 +346,7 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
                 return CompletedTask;
             }
         )
+        .UseProtobuf()
         .Create();
 
     await processor.RunUntilCompletion(cancellator.Token);
@@ -348,6 +383,7 @@ static async Task<List<KrimsonRecord>> ReadMessages(
         .ClientId($"krimson-sherlock-reader-{processorId ?? DateTimeOffset.Now.ToUnixTimeSeconds()}")
         .InputTopic(topic)
         .Process<InputMessage>((message, ctx) => records.Add(ctx.Record))
+        .UseProtobuf()
         .Create();
 
     await processor.Start(cancellator.Token);
@@ -355,20 +391,20 @@ static async Task<List<KrimsonRecord>> ReadMessages(
     return records;
 }
 
-public class InputMessage {
-    public InputMessage() { }
-
-    public InputMessage(int globalOrder, Guid batchId, int batchOrder, string text) {
-        GlobalOrder = globalOrder;
-        BatchId     = batchId;
-        BatchOrder  = batchOrder;
-        Text        = text;
-    }
-
-    public string Text        { get; set; } = Empty;
-    public int    GlobalOrder { get; set; }
-    public Guid   BatchId     { get; set; }
-    public int    BatchOrder  { get; set; }
-
-    public override string ToString() => $"{GlobalOrder:0000000}-{BatchId.ToString("N").Substring(28, 4)}:{BatchOrder:000}";
-}
+// public class InputMessage {
+//     public InputMessage() { }
+//
+//     public InputMessage(int globalOrder, Guid batchId, int batchOrder, string text) {
+//         GlobalOrder = globalOrder;
+//         BatchId     = batchId;
+//         BatchOrder  = batchOrder;
+//         Text        = text;
+//     }
+//
+//     public string Text        { get; set; } = Empty;
+//     public int    GlobalOrder { get; set; }
+//     public Guid   BatchId     { get; set; }
+//     public int    BatchOrder  { get; set; }
+//
+//     public override string ToString() => $"{GlobalOrder:0000000}-{BatchId.ToString("N").Substring(28, 4)}:{BatchOrder:000}";
+// }

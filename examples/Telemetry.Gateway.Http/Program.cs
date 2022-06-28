@@ -11,34 +11,27 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// KrimsonProducer.Builder
-//     .ReadSettings(builder.Configuration)
-//     .ProducerName("gateway")
-//     .Topic("telemetry")
-//     .UseProtobuf()
-//     .Create();
-
+// you can register a producer in many ways...
 builder.Services.AddKrimsonProducer(
     producer => producer
         .ReadSettings(builder.Configuration)
         .UseProtobuf()
 );
 
-builder.Services.AddKrimsonProducer(
-    producer => producer
-        .ClientId("telemetry-gateway")
-        .Topic("telemetry")
-        .UseProtobuf()
-);
-
-builder.Services.AddSingleton(
-    ctx => KrimsonProducer.Builder
-        .ReadSettings(ctx.GetRequiredService<IConfiguration>())
-        .ClientId("gateway")
-        .Topic("telemetry")
-        .UseProtobuf()
-        .Create()
-);
+// builder.Services.AddKrimsonProducer(
+//     producer => producer
+//         .ReadSettings(builder.Configuration)
+//         .ClientId("telemetry-gateway")
+//         .Topic("telemetry")
+//         .UseProtobuf()
+// );
+//
+// builder.Services.AddSingleton(
+//     serviceProvider => KrimsonProducer.Builder
+//         .ReadSettings(serviceProvider.GetRequiredService<IConfiguration>())
+//         .UseProtobuf()
+//         .Create()
+// );
 
 var app = builder.Build();
 

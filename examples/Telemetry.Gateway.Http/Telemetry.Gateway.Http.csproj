@@ -6,8 +6,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
-    <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
-    <ProjectReference Include="..\Device.Contracts\Device.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Krimson.Core\Krimson.Core.csproj" />
+    <ProjectReference Include="..\Telemetry.Contracts\Telemetry.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

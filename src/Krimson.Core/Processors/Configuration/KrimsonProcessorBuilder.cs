@@ -126,7 +126,7 @@ public record KrimsonProcessorBuilder {
         };
     }
 
-    public KrimsonProcessorBuilder SchemaRegistry(string url, string apiKey, string apiSecret) {
+    public KrimsonProcessorBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
         return OverrideSchemaRegistryConfig(
             cfg => {
                 cfg.Url                        = url;

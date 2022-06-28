@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Krimson\Krimson.csproj" />
+    <ProjectReference Include="..\Krimson.Core\Krimson.Core.csproj" />
   </ItemGroup>
 
 </Project>

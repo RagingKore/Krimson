@@ -83,3 +83,17 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
       KAFKA_CLUSTERS_0_JMXPORT: 9997
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+  
+  kouncil:
+    image: consdata/kouncil:latest
+    container_name: kouncil
+    hostname: kouncil
+    ports:
+      - '7070:8080'
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+    environment:
+      bootstrapServers: kafka:29092
+      schemaRegistryUrl: http://schema-registry:8081

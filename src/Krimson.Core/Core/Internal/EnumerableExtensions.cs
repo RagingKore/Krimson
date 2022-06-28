@@ -40,7 +40,3 @@ static class EnumerableExtensions {
         }.Concat(collection);
     }
 }
-
-public static class CollectionExtensions {
-    
-}

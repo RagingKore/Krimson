@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
+    <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
     <ProjectReference Include="..\Krimson.Fixie\Krimson.Fixie.csproj" />
   </ItemGroup>
 
