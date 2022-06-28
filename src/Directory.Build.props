@@ -1,13 +1,18 @@
 <Project>
+  
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <Deterministic>true</Deterministic>
+    <Nullable>enable</Nullable>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <!--    <LangVersion>preview</LangVersion>-->
+    <!--    <EnablePreviewFeatures>True</EnablePreviewFeatures>-->
   </PropertyGroup>
-
+  
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    
     <PackageId>$(AssemblyName)</PackageId>
     <Authors>Sérgio Silveira</Authors>
     <Copyright>Copyright © $([System.DateTime]::Now.Year) $(Authors)</Copyright>
@@ -16,7 +21,7 @@
     <PackageProjectUrl>https://github.com/RagingKore/Krimson</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RepositoryUrl>https://github.com/RagingKore/Krimson</RepositoryUrl>
-    <PackageTags>kafka protobuf dotnet</PackageTags>
+    <PackageTags>kafka dotnet protobuf streaming event-driven</PackageTags>
 
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -30,8 +35,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="4.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-    <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" PrivateAssets="All" />
+    <PackageReference Include="MinVer" Version="4.0.0" PrivateAssets="All"/>
+    <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <!--    <None Include="$(RepoRoot)\e-logo.png" Pack="true" PackagePath="\"/>-->
   </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Krimson"/>
+    <Using Include="System"/>
+    <Using Include="System.Collections"/>
+    <Using Include="System.Collections.Generic"/>
+    <Using Include="System.Threading"/>
+    <Using Include="System.Threading.Tasks"/>
+    <Using Include="JetBrains.Annotations"/>
+    <Using Include="OneOf"/>
+  </ItemGroup>
+
 </Project>

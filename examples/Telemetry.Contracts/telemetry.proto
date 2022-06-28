@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package krimson.examples.messages.telemetry;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Krimson.Examples.Messages.Telemetry";
+
+message PowerConsumption {
+    string                      device_id = 1;
+    string                      unit      = 2;
+    google.protobuf.DoubleValue value     = 3;
+    google.protobuf.Timestamp   timestamp = 4;
+}
+
+message PowerCost {
+    string                      delivery_area = 1;
+    string                      currency      = 2;
+    google.protobuf.DoubleValue price         = 3;
+    google.protobuf.Timestamp   timestamp     = 4;
+}
+
+message PowerConsumptionMetadata {
+    string device_id = 1;
+}
+
+message PowerCostMetadata {
+    google.protobuf.StringValue delivery_area = 1;
+    google.protobuf.StringValue currency      = 2;
+}
+
+message TimeSeriesEntry {
+    google.protobuf.Any         metadata  = 1;
+    google.protobuf.DoubleValue value     = 2;
+    google.protobuf.Timestamp   timestamp = 3;
+}
+
+
+message InputMessage {
+    string text = 1;
+    int32 global_order = 2;
+    string batch_id = 3;
+    int32 batch_order = 4;
+}

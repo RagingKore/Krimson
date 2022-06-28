@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
+    <ProjectReference Include="..\..\src\Krimson.Core\Krimson.Core.csproj" />
+    <ProjectReference Include="..\Telemetry.Contracts\Telemetry.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
