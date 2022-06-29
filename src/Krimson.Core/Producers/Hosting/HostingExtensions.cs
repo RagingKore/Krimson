@@ -17,4 +17,16 @@ public static class HostingExtensions {
                     .With(x => build(configuration, serviceProvider, x)).Create();
             }
         );
+    
+    public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<IConfiguration, KrimsonProducerBuilder, KrimsonProducerBuilder> build) =>
+        services.AddSingleton(
+            serviceProvider => {
+                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                
+                return KrimsonProducer.Builder
+                    .ReadSettings(configuration)
+                    .LoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>())
+                    .With(x => build(configuration, x)).Create();
+            }
+        );
 }
