@@ -13,9 +13,7 @@ builder.Services.AddSwaggerGen();
 
 // you can register a producer in many ways...
 builder.Services.AddKrimsonProducer(
-    producer => producer
-        .ReadSettings(builder.Configuration)
-        .UseProtobuf()
+    (configuration, serviceProvider, producer) => producer.UseProtobuf()
 );
 
 // builder.Services.AddKrimsonProducer(

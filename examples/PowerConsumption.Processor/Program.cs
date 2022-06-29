@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimsonProcessor(
     tasks: 6,
-    (serviceProvider, krimson) => krimson
+    (configuration, serviceProvider, krimson) => krimson
         .Connection("localhost:9092")
         .SchemaRegistry("localhost:8081")
         .GroupId("telemetry-processor")

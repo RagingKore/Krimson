@@ -12,7 +12,7 @@ public static class HostingExtensions {
 
     static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
-        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         int tasks = 1,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) {
@@ -27,9 +27,12 @@ public static class HostingExtensions {
         return services;
 
         IHostedService AddWorker(IServiceProvider ctx, int order) {
+            var configuration = ctx.GetRequiredService<IConfiguration>();
+            
             var builder = KrimsonProcessor.Builder
-                .ReadSettings(ctx.GetRequiredService<IConfiguration>())
-                .With(x => build(ctx, x));
+                .ReadSettings(configuration)
+                .LoggerFactory(ctx.GetRequiredService<ILoggerFactory>())
+                .With(x => build(configuration, ctx, x));
 
             if (order > 1) {
                 builder = builder
@@ -44,28 +47,17 @@ public static class HostingExtensions {
             );
         }
     }
-
-    public static IServiceCollection AddKrimsonProcessor(
-        this IServiceCollection services,
-        int tasks,
-        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build
-    ) => AddKrimsonProcessor(services, build, tasks, null);
     
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
-        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        int tasks,
+        Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    ) => AddKrimsonProcessor(services, build, tasks, initialize);
+    
+    public static IServiceCollection AddKrimsonProcessor(
+        this IServiceCollection services,
+        Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) => AddKrimsonProcessor(services, build, 1, initialize);
-
-    public static IServiceCollection AddKrimsonProcessor(
-        this IServiceCollection services,
-        int tasks,
-        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build
-    ) => AddKrimsonProcessor(services, tasks, (_, builder) => build(builder));
-
-    public static IServiceCollection AddKrimsonProcessor(
-        this IServiceCollection services,
-        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
-        Func<IServiceProvider, CancellationToken, Task>? initialize = null
-    ) => AddKrimsonProcessor(services, (_, builder) => build(builder), initialize);
 }
