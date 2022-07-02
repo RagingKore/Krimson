@@ -1,10 +1,10 @@
 namespace Krimson.Processors;
 
 public interface IKrimsonProcessor {
-    string                 ClientId    { get; }
-    string                 GroupId { get; }
-    string[]               Topics           { get; }
-    KrimsonProcessorStatus Status           { get; }
+    string                 ClientId { get; }
+    string                 GroupId  { get; }
+    string[]               Topics   { get; }
+    KrimsonProcessorStatus Status   { get; }
 
     Task                                            Start(CancellationToken stoppingToken, OnProcessorStop? onStop = null);
     Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGap();

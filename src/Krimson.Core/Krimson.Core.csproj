@@ -33,4 +33,8 @@
     <None Remove="Krimson.Core.csproj.DotSettings" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components" />
+  </ItemGroup>
+
 </Project>
