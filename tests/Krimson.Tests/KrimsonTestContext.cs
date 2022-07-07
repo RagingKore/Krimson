@@ -95,7 +95,7 @@ public class KrimsonTestContext : TestContext {
             .ConfigureAwait(false);
     }
 
-    protected override async ValueTask CleanUp() {
+    protected override ValueTask CleanUp() {
         try {
             if (CreatedTopics.Any()) {
                // await AdminClient.DeleteTopics(CreatedTopics);
@@ -109,6 +109,8 @@ public class KrimsonTestContext : TestContext {
         catch (Exception ex) {
             Log.Warning(ex, "disposed suddenly");
         }
+        
+        return ValueTask.CompletedTask;
     }
 
     public KrimsonTestContext WithConnection(
@@ -193,7 +195,7 @@ public class KrimsonTestContext : TestContext {
             .Intercept(new OpenTelemetryProducerInterceptor(nameof(Krimson.Tests)))
             .Create();
 
-        var requests = Enumerable.Range(1, numberOfMessages).Select(CreateProducerMessage).ToArray();
+        var requests = Enumerable.Range(1, numberOfMessages).Select(CreateMessage).ToArray();
         var ids      = new ConcurrentBag<RecordId>();
         var failed   = false;
         
@@ -219,7 +221,7 @@ public class KrimsonTestContext : TestContext {
 
         return ids.ToList();
 
-        ProducerRequest CreateProducerMessage(int order) {
+        ProducerRequest CreateMessage(int order) {
             var id = Guid.NewGuid();
 
             var msg = new KrimsonTestMessage {
@@ -227,20 +229,20 @@ public class KrimsonTestContext : TestContext {
                 Order     = order,
                 Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
             };
-           
-            return msg.ToProduceRequest(msg.Order, id);
             
-            return msg
-                .ProduceRequest()
-                .Key(msg.Order)
-                .RequestId(id)
-                .Create();
-
             return ProducerRequest.Builder
                 .Message(msg)
                 .Key(msg.Order)
                 .RequestId(id)
                 .Create();
+            //
+            // return msg.ToProduceRequest(msg.Order, id);
+            //
+            // return msg
+            //     .ProduceRequest()
+            //     .Key(msg.Order)
+            //     .RequestId(id)
+            //     .Create();
         }
     }
 

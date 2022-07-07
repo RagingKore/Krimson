@@ -56,12 +56,12 @@ public class OpenTelemetryProcessorInterceptor : InterceptorModule {
                         .SetTag("messaging.acknowledge_type", "Error")
                         .RecordException(evt.Exception);
                 }
-                else {
-                    Logger.Error(
-                        "{Event} {RecordId} {MessageType} ## failed to find start of activity",
-                        nameof(InputError), evt.Record, evt.Record.MessageType.Name
-                    );
-                }
+                // else {
+                //     Logger.Error(
+                //         "{Event} {RecordId} {MessageType} ## failed to find start of activity",
+                //         nameof(InputError), evt.Record, evt.Record.MessageType.Name
+                //     );
+                // }
             }
         );
 
@@ -70,12 +70,12 @@ public class OpenTelemetryProcessorInterceptor : InterceptorModule {
                 if (Activities.TryRemove(evt.Record.Id, out var activity)) {
                     activity.Dispose();
                 }
-                else {
-                    Logger.Error(
-                        "{ProcessorName} | {RecordId} ## failed to find start of activity",
-                        evt.Processor.ClientId, evt.Record.Id
-                    );
-                }
+                // else {
+                //     Logger.Error(
+                //         "{ProcessorName} | {RecordId} ## failed to find start of activity",
+                //         evt.Processor.ClientId, evt.Record.Id
+                //     );
+                // }
             }
         );
         

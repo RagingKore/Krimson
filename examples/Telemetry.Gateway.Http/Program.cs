@@ -13,6 +13,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // you can register a producer in many ways...
+builder.Services.AddKrimson()
+    .AddProtobuf()
+    .AddProducer(pdr => pdr
+        .ClientId("telemetry-gateway")
+        .Topic("telemetry")
+    );
 
 builder.UseKrimson(
     krs => {
@@ -31,12 +37,7 @@ builder.UseKrimson()
             .Topic("telemetry")
     );
 
-builder.Services.AddKrimson()
-    .AddProtobuf()
-    .AddProducer(pdr => pdr
-        .ClientId("telemetry-gateway")
-        .Topic("telemetry")
-    );
+
 
 builder.Services.AddKrimson()
     .AddProducer(
