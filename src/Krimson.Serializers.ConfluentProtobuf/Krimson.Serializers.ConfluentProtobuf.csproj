@@ -6,6 +6,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="NuGetizer" Version="0.8.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Krimson.Core\Krimson.Core.csproj" />
   </ItemGroup>
 
