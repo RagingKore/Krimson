@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson", "src\Krimson\Krim
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sherlock", "examples\Sherlock\Sherlock.csproj", "{F44B1931-0BA3-41C2-9A4E-4A68FC32038F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.OpenTelemetry", "src\Krimson.OpenTelemetry\Krimson.OpenTelemetry.csproj", "{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,6 +80,10 @@ Global
 		{F44B1931-0BA3-41C2-9A4E-4A68FC32038F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F44B1931-0BA3-41C2-9A4E-4A68FC32038F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F44B1931-0BA3-41C2-9A4E-4A68FC32038F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5E36A5F6-7D2C-4BAB-B475-ADA69B429948} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}

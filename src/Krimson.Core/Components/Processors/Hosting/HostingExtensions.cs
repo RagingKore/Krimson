@@ -1,8 +1,8 @@
+using Confluent.SchemaRegistry;
 using Krimson.Processors.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Krimson.Processors.Hosting;
 
@@ -27,11 +27,12 @@ public static class HostingExtensions {
         return services;
 
         IHostedService AddWorker(IServiceProvider ctx, int order) {
-            var configuration = ctx.GetRequiredService<IConfiguration>();
+            var configuration  = ctx.GetRequiredService<IConfiguration>();
+            var registryClient = ctx.GetRequiredService<ISchemaRegistryClient>();
             
             var builder = KrimsonProcessor.Builder
                 .ReadSettings(configuration)
-                .LoggerFactory(ctx.GetRequiredService<ILoggerFactory>())
+                .SchemaRegistry(registryClient)
                 .With(x => build(configuration, ctx, x));
 
             if (order > 1) {
@@ -60,4 +61,17 @@ public static class HostingExtensions {
         Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) => AddKrimsonProcessor(services, build, 1, initialize);
+    
+    public static IServiceCollection AddKrimsonProcessor(
+        this IServiceCollection services,
+        int tasks,
+        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    ) => AddKrimsonProcessor(services, (_, provider, builder) => build(provider, builder), tasks, initialize);
+    
+    public static IServiceCollection AddKrimsonProcessor(
+        this IServiceCollection services,
+        Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    ) => AddKrimsonProcessor(services, (_, provider, builder) => build(provider, builder), 1, initialize);
 }

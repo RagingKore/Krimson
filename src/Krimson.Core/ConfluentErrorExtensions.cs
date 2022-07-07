@@ -2,7 +2,7 @@ using Confluent.Kafka;
 
 namespace Krimson;
 
-static class ConfluentErrorExtensions {
+public static class ConfluentErrorExtensions {
     public static bool IsUseless(this Error error) => error.Code is ErrorCode.NoError;
 
     public static bool IsTerminal(this Error error) =>

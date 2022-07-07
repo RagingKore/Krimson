@@ -1,26 +1,25 @@
 using Krimson.Examples.Messages.Telemetry;
+using Krimson.Extensions.DependencyInjection;
 using Krimson.Processors;
-using Krimson.Processors.Hosting;
 using Krimson.SchemaRegistry.Protobuf;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddKrimsonProcessor(
-    tasks: 6,
-    (configuration, serviceProvider, krimson) => krimson
-        .Connection("localhost:9092")
-        .SchemaRegistry("localhost:8081")
-        .GroupId("telemetry-processor")
-        .InputTopic("telemetry")
-        .UseProtobuf()
-        .Module<TelemetryModule>()
-   
-);
-    
+builder.Services.AddKrimson()
+    .SchemaRegistry()
+    .Processor(
+        (configuration, serviceProvider, processor) => processor
+            .GroupId("telemetry-processor")
+            .InputTopic("telemetry")
+            .UseProtobuf()
+            .Module<TelemetryModule>()
+    );
+
+
 builder.Build().Run();
 
 class TelemetryModule : KrimsonProcessorModule {
     public TelemetryModule() {
-        On<PowerConsumption>((msg, ctx) => ctx.Logger.LogInformation("{@PowerConsumption}", msg));
+        On<PowerConsumption>((msg, ctx) => ctx.Logger.Information("{@PowerConsumption}", msg));
     }
 }

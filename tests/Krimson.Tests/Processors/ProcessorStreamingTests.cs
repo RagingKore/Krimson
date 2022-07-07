@@ -8,7 +8,7 @@ public class ProcessorStreamingTests : TestFixture<KrimsonTestContext> {
     public ProcessorStreamingTests(KrimsonTestContext context) : base(context) { }
     
     [TestCase(1, 1)]
-    // [TestCase(10, 1)]
+    // [TestCase(50, 6)]
     // [TestCase(3, 3)]
     // [TestCase(4, 3)]
     // [TestCase(30, 8)]
@@ -48,7 +48,7 @@ public class ProcessorStreamingTests : TestFixture<KrimsonTestContext> {
         );
         
         subscriptionOutputTopicGap.First(x => x.Topic == outputTopic).CaughtUp.Should().BeTrue();
-        // processedOutputRecords.Select(x => (x.Key, x.Value))
-        //     .Should().BeEquivalentTo(processedRecords.Select(x => (x.Key, x.Value)));
+        processedOutputRecords.Select(x => (x.Key, x.Value))
+            .Should().BeEquivalentTo(processedRecords.Select(x => (x.Key, x.Value)));
     }
 }

@@ -76,7 +76,9 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
         }
     }
 
-    public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
-        => DeserializeAsync(new ReadOnlyMemory<byte>(data.ToArray()), isNull, context)
+    public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context) {
+        var bytes = data.ToArray();
+        return DeserializeAsync(new ReadOnlyMemory<byte>(bytes), isNull, context)
             .ConfigureAwait(false).GetAwaiter().GetResult();
+    }
 }

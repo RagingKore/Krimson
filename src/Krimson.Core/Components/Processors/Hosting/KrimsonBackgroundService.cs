@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Krimson.Processors.Hosting; 
 
@@ -36,27 +36,27 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
 
         // execute the real initialization routine
         try {
-            Logger.LogTrace("initializing...");
+            Logger.Verbose("initializing...");
             await Initialize(cancellationToken);
-            Logger.LogDebug("initialization complete");
+            Logger.Debug("initialization complete");
         }
         catch (OperationCanceledException) {
-            Logger.LogWarning("initialization cancelled");
+            Logger.Warning("initialization cancelled");
             throw;
         }
         catch (Exception ex) {
-            Logger.LogCritical(ex, "initialization failed!");
+            Logger.Fatal(ex, "initialization failed!");
             throw;
         }
         
-        Logger.LogDebug("delaying execution until application host is ready...");
+        Logger.Debug("delaying execution until application host is ready...");
 
         _ = Task.Run(
             async () => {
                 Gatekeeper.Wait(cancellationToken); 
                 Gatekeeper.Dispose();
 
-                Logger.LogTrace("application host ready, executing...");
+                Logger.Debug("application host ready, executing...");
 
                 // Store the task we're executing
                 ExecutingTask = Start(Cancellator.Token);
@@ -65,7 +65,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
                     await ExecutingTask;
                 }
                 catch (Exception ex) {
-                    Logger.LogCritical(ex, "failed to execute!");
+                    Logger.Fatal(ex, "failed to execute!");
                     throw;
                 }
             }, cancellationToken
@@ -73,7 +73,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     }
     
     public async ValueTask DisposeAsync() {
-        Logger.LogTrace("disposing...");
+        Logger.Verbose("disposing...");
 
         try {
             await Dispose()
@@ -82,10 +82,10 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
             Cancellator.Dispose();
             //Gatekeeper.Dispose();
             
-            Logger.LogDebug("disposed");
+            Logger.Debug("disposed");
         }
         catch (Exception vex) {
-            Logger.LogWarning(vex, "disposed violently!");
+            Logger.Warning(vex, "disposed violently!");
         }
     }
 
@@ -95,12 +95,12 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     /// </summary>
     /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
     public async Task StopAsync(CancellationToken cancellationToken) {
-        Logger.LogTrace("stopping...");
+        Logger.Verbose("stopping...");
 
         try {
             // Stop called without start
             if (ExecutingTask is null) {
-                Logger.LogDebug("stopped awkwardly since it didn't even start");
+                Logger.Debug("stopped awkwardly since it didn't even start");
                 return;
             }
 
@@ -112,7 +112,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
                 Cancellator.Cancel();
             }
             catch (Exception ex) {
-                Logger.LogDebug(ex, "failed to request task cancellation!");
+                Logger.Debug(ex, "failed to request task cancellation!");
             }
 
             // Wait until the task completes or the stop token triggers
@@ -120,14 +120,14 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
 
             await Stop(cancellationToken);
 
-            Logger.LogInformation("stopped");
+            Logger.Information("stopped");
         }
         catch (OperationCanceledException) {
-            Logger.LogInformation("stopped suddenly on cancellation request");
+            Logger.Information("stopped suddenly on cancellation request");
             throw;
         }
         catch (Exception vex) {
-            Logger.LogWarning(vex, "stopped violently!");
+            Logger.Warning(vex, "stopped violently!");
             throw;
         }
     }

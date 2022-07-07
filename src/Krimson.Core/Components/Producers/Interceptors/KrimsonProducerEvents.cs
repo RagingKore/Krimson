@@ -5,8 +5,8 @@ namespace Krimson.Producers.Interceptors;
 
 public record BeforeProduce(string ProducerName, ProducerRequest Request) : InterceptorEvent;
 
-public record ProducerResultReceived(string ProducerName, ProducerResult Result) : InterceptorEvent;
+public record ProduceResultReceived(string ProducerName, ProducerResult Result) : InterceptorEvent;
 
-public record ProducerResultUserHandlingError(string ProducerName, ProducerResult Result, Exception UserException) : InterceptorEvent;
+public record ProduceResultUserHandlingError(string ProducerName, ProducerResult Result, Exception UserException) : InterceptorEvent;
 
-public record ProducerResultError(string ProducerName, Guid RequestId, DeliveryReport<byte[], object?> Report, Exception Exception) : InterceptorEvent;
+public record ProduceResultError(string ProducerName, Guid RequestId, DeliveryReport<byte[], object?> Report, Exception Exception) : InterceptorEvent;

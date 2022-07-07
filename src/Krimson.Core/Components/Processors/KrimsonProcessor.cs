@@ -1,7 +1,6 @@
 // ReSharper disable MethodSupportsCancellation
 
 using System.Collections.Concurrent;
-using System.Runtime.ExceptionServices;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
@@ -9,14 +8,15 @@ using Krimson.Logging;
 using Krimson.Processors.Configuration;
 using Krimson.Processors.Interceptors;
 using Krimson.Producers;
-using Microsoft.Extensions.Logging;
+using Krimson.SchemaRegistry;
+using Serilog;
 
 namespace Krimson.Processors;
 
 public enum KrimsonProcessorStatus {
-    Running,
-    Stopping,
-    Stopped
+    Activated,
+    Terminating,
+    Terminated
 }
 
 [PublicAPI]
@@ -24,23 +24,27 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
     public static KrimsonProcessorBuilder Builder => new();
 
     public KrimsonProcessor(KrimsonProcessorOptions options) {
-        ClientId = options.ConsumerConfiguration.ClientId;
-        GroupId  = options.ConsumerConfiguration.GroupId;
-        Router   = options.Router;
-        Topics   = options.InputTopics;
-        Logger   = options.LoggerFactory.CreateLogger(ClientId);
-        Registry = options.RegistryFactory();
+        ClientId         = options.ConsumerConfiguration.ClientId;
+        GroupId          = options.ConsumerConfiguration.GroupId;
+        Topics           = options.InputTopics;
+        BootstrapServers = options.ConsumerConfiguration.BootstrapServers;
+        
+        Router = options.Router;
+        Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
-            .Prepend(new KrimsonProcessorLogger { Name = $"KrimsonProcessor({ClientId})"})
+            .Prepend(new KrimsonProcessorLogger().WithName($"KrimsonProcessor({ClientId})"))
             .Prepend(new ConfluentProcessorLogger())
-            .WithLoggerFactory(options.LoggerFactory)
             .Intercept;
-
+        
+        ISchemaRegistryClient registry     = options.RegistryFactory();
+        IDynamicSerializer    serializer   = options.SerializerFactory(registry);
+        IDynamicDeserializer  deserializer = options.DeserializerFactory(registry);
+        
         Producer = new KrimsonProducer(
             options.ProducerConfiguration,
             Intercept,
-            options.SerializerFactory(Registry),
+            serializer,
             options.OutputTopic?.Name
         );
         
@@ -54,116 +58,103 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         // consume loop and handled by the try/catch block there.
         
         Consumer = new ConsumerBuilder<byte[], object?>(options.ConsumerConfiguration)
+            .SetValueDeserializer(deserializer)
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
-            .SetValueDeserializer(options.DeserializerFactory(Registry))
-            .SetPartitionsAssignedHandler((_, partitions) => Intercept(new PartitionsAssigned(ClientId, partitions)))
-            .SetOffsetsCommittedHandler((_, committed) => Intercept(new PositionsCommitted(ClientId, committed.Offsets, committed.Error)))
-            .SetPartitionsRevokedHandler(
-                (_, positions) => {
-                    Intercept(new PartitionsRevoked(ClientId, positions));
-                    Flush(positions);
-                }
-            )
-            .SetPartitionsLostHandler(
-                (_, positions) => {
-                    Intercept(new PartitionsLost(ClientId, positions));
-                    Flush(positions);
-                }
-            )
+            .SetPartitionsAssignedHandler((_, partitions) => Intercept(new PartitionsAssigned(this, partitions)))
+            .SetOffsetsCommittedHandler((_, committed) => Intercept(new PositionsCommitted(this, committed.Offsets, committed.Error)))
+            .SetPartitionsRevokedHandler((_, positions) => {
+                Intercept(new PartitionsRevoked(this, positions));
+                Flush(positions);
+            })
+            .SetPartitionsLostHandler((_, positions) => {
+                Intercept(new PartitionsLost(this, positions));
+                Flush(positions);
+            })
             .Build();
 
-        Status = KrimsonProcessorStatus.Stopped;
+        Status = KrimsonProcessorStatus.Terminated;
     }
 
     ILogger                    Logger    { get; }
-    ISchemaRegistryClient      Registry  { get; }
     IConsumer<byte[], object?> Consumer  { get; }
     KrimsonProducer            Producer  { get; }
     Intercept                  Intercept { get; }
     KrimsonProcessorRouter     Router    { get; }
 
-    CancellationTokenSource Cancellator { get; set; } = null!;
-    OnProcessorStop         OnStop      { get; set; } = null!;
+    CancellationTokenSource Cancellator  { get; set; } = null!;
+    OnProcessorTerminated   OnTerminated { get; set; } = null!;
 
-    public string                 ClientId { get; }
-    public string                 GroupId  { get; }
-    public string[]               Topics   { get; }
-    public KrimsonProcessorStatus Status   { get; private set; }
+    public string                 ClientId         { get; }
+    public string                 GroupId          { get; }
+    public string[]               Topics           { get; }
+    public string                 BootstrapServers { get; }
+    public KrimsonProcessorStatus Status           { get; private set; }
 
-    public async Task Start(CancellationToken stoppingToken, OnProcessorStop? onStop = null) {
-        if (Status == KrimsonProcessorStatus.Running)
+    public async Task Activate(CancellationToken terminationToken, OnProcessorTerminated? onTerminated = null) {
+        if (Status == KrimsonProcessorStatus.Activated)
             return;
 
         Consumer.Subscribe(Topics);
 
-        Intercept(new ProcessorStarted(ClientId, GroupId, Topics));
+        Intercept(new ProcessorActivated(this));
 
-        Status      = KrimsonProcessorStatus.Running;
-        OnStop      = onStop ?? ((_, _, _, _) => Task.CompletedTask);
-        Cancellator = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        Status       = KrimsonProcessorStatus.Activated;
+        OnTerminated = onTerminated ?? ((_, _, _) => Task.CompletedTask);
+        Cancellator  = CancellationTokenSource.CreateLinkedTokenSource(terminationToken);
         
         await Task.Yield();
 
         try {
-            await foreach (var record in Consumer.Records(position => Intercept(new PartitionEndReached(ClientId, position)), Cancellator.Token)) {
+            await foreach (var record in Consumer.Records(position => Intercept(new PartitionEndReached(this, position)), Cancellator.Token))
                 await ProcessRecord(record, Cancellator.Token);
-            }
         }
         catch (Exception ex) {
-            await Stop(ex);
+            await Terminate(ex);
         }
         finally {
-            if (Status == KrimsonProcessorStatus.Running)
-                await Stop();
+            if (Status == KrimsonProcessorStatus.Activated)
+                await Terminate();
         }
-    }
-
-    public async ValueTask DisposeAsync() {
-        if (Status == KrimsonProcessorStatus.Running)
-            await Stop().ConfigureAwait(false);
     }
 
     public Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGap() => Consumer.GetSubscriptionGap();
 
-    public Task Stop() => Stop(null);
- 
+    public Task Terminate() => Terminate(null);
+    
+    public async ValueTask DisposeAsync() {
+        if (Status == KrimsonProcessorStatus.Activated)
+            await Terminate().ConfigureAwait(false);
+    }
+
     void Flush(List<TopicPartitionOffset> positions) {
-        try {
-            Producer.Flush();
-            Consumer.CommitAll();
-        }
-        catch (Exception ex) {
-            Console.WriteLine(ex);
-            throw;
-        }
+        Producer.Flush();
+        Consumer.CommitAll();
     }
 
     async Task ProcessRecord(KrimsonRecord record, CancellationToken cancellationToken) {
         if (!Router.CanRoute(record)) {
             Consumer.TrackPosition(record);
-            Intercept(new InputSkipped(ClientId, record));
+            Intercept(new InputSkipped(this, record));
             return;
         }
 
-        Intercept(new InputReady(ClientId, record));
+        Intercept(new InputReady(this, record));
 
-        var context = new KrimsonProcessorContext(record, Logger, cancellationToken);
+        var context = new KrimsonProcessorContext(record, Logger.WithRecordInfo(record), cancellationToken);
 
         try {
-            using (Logger.WithRecordInfo(record)) {
-                await Router
-                    .Process(context)
-                    .ConfigureAwait(false);
-            }
-
-            Intercept(new InputConsumed(ClientId, record, context.GeneratedOutput()));
+            await Router
+                .Process(context)
+                .ConfigureAwait(false);
+            
+            Intercept(new InputConsumed(this, record, context.GeneratedOutput()));
         }
         catch (OperationCanceledException) {
             return;
         }
         catch (Exception ex) {
-            Intercept(new InputError(ClientId, record, ex));
+            Intercept(new InputError(this, record, ex));
             throw;
         }
 
@@ -172,7 +163,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         void ProcessOutput(IReadOnlyCollection<ProducerRequest> requests) {
             if (requests.Count == 0) {
                 Consumer.TrackPosition(record);
-                Intercept(new InputProcessed(ClientId, record, requests));
+                Intercept(new InputProcessed(this, record, requests));
                 return;
             }
 
@@ -182,7 +173,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
                 Producer.Produce(request, result => OnResult(request, result));
 
             void OnResult(ProducerRequest message, ProducerResult result) { 
-                Intercept(new OutputProcessed(ClientId, Producer.ClientId, result, record, message));
+                Intercept(new OutputProcessed(this, Producer.ClientId, result, record, message));
 
                 if (result.Success) {
                     results.Enqueue(result);
@@ -192,32 +183,32 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
 
                     Consumer.TrackPosition(record);
 
-                    Intercept(new InputProcessed(ClientId, record, requests));
+                    Intercept(new InputProcessed(this, record, requests));
                 }
                 else {
+                    Intercept(new InputError(this, record, result.Exception!));
                     // dont wait here, just let it flow...
                     // this will trigger the cancellation of the token
-                    // to gracefully stop processing any other messages
-#pragma warning disable CS4014
-                    Stop(result.Exception);
-#pragma warning restore CS4014
+                    // and gracefully stop processing any other messages
+                    #pragma warning disable CS4014
+                    Terminate(result.Exception);
+                    #pragma warning restore CS4014
                 }
             }
         }
     }
 
-    async Task Stop(Exception? exception) {
+    async Task Terminate(Exception? exception) {
         if (!Cancellator.IsCancellationRequested)
-            Cancellator.Cancel();
+            Cancellator.Cancel(); // this will start asking everyone to just stop...
         
         if (exception is OperationCanceledException)
             exception = null;
 
-        if (Status != KrimsonProcessorStatus.Running) {
+        if (Status != KrimsonProcessorStatus.Activated) {
             Intercept(
-                new ProcessorStopped(
-                    ClientId, GroupId, Topics,
-                    new InvalidOperationException(
+                new ProcessorTerminated(
+                    this, Array.Empty<SubscriptionTopicGap>(), new InvalidOperationException(
                         $"{ClientId} already {Status.ToString().ToLower()}. This should not happen! Investigate!", exception
                     )
                 )
@@ -226,16 +217,16 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
             return;
         }
 
-        Status = KrimsonProcessorStatus.Stopping;
+        Status = KrimsonProcessorStatus.Terminating;
 
-        Intercept(new ProcessorStopping(ClientId, GroupId, Topics));
+        Intercept(new ProcessorTerminating(this));
         
-        IReadOnlyCollection<SubscriptionTopicGap> gap = Array.Empty<SubscriptionTopicGap>();
+        IReadOnlyCollection<SubscriptionTopicGap> gaps = Array.Empty<SubscriptionTopicGap>();
 
         try {
             // stop the consumer first since this will
             // trigger flush by partitions revoked/lost
-            gap = await Consumer
+            gaps = await Consumer
                 .Stop()
                 .ConfigureAwait(false);
             
@@ -246,27 +237,25 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
                 .DisposeAsync()
                 .ConfigureAwait(false);
             
-            // disposing as 
+            // finally dispose 
             Consumer.Dispose();
-            Registry.Dispose();
         }
         catch (Exception vex) {
-            vex = new Exception($"{ClientId} stopped violently! {vex.Message}", vex);
+            vex = new Exception($"{ClientId} terminated violently! {vex.Message}", vex);
             exception = exception is not null
                 ? new AggregateException(exception, vex).Flatten()
                 : vex;
         }
 
-        Status = KrimsonProcessorStatus.Stopped;
+        Status = KrimsonProcessorStatus.Terminated;
 
-        Intercept(new ProcessorStopped(ClientId, GroupId, Topics, exception));
+        Intercept(new ProcessorTerminated(this, gaps, exception));
 
         try {
-            await OnStop(ClientId, GroupId, gap, exception)
-                .ConfigureAwait(false);
+            await OnTerminated(this, gaps, exception).ConfigureAwait(false);
         }
         catch (Exception ex) {
-            Intercept(new ProcessorStoppedUserHandlingError(ClientId, GroupId, Topics, ex)); // maybe remove it
+            Intercept(new ProcessorTerminatedUserHandlingError(this, ex)); // maybe remove it
         }
     }
 }

@@ -31,7 +31,7 @@ public static class HeadersExtensions {
                     : Encoding.UTF8.GetBytes(value)
         );
 
-    public static IReadOnlyDictionary<string, string?> Decode(this Headers? encodedHeaders, DecodeHeaderValue decode) {
+    public static IDictionary<string, string?> Decode(this Headers? encodedHeaders, DecodeHeaderValue decode) {
         return encodedHeaders.EmptyIfNull().Aggregate(
             new Dictionary<string, string?>(), (headers, entry) => {
                 try {
@@ -44,5 +44,5 @@ public static class HeadersExtensions {
         );
     }
 
-    public static IReadOnlyDictionary<string, string?> Decode(this Headers? headers) => Decode(headers, Encoding.UTF8.GetString);
+    public static IDictionary<string, string?> Decode(this Headers? headers) => Decode(headers, Encoding.UTF8.GetString);
 }

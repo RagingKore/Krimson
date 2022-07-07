@@ -4,5 +4,6 @@
 [assembly: InternalsVisibleTo("Krimson.SchemaRegistry.Json")]
 [assembly: InternalsVisibleTo("Krimson.Tests")]
 
-[assembly: InternalsVisibleTo("Krimson.Core")]
+[assembly: InternalsVisibleTo("Krimson")]
+[assembly: InternalsVisibleTo("Krimson.OpenTelemetry")]
 [assembly: InternalsVisibleTo("Sherlock")]

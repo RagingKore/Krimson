@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 using Confluent.Kafka;
 using Krimson.Interceptors;
 using Krimson.Producers.Interceptors;
@@ -108,19 +107,19 @@ public class KrimsonProducer : IAsyncDisposable {
                 try {
                     var result = ProducerResult.From(request.RequestId, report);
 
-                    Intercept(new ProducerResultReceived(ClientId, result));
+                    Intercept(new ProduceResultReceived(ClientId, result));
 
                     try {
                         onResult(result);
                     }
                     catch (Exception uex) {
-                        Intercept(new ProducerResultUserHandlingError(ClientId, result, uex));
+                        Intercept(new ProduceResultUserHandlingError(ClientId, result, uex));
                     }
 
                     InFlightMessageCounter.Decrement();
                 }
                 catch (Exception ex) {
-                    Intercept(new ProducerResultError(ClientId, request.RequestId, report, ex));
+                    Intercept(new ProduceResultError(ClientId, request.RequestId, report, ex));
                 }
             };
     }

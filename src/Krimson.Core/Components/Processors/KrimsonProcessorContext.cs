@@ -1,5 +1,5 @@
 using Krimson.Producers;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Krimson.Processors;
 

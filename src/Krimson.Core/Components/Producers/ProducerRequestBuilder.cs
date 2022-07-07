@@ -4,7 +4,7 @@ namespace Krimson.Producers;
 public record ProducerRequestBuilder {
     ProducerRequest Options { get; init; } = ProducerRequest.Empty with {
         RequestId = Guid.NewGuid(),
-        Headers   = new()
+        Headers   = new Dictionary<string, string?>()
     };
 
     public ProducerRequestBuilder Topic(string topic) =>

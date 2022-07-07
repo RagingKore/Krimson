@@ -2,7 +2,8 @@
 
 using Confluent.Kafka;
 using Krimson.Interceptors;
-using Microsoft.Extensions.Logging;
+using Krimson.Logging;
+using Serilog.Events;
 
 namespace Krimson.Producers.Interceptors;
 
@@ -10,7 +11,7 @@ public sealed class ConfluentProducerLogger : InterceptorModule {
     public ConfluentProducerLogger() {
         On<ConfluentProducerLog>(
             evt => {
-                Logger.Log(
+                Logger.Write(
                     evt.LogMessage.GetLogLevel(), 
                     $"{{ClientInstanceId}} | {{Source}} {evt.LogMessage.Message}", 
                     evt.ClientInstanceId, evt.LogMessage.Facility
@@ -20,18 +21,20 @@ public sealed class ConfluentProducerLogger : InterceptorModule {
 
         On<ConfluentProducerError>(
             evt => {
+                // TODO SS: sanity check might not be needed... investigate
                 var logLevel = evt.Error.IsUseless()
-                    ? LogLevel.Debug
+                    ? LogEventLevel.Debug
                     : evt.Error.IsTerminal()
-                        ? LogLevel.Critical
-                        : LogLevel.Error;
+                        ? LogEventLevel.Fatal
+                        : LogEventLevel.Error;
 
                 var source = evt.Error.IsLocalError 
                     ? ConfluentKafkaErrorSource.Client 
                     : ConfluentKafkaErrorSource.Broker;
 
-                Logger.Log(
-                    logLevel, new KafkaException(evt.Error), "{ClientInstanceId} | {Source} ({Error}) {ErrorCode} {ErrorReason}",
+                Logger.Write(
+                    level: logLevel, exception: new KafkaException(evt.Error), 
+                    messageTemplate: "{ClientInstanceId} | {Source} ({Error}) {ErrorCode} {ErrorReason}",
                     evt.ClientInstanceId, source, (int) evt.Error.Code, evt.Error.Code, evt.Error.Reason
                 );
             }

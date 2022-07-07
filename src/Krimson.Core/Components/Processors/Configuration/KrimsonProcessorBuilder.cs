@@ -3,7 +3,6 @@ using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.SchemaRegistry;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using static System.String;
 
 namespace Krimson.Processors.Configuration;
@@ -12,12 +11,33 @@ namespace Krimson.Processors.Configuration;
 public record KrimsonProcessorBuilder {
     protected internal KrimsonProcessorOptions Options { get; init; } = new();
 
+    public KrimsonProcessorBuilder OverrideConsumerConfiguration(Action<ConsumerConfig> configureConsumer) {
+        Ensure.NotNull(configureConsumer, nameof(configureConsumer));
+
+        return this with {
+            Options = Options with {
+                ConsumerConfiguration = new ConsumerConfig(Options.ConsumerConfiguration).With(configureConsumer)
+            }
+        };
+    }
+
+    public KrimsonProcessorBuilder OverrideProducerConfiguration(Action<ProducerConfig> configureProducer) {
+        Ensure.NotNull(configureProducer, nameof(configureProducer));
+
+        return this with {
+            Options = Options with {
+                ProducerConfiguration = new ProducerConfig(Options.ProducerConfiguration).With(configureProducer)
+            }
+        };
+    }
+
+    
     public KrimsonProcessorBuilder Connection(
         string bootstrapServers, string? username = null, string? password = null,
         SecurityProtocol protocol = SecurityProtocol.Plaintext,
         SaslMechanism mechanism = SaslMechanism.Plain
     ) {
-        return OverrideConsumerConfig(
+        return OverrideConsumerConfiguration(
                 cfg => {
                     cfg.BootstrapServers = bootstrapServers;
                     cfg.SaslUsername     = username ?? "";
@@ -26,7 +46,7 @@ public record KrimsonProcessorBuilder {
                     cfg.SaslMechanism    = mechanism;
                 }
             )
-            .OverrideProducerConfig(
+            .OverrideProducerConfiguration(
                 cfg => {
                     cfg.BootstrapServers = bootstrapServers;
                     cfg.SaslUsername     = username ?? "";
@@ -45,27 +65,17 @@ public record KrimsonProcessorBuilder {
     }
 
     public KrimsonProcessorBuilder ClientId(string clientId) {
-        return OverrideConsumerConfig(
+        return OverrideConsumerConfiguration(
                 cfg => {
                     cfg.ClientId = clientId;
                     cfg.GroupId  = IsNullOrWhiteSpace(Options.ConsumerConfiguration.GroupId) ? clientId : cfg.GroupId;
                 }
             )
-            .OverrideProducerConfig(cfg => cfg.ClientId = clientId);
-
-        // return this with {
-        //     Options = Options with {
-        //         ConsumerConfiguration = new ConsumerConfig(Options.ConsumerConfiguration)
-        //             .With(x => x.ClientId = clientId)
-        //             .With(x => x.GroupId = clientId, Options.ConsumerConfiguration.GroupId is null),
-        //         ProducerConfiguration = new ProducerConfig(Options.ProducerConfiguration)
-        //             .With(x => x.ClientId = clientId)
-        //     }
-        // };
+            .OverrideProducerConfiguration(cfg => cfg.ClientId = clientId);
     }
 
     public KrimsonProcessorBuilder GroupId(string groupId) {
-        return OverrideConsumerConfig(cfg => {
+        return OverrideConsumerConfiguration(cfg => {
             cfg.GroupId  = groupId;
             cfg.ClientId = Options.ConsumerConfiguration.ClientId == "rdkafka" ? groupId : cfg.ClientId;
         });
@@ -79,9 +89,7 @@ public record KrimsonProcessorBuilder {
         };
     }
 
-    public KrimsonProcessorBuilder OutputTopic(
-        string topic, int partitions = 1, short replicationFactor = 3, Dictionary<string, string>? configuration = null
-    ) {
+    public KrimsonProcessorBuilder OutputTopic(string topic, int partitions = 1, short replicationFactor = 3, Dictionary<string, string>? configuration = null) {
         return this with {
             Options = Options with {
                 OutputTopic = new() {
@@ -93,68 +101,31 @@ public record KrimsonProcessorBuilder {
             }
         };
     }
-
-    public KrimsonProcessorBuilder OverrideConsumerConfig(Action<ConsumerConfig> configureConsumer) {
-        Ensure.NotNull(configureConsumer, nameof(configureConsumer));
-
-        return this with {
-            Options = Options with {
-                ConsumerConfiguration = new ConsumerConfig(Options.ConsumerConfiguration).With(configureConsumer)
-            }
-        };
-    }
-
-    public KrimsonProcessorBuilder OverrideProducerConfig(Action<ProducerConfig> configureProducer) {
-        Ensure.NotNull(configureProducer, nameof(configureProducer));
-
-        return this with {
-            Options = Options with {
-                ProducerConfiguration = new ProducerConfig(Options.ProducerConfiguration).With(configureProducer)
-            }
-        };
-    }
-
-    public KrimsonProcessorBuilder OverrideSchemaRegistryConfig(Action<SchemaRegistryConfig> configureSchemaRegistry) {
-        Ensure.NotNull(configureSchemaRegistry, nameof(configureSchemaRegistry));
-
-        var options = Options with { };
-
-        configureSchemaRegistry(options.RegistryConfiguration);
-
-        return this with {
-            Options = options
-        };
-    }
-
-    public KrimsonProcessorBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
-        return OverrideSchemaRegistryConfig(
-            cfg => {
-                cfg.Url                        = url;
-                cfg.BasicAuthUserInfo          = $"{apiKey}:{apiSecret}";
-                cfg.BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo;
-            }
-        );
-    }
+    
+    // public KrimsonProcessorBuilder SchemaRegistry(Func<KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> buildSchemaRegistry) {
+    //     var builder = buildSchemaRegistry(Options.RegistryBuilder);
+    //     
+    //     return this with {
+    //         Options = Options with {
+    //             RegistryBuilder = builder,
+    //             RegistryFactory = () => builder.Create()
+    //         }
+    //     };
+    // }
 
     public KrimsonProcessorBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
         Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
-
+        
         return this with {
             Options = Options with {
                 RegistryFactory = () => schemaRegistryClient
             }
         };
     }
-
-    public KrimsonProcessorBuilder SchemaRegistry(Func<ISchemaRegistryClient> factory) {
-        Ensure.NotNull(factory, nameof(factory));
-
-        return this with {
-            Options = Options with {
-                RegistryFactory = factory
-            }
-        };
-    }
+    
+    // public KrimsonProcessorBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
+    //     return SchemaRegistry(builder => builder.Connection(url, apiKey, apiSecret));
+    // }
 
     public KrimsonProcessorBuilder Intercept(InterceptorModule interceptor, bool prepend = false) {
         Ensure.NotNull(interceptor, nameof(interceptor));
@@ -216,20 +187,16 @@ public record KrimsonProcessorBuilder {
         };
     }
 
-    public KrimsonProcessorBuilder LoggerFactory(ILoggerFactory loggerFactory) {
-        return this with {
-            Options = Options with {
-                LoggerFactory = Ensure.NotNull(loggerFactory, nameof(loggerFactory))
-            }
-        };
-    }
-
     public KrimsonProcessorBuilder EnableConsumerDebug(bool enable = true, string? context = null) {
-        return OverrideConsumerConfig(cfg => cfg.EnableDebug(enable, context));
+        return OverrideConsumerConfiguration(cfg => cfg.EnableDebug(enable, context));
     }
 
     public KrimsonProcessorBuilder EnableProducerDebug(bool enable = true, string? context = null) {
-        return OverrideProducerConfig(cfg => cfg.EnableDebug(enable, context));
+        return OverrideProducerConfiguration(cfg => cfg.EnableDebug(enable, context));
+    }
+    
+    public KrimsonProcessorBuilder EnableDebug(bool enable = true) {
+        return EnableConsumerDebug(enable).EnableProducerDebug(enable);
     }
     
     public KrimsonProcessorBuilder ReadSettings(IConfiguration configuration) {
@@ -290,11 +257,6 @@ public record KrimsonProcessorBuilder {
                 configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.ConsumerConfiguration.SecurityProtocol!.Value),
                 configuration.GetValue("Krimson:Connection:SaslMechanism", Options.ConsumerConfiguration.SaslMechanism!.Value)
             )
-            .SchemaRegistry(
-                configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url),
-                configuration.GetValue("Krimson:SchemaRegistry:ApiKey", ""),
-                configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")
-            )
             .ClientId(
                 configuration.GetValue(
                     "Krimson:Input:ClientId",
@@ -304,6 +266,7 @@ public record KrimsonProcessorBuilder {
             .GroupId(configuration.GetValue("Krimson:GroupId", Options.ConsumerConfiguration.GroupId))
             .InputTopic(configuration.GetValues("Krimson:Input:Topic"))
             .OutputTopic(configuration.GetValue("Krimson:Output:Topic", ""));
+            //.SchemaRegistry(builder => builder.ReadSettings(configuration));
     }
 
     public KrimsonProcessor Create() {
@@ -312,7 +275,6 @@ public record KrimsonProcessorBuilder {
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.GroupId, nameof(GroupId));
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.BootstrapServers, nameof(Options.ConsumerConfiguration.BootstrapServers));
         Ensure.NotNullOrWhiteSpace(Options.ProducerConfiguration.BootstrapServers, nameof(Options.ProducerConfiguration.BootstrapServers));
-        Ensure.NotNullOrWhiteSpace(Options.RegistryConfiguration.Url, nameof(Options.RegistryConfiguration.Url));
         Ensure.NotNullOrEmpty(Options.InputTopics, nameof(InputTopic));
         Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));

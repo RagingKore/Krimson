@@ -1,51 +1,69 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Krimson.Fixie;
+using Krimson.OpenTelemetry;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.SchemaRegistry.Protobuf;
 using Krimson.Tests.Messages;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
-
 using static Google.Protobuf.WellKnownTypes.Timestamp;
-using ILogger = Serilog.ILogger;
+using static Serilog.Core.Constants;
+using static Serilog.Log;
 
 namespace Krimson.Tests;
 
 public class KrimsonTestContext : TestContext {
-    static readonly ILogger Log = Serilog.Log.ForContext("SourceContext", nameof(KrimsonTestContext));
-    
-    // public KrimsonTestContext() {
-    //     ClientConnection = new();
-    //     AdminClient      = null!;
-    //     SchemaRegistry   = new CachedSchemaRegistryClient(DefaultConfigs.DefaultSchemaRegistryConfig);
-    //     CreatedTopics    = new();
-    //     LoggerFactory    = new LoggerFactory().AddSerilog();
-    // }
-    //
-    // ClientConnection      ClientConnection { get; set; }
-    // IAdminClient          AdminClient      { get; set; }
-    // ISchemaRegistryClient SchemaRegistry   { get; set; }
-    // ILoggerFactory        LoggerFactory    { get; }
-    // List<string>          CreatedTopics    { get; }
+    static readonly ILogger Log = ForContext(SourceContextPropertyName, nameof(KrimsonTestContext));
+
+    static KrimsonTestContext() {
+        // Sdk.CreateTracerProviderBuilder()
+        //     .AddSource(nameof(Krimson.Tests))
+        //     .AddConsoleExporter();
+    }
 
     public KrimsonTestContext() {
         ClientConnection = null!;
         AdminClient      = null!;
         SchemaRegistry   = null!;
         CreatedTopics    = new List<string>();
-        LoggerFactory    = new LoggerFactory().AddSerilog();
+
+        TracerProvider = Sdk.CreateTracerProviderBuilder()
+            .AddSource("Krimson.Tests")
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName: "Krimson.Tests"))
+            .AddConsoleExporter()
+            .AddInMemoryExporter(InMemoryActivities)
+            .AddOtlpExporter(
+                options => {
+                    options.Protocol = OtlpExportProtocol.Grpc;
+                })
+            .Build();
+
+        // TestListener = new ActivityListener {
+        //     ShouldListenTo  = source => source.Name.StartsWith("Krimson"),
+        //     Sample          = SampleAll,
+        //     ActivityStopped = activity => Activities.Add(activity)
+        // };
+        //
+        // ActivitySource.AddActivityListener(TestListener);
+
+        // static ActivitySamplingResult SampleAll(ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
     }
 
-    ClientConnection      ClientConnection { get; set; }
-    IAdminClient          AdminClient      { get; set; }
-    ISchemaRegistryClient SchemaRegistry   { get; set; }
-    ILoggerFactory        LoggerFactory    { get; }
-    List<string>          CreatedTopics    { get; }
+    ClientConnection        ClientConnection   { get; set; }
+    IAdminClient            AdminClient        { get; set; }
+    ISchemaRegistryClient   SchemaRegistry     { get; set; }
+    List<string>            CreatedTopics      { get; }
+    TracerProvider          TracerProvider     { get; }
+    List<Activity>          InMemoryActivities { get; } = new();
 
     protected override async ValueTask SetUp() {
         var configuration = new ConfigurationBuilder()
@@ -80,12 +98,13 @@ public class KrimsonTestContext : TestContext {
     protected override async ValueTask CleanUp() {
         try {
             if (CreatedTopics.Any()) {
-                await AdminClient.DeleteTopics(CreatedTopics);
+               // await AdminClient.DeleteTopics(CreatedTopics);
                 Log.Information("deleted topics: {CreatedTopics}", CreatedTopics);
             }
 
             SchemaRegistry.Dispose();
             AdminClient.Dispose();
+            TracerProvider.Dispose();
         }
         catch (Exception ex) {
             Log.Warning(ex, "disposed suddenly");
@@ -170,9 +189,9 @@ public class KrimsonTestContext : TestContext {
             .SchemaRegistry(SchemaRegistry)
             .ClientId(topic)
             .Topic(topic)
-            .LoggerFactory(LoggerFactory)
             //.EnableDebug()
             .UseProtobuf()
+            .Intercept(new OpenTelemetryProducerInterceptor(nameof(Krimson.Tests)))
             .Create();
 
         var requests = Enumerable.Range(1, numberOfMessages).Select(CreateProducerMessage).ToArray();
@@ -246,8 +265,8 @@ public class KrimsonTestContext : TestContext {
                 .Connection(ClientConnection)
                 .SchemaRegistry(SchemaRegistry)
                 .Process<KrimsonTestMessage>(TestMessageHandler)
-                .LoggerFactory(LoggerFactory)
                 .UseProtobuf()
+                .Intercept(new OpenTelemetryProcessorInterceptor(nameof(Krimson.Tests)))
                 .Create();
 
             var gap = await processor

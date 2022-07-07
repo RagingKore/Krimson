@@ -2,30 +2,28 @@
 
 using System.Collections.Concurrent;
 using Confluent.Kafka;
+using Confluent.SchemaRegistry;
 using FluentAssertions;
 using Humanizer;
 using Krimson;
 using Krimson.Examples.Messages.Telemetry;
 using Krimson.Processors;
 using Krimson.Producers;
+using Krimson.SchemaRegistry.Configuration;
 using Krimson.SchemaRegistry.Protobuf;
-using Microsoft.Extensions.Logging;
 using Nito.AsyncEx.Synchronous;
 using Serilog;
 using Serilog.Exceptions;
 using Serilog.Sinks.SystemConsole.Themes;
-using static System.String;
 using static System.Threading.Tasks.Task;
-using ILogger = Serilog.ILogger;
-
-const string LogOutputTemplate = "[{Timestamp:HH:mm:ss.fff} {Level:u3}] ({ThreadId:000}) {SourceContext}{NewLine}{Message}{NewLine}{Exception}";
+using static Serilog.Core.Constants;
 
 await Run();
 
 static async Task Run() {
     const int    processorTasks               = 1;
-    const int    inputMessagesCount           = 100;
-    const int    inputBatchSize               = 10;
+    const int    inputMessagesCount           = 1;
+    const int    inputBatchSize               = 100;
     const int    processorMaxInFlightMessages = 10000;
     const string inputTopic                   = "krimson.sherlock.input";
     const int    inputTopicPartitions         = 1;
@@ -35,24 +33,22 @@ static async Task Run() {
     const int    startTaskDelay               = 3000;
     const int    runs                         = 1;
 
+    const string logOutputTemplate = "[{Timestamp:HH:mm:ss.fff} {Level:u3}] ({ThreadId:000}) {SourceContext}{NewLine}{Message}{NewLine}{Exception}";
+
     Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Debug()
         //.MinimumLevel.Override(nameof(Fixie), LogEventLevel.Verbose)
-        .Enrich.WithProperty("SourceContext", "Krimson.Sherlock")
+        .Enrich.WithProperty(SourceContextPropertyName, "Krimson.Sherlock")
         .Enrich.FromLogContext()
         .Enrich.WithThreadId()
         .Enrich.WithExceptionDetails()
         .WriteTo.Logger(
             logger => logger
                 //.Filter.ByExcluding(Matching.FromSource(nameof(Fixie)))
-                .WriteTo.Console(theme: AnsiConsoleTheme.Literate, outputTemplate: LogOutputTemplate, applyThemeToRedirectedOutput: true)
+                .WriteTo.Console(theme: AnsiConsoleTheme.Literate, outputTemplate: logOutputTemplate, applyThemeToRedirectedOutput: true)
         )
         .CreateLogger();
-
-    var loggerFactory = new LoggerFactory().AddSerilog();
     
-    var logger = Log.ForContext("SourceContext", "Krimson.Sherlock");
-
     /*
      * Create client
      */
@@ -67,22 +63,25 @@ static async Task Run() {
     // };
     var connection = new ClientConnection();
 
+    var registryClient = new KrimsonSchemaRegistryBuilder().Create();
+
     for (var run = 1; run <= runs; run++)
         await ExecuteTest(
-            run, connection, inputTopic,
+            run, connection, registryClient, inputTopic,
             inputTopicPartitions,
             outputTopic, outputTopicPartitions,
             inputMessagesCount, inputBatchSize,
             processorTasks, processorMaxInFlightMessages,
-            timeout, startTaskDelay, logger, loggerFactory
+            timeout, startTaskDelay
         );
 
-    logger.Information("*** {Runs} test run(s) completed ***", runs);
+    Log.Information("*** {Runs} test run(s) completed ***", runs);
 }
 
 static async Task ExecuteTest(
     int run,
     ClientConnection connection,
+    ISchemaRegistryClient registryClient,
     string inputTopic,
     int inputTopicPartitions,
     string outputTopic,
@@ -92,8 +91,7 @@ static async Task ExecuteTest(
     int processorTasks,
     int processorMaxInFlightMessages,
     int timeout,
-    int startTaskDelay,
-    ILogger logger, ILoggerFactory loggerFactory
+    int startTaskDelay
 ) {
     var subscription = $"krimson-{DateTime.UtcNow.Millisecond}";
 
@@ -110,7 +108,7 @@ static async Task ExecuteTest(
     );
 
     await Delay(2000);
-    logger.Information("*** test run {Run:00} | topics deleted ***", run);
+    Log.Information("*** test run {Run:00} | topics deleted ***", run);
 
     /*
      * Create topics
@@ -118,15 +116,15 @@ static async Task ExecuteTest(
     await adminClient.CreateTopic(inputTopic, inputTopicPartitions, 1);
     await adminClient.CreateTopic(outputTopic, outputTopicPartitions, 1);
     await Delay(1000);
-    logger.Information("*** test run {Run:00} | topics created ***", run);
+    Log.Information("*** test run {Run:00} | topics created ***", run);
 
     /*
      * Generate messages
      */
-    var generatedMessages = GenerateMessages(
-        connection, inputTopic, inputMessagesCount,
-        inputBatchSize, logger
-    );
+    var generatedMessages = await GenerateMessages(
+        connection, registryClient, inputTopic, inputMessagesCount,
+        inputBatchSize
+    ).ConfigureAwait(false);
 
     /*
     * Process messages
@@ -137,43 +135,42 @@ static async Task ExecuteTest(
 
     for (var id = 1; id <= processorTasks; id++) {
         if (id > 1) {
-            logger.Information("*** test run {Run:00} | adding new consumer to group in {Delay}ms ***", run, startTaskDelay);
+            Log.Information("*** test run {Run:00} | adding new consumer to group in {Delay}ms ***", run, startTaskDelay);
 
             await Delay(startTaskDelay);
         }
 
         var task = ProcessMessages(
             connection,
+            registryClient,
             id,
             subscription,
             inputTopic,
             outputTopic,
-            processorMaxInFlightMessages,
-            cancellator,
-            logger,loggerFactory
+            cancellator
         );
 
         tasks.Add(task);
     }
 
-    var results    = await WhenAll(tasks);
+    var results    = await WhenAll(tasks).ConfigureAwait(false);
     var replicated = results.SelectMany(x => x).ToList();
 
     /*
      * Check extra/missing messages
      */
     if (replicated.Count > inputMessagesCount)
-        logger.Fatal(
+        Log.Fatal(
             "*** test run {Run:00} | processed {ReplicatedMessageCount} ({DuplicatesCount} extra) ***",
             run, replicated.Count, replicated.Count - inputMessagesCount
         );
     else if (replicated.Count < inputMessagesCount)
-        logger.Fatal(
+        Log.Fatal(
             "*** test run {Run:00} | processed {ReplicatedMessageCount} ({DuplicatesCount} missing) ***",
             run, replicated.Count, inputMessagesCount - replicated.Count
         );
     else
-        logger.Information("*** test run {Run:00} | all {InputMessagesCount} message(s) processed ***", run, inputMessagesCount);
+        Log.Information("*** test run {Run:00} | all {InputMessagesCount} message(s) processed ***", run, inputMessagesCount);
 
     /*
      * Check overall duplicates
@@ -187,33 +184,32 @@ static async Task ExecuteTest(
     var dupesFound = duplicates.Length > 0;
 
     if (dupesFound)
-        logger.Fatal("*** test run {Run:00} | {DupsCount} duplicates found ***", run, duplicates.Length);
+        Log.Fatal("*** test run {Run:00} | {DupsCount} duplicates found ***", run, duplicates.Length);
     else
-        logger.Information("*** test run {Run:00} | no dupplicates found ***", run);
+        Log.Information("*** test run {Run:00} | no dupplicates found ***", run);
 
     var messages = await ProcessMessages(
         connection,
+        registryClient,
         0,
         subscription,
         inputTopic,
         outputTopic,
-        processorMaxInFlightMessages,
-        new CancellationTokenSource(10000),
-        logger, loggerFactory
-    );
+        new CancellationTokenSource(10000)
+    ).ConfigureAwait(false);
 
     if (messages.Any())
-        logger.Fatal(
+        Log.Fatal(
             "*** test run {Run:00} | sequences not acknowledged. {MessageCount} messages consumed ***", run,
             messages.Count
         );
     else
-        logger.Information("*** test run {Run:00} | all sequences acknowledged ***", run);
+        Log.Information("*** test run {Run:00} | all sequences acknowledged ***", run);
 
-    var consumedMessages = await ReadMessages(connection, outputTopic);
+    var consumedMessages = await ReadMessages(connection, registryClient, outputTopic).ConfigureAwait(false);
 
     if (consumedMessages.Count != inputMessagesCount)
-        logger.Fatal("*** test run {Run:00} | Read only {MessageCount} messages ***", run, consumedMessages.Count);
+        Log.Fatal("*** test run {Run:00} | Read only {MessageCount} messages ***", run, consumedMessages.Count);
 
     var messagesByPartition = consumedMessages
         .GroupBy(x => x.Id.Position.TopicPartition)
@@ -228,18 +224,19 @@ static async Task ExecuteTest(
 
 static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, InputMessage>>> GenerateMessages(
     ClientConnection connection,
+    ISchemaRegistryClient registryClient,
     string inputTopic,
     int messageCount,
-    int batchSize,
-    ILogger logger
+    int batchSize
 ) {
     var lorem = new Bogus.DataSets.Lorem();
 
     await using var producer = KrimsonProducer.Builder
         .Connection(connection)
+        .SchemaRegistry(registryClient)
+        .ClientId("krimson-sherlock-generator")
         .Topic(inputTopic)
         .UseProtobuf()
-        //.EnableLogging()
         .Create();
 
     var generatedMessages = new ConcurrentQueue<(TopicPartitionOffset Sequence, InputMessage Message)>();
@@ -270,7 +267,7 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
         producer.Produce(
             producerMessage, result => {
                 if (!result.Success) {
-                    logger.Error(
+                    Log.Error(
                         result.Exception, "{GlobalOrder} message delivery failed: {ErrorMessage}",
                         inputMessage.GlobalOrder, result.Exception!.Message
                     );
@@ -280,7 +277,7 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
 
                 generatedMessages.Enqueue((result.RecordId, inputMessage));
 
-                logger.Verbose(
+                Log.Debug(
                     "{GlobalOrder} message delivered: {MessageId}",
                     inputMessage.GlobalOrder, result.RecordId.ToString()
                 );
@@ -298,7 +295,7 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
 
     producer.Flush();
 
-    logger.Warning(
+    Log.Warning(
         "*** generated {MessageCount} in {ElapsedHumanReadable} ***",
         generatedMessages.Count, MicroProfiler.GetElapsed(start).Humanize(3)
     );
@@ -311,13 +308,12 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
 
 static async Task<List<KrimsonRecord>> ProcessMessages(
     ClientConnection connection,
+    ISchemaRegistryClient registryClient,
     int processorId,
     string? subscriptionName,
     string inputTopic,
     string outputTopic,
-    int maxInFlightMessages,
-    CancellationTokenSource cancellator,
-    ILogger logger, ILoggerFactory loggerFactory
+    CancellationTokenSource cancellator
 ) {
     var processedMessages = new ConcurrentBag<KrimsonRecord>();
     
@@ -325,9 +321,9 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
         .ClientId($"krimson-sherlock-{processorId:00}")
         .GroupId(subscriptionName ?? "krimson-sherlock")
         .Connection(connection)
+        .SchemaRegistry(registryClient)
         .InputTopic(inputTopic)
         .OutputTopic(outputTopic)
-        .LoggerFactory(loggerFactory)
         .Process<InputMessage>(
             (message, ctx) => {
                 ctx.Output(message, ctx.Record.Key);
@@ -349,7 +345,7 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
         .UseProtobuf()
         .Create();
 
-    await processor.RunUntilCompletion(cancellator.Token);
+    await processor.RunUntilCompletion(cancellator.Token).ConfigureAwait(false);
 
     var messageIds = processedMessages.Any()
         ? processedMessages.Select(x => x.Id.ToString()).ToList()
@@ -362,31 +358,32 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
         .ToList();
 
     if (duplicates.Count > 0)
-        logger.Fatal(
+        Log.Fatal(
             "[{ProcessorId}] finished: {DupesCount} duplicates found. sample: {Dupes}", processorId, duplicates.Count,
             duplicates.Take(3)
         );
     else
-        logger.Information("[{ProcessorId}] finished: no duplicates found", processorId);
+        Log.Information("[{ProcessorId}] finished: no duplicates found", processorId);
 
     return processedMessages.ToList();
 }
 
 static async Task<List<KrimsonRecord>> ReadMessages(
-    ClientConnection connection, string topic, int? processorId = null
+    ClientConnection connection, ISchemaRegistryClient registryClient, string topic, int? processorId = null
 ) {
     var records     = new List<KrimsonRecord>();
     var cancellator = new CancellationTokenSource(60000);
 
     var processor = KrimsonProcessor.Builder
         .Connection(connection)
+        .SchemaRegistry(registryClient)
         .ClientId($"krimson-sherlock-reader-{processorId ?? DateTimeOffset.Now.ToUnixTimeSeconds()}")
         .InputTopic(topic)
         .Process<InputMessage>((message, ctx) => records.Add(ctx.Record))
         .UseProtobuf()
         .Create();
 
-    await processor.Start(cancellator.Token);
+    await processor.Activate(cancellator.Token).ConfigureAwait(false);
 
     return records;
 }

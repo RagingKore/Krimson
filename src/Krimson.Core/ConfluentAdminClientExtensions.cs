@@ -20,22 +20,23 @@ public static class ConfluentAdminClientExtensions {
         Ensure.Positive(partitions, nameof(partitions));
         Ensure.Positive(replicationFactor, nameof(replicationFactor));
 
-        var entries = await DescribeTopic(client, topicName);
+        var entries = await DescribeTopic(client, topicName).ConfigureAwait(false);
 
         if (entries is not null)
             return true;
 
         try {
-            await client.CreateTopicsAsync(
-                new List<TopicSpecification> {
-                    new() {
-                        Name              = topicName,
-                        NumPartitions     = partitions,
-                        ReplicationFactor = replicationFactor,
-                        Configs           = configs ?? new Dictionary<string, string>()
+            await client
+                .CreateTopicsAsync(
+                    new List<TopicSpecification> {
+                        new() {
+                            Name              = topicName,
+                            NumPartitions     = partitions,
+                            ReplicationFactor = replicationFactor,
+                            Configs           = configs ?? new Dictionary<string, string>()
+                        }
                     }
-                }
-            );
+                ).ConfigureAwait(false);
         }
         catch (CreateTopicsException ex) {
             if (ex.Error.Code == ErrorCode.Local_Partial && ex.Message.Contains("Topic replication factor must be")) {
@@ -67,15 +68,10 @@ public static class ConfluentAdminClientExtensions {
         return false;
     }
 
-    public static Task<bool> CreateCompactedTopic(
-        this IAdminClient client,
-        string topicName,
-        int partitions,
-        short replicationFactor
-    ) =>
+    public static Task<bool> CreateCompactedTopic(this IAdminClient client, string topicName, int partitions, short replicationFactor) =>
         CreateTopic(
-            client, topicName, partitions,
-            replicationFactor, new() { { "cleanup.policy", "compact" } }
+            client, topicName, partitions, replicationFactor, 
+            new Dictionary<string, string> { { "cleanup.policy", "compact" } }
         );
 
     public static Task<bool[]> CreateTopics(
@@ -126,17 +122,21 @@ public static class ConfluentAdminClientExtensions {
         }
     }
 
-    public static async ValueTask<Dictionary<string, ConfigEntryResult>?> DescribeConfigs(this IAdminClient client, string resource, ResourceType resourceType) {
+    public static async ValueTask<Dictionary<string, ConfigEntryResult>?> DescribeConfigurations(
+        this IAdminClient client, string resource, ResourceType resourceType
+    ) {
         Ensure.NotNullOrWhiteSpace(resource, nameof(resource));
 
-        var result = await client.DescribeConfigsAsync(
-            new[] {
-                new ConfigResource {
-                    Name = resource,
-                    Type = resourceType
+        var result = await client
+            .DescribeConfigsAsync(
+                new[] {
+                    new ConfigResource {
+                        Name = resource,
+                        Type = resourceType
+                    }
                 }
-            }
-        );
+            )
+            .ConfigureAwait(false);
 
         return result[0].Entries;
     }
@@ -145,7 +145,7 @@ public static class ConfluentAdminClientExtensions {
         Ensure.NotNull(topics, nameof(topics));
 
         try {
-            await client.DeleteTopicsAsync(topics);
+            await client.DeleteTopicsAsync(topics).ConfigureAwait(false);
         }
         catch (DeleteTopicsException ex) {
             if (ex.Results.Select(r => r.Error.Code).Any(err => err != ErrorCode.UnknownTopicOrPart && err != ErrorCode.NoError))
@@ -154,7 +154,7 @@ public static class ConfluentAdminClientExtensions {
     }
 
     public static Task DeleteTopic(this IAdminClient client, string topic) =>
-        DeleteTopics(client, new() { topic });
+        DeleteTopics(client, new List<string> { topic });
 
     public static async Task DeleteTestTopics(this IAdminClient client, Predicate<string> predicate) {
         var topicsToDelete = client
@@ -169,6 +169,6 @@ public static class ConfluentAdminClientExtensions {
                 .ConfigureAwait(false);
     }
 
-    public static IEnumerable<PartitionMetadata> GetTopicPartitions(this IAdminClient client, string topic) => 
+    public static IEnumerable<PartitionMetadata> GetTopicPartitions(this IAdminClient client, string topic) =>
         client.GetMetadata(topic, DefaultRequestTimeout).Topics.SingleOrDefault()?.Partitions ?? Enumerable.Empty<PartitionMetadata>();
 }

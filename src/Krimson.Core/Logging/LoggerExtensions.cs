@@ -1,21 +1,21 @@
 using Krimson.Processors;
-using Microsoft.Extensions.Logging;
-// ReSharper disable CheckNamespace
+using Serilog;
+using Serilog.Core.Enrichers;
 
 namespace Krimson.Logging;
 
-public static class LoggerExtensions {
-    public static IDisposable WithRecordInfo(this ILogger logger, KrimsonRecord record) {
-        var info = new Dictionary<string, object> {
-            ["krimson.record.id"]                 = record.Id,
-            ["krimson.record.key"]                = record.Key,
-            ["krimson.record.position.topic"]     = record.Position.Topic,
-            ["krimson.record.position.partition"] = record.Position.Partition.Value,
-            ["krimson.record.position.offset"]    = record.Position.Offset.Value,
-            ["krimson.record.timestamp"]          = record.Timestamp,
-            ["krimson.record.producer"]           = record.ProducerName
+static class LoggerExtensions {
+    public static ILogger WithRecordInfo(this ILogger logger, KrimsonRecord record) {
+        var info = new[] {
+            new PropertyEnricher("krimson.record.id", record.Id),
+            new PropertyEnricher("krimson.record.key", record.Key),
+            new PropertyEnricher("krimson.record.position.topic", record.Position.Topic),
+            new PropertyEnricher("krimson.record.position.partition", record.Position.Partition.Value),
+            new PropertyEnricher("krimson.record.position.offset", record.Position.Offset.Value),
+            new PropertyEnricher("krimson.record.timestamp", record.Timestamp),
+            new PropertyEnricher("krimson.record.producer", record.Id, true),
         };
-
-        return logger.BeginScope(info);
+        
+        return logger.ForContext(info);
     }
 }

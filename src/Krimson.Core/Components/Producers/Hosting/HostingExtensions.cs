@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Krimson.Producers.Hosting;
 
@@ -13,20 +12,14 @@ public static class HostingExtensions {
                 
                 return KrimsonProducer.Builder
                     .ReadSettings(configuration)
-                    .LoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>())
-                    .With(x => build(configuration, serviceProvider, x)).Create();
+                    .With(x => build(configuration, serviceProvider, x))
+                    .Create();
             }
         );
-    
+
     public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<IConfiguration, KrimsonProducerBuilder, KrimsonProducerBuilder> build) =>
-        services.AddSingleton(
-            serviceProvider => {
-                var configuration = serviceProvider.GetRequiredService<IConfiguration>();
-                
-                return KrimsonProducer.Builder
-                    .ReadSettings(configuration)
-                    .LoggerFactory(serviceProvider.GetRequiredService<ILoggerFactory>())
-                    .With(x => build(configuration, x)).Create();
-            }
-        );
+        AddKrimsonProducer(services, (configuration, _, builder) => build(configuration, builder));
+    
+    public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<KrimsonProducerBuilder, KrimsonProducerBuilder> build) =>
+        AddKrimsonProducer(services, (_, _, builder) => build(builder));
 }

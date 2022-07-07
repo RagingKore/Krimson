@@ -13,8 +13,7 @@ public record ProducerResult {
     public Error                              Error             { get; private init; } = NoError;
     public ProduceException<byte[], object?>? Exception         { get; private init; }
 
-    //public bool DeliveryFailed => !Error.IsUseless();
-    public bool Success        => Error.IsUseless();
+    public bool Success => Error.IsUseless();
     
     public static ProducerResult From(Guid requestId, DeliveryReport<byte[], object?> report) {
         return new() {
@@ -23,7 +22,7 @@ public record ProducerResult {
             RecordId          = report.Error.IsError ? RecordId.None : RecordId.From(report.TopicPartitionOffset),
             PersistenceStatus = report.Status,
             Error             = report.Error,
-            Exception         = report.Error.IsError ? new(report.Error, report) : null
+            Exception         = report.Error.IsError ? new ProduceException<byte[], object?>(report.Error, report) : null
         };
     }
 }
