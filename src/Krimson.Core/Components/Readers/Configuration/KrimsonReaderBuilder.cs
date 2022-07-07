@@ -1,9 +1,8 @@
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
-using Krimson.SchemaRegistry;
+using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using static System.String;
 
 namespace Krimson.Readers.Configuration;
@@ -83,15 +82,15 @@ public record KrimsonReaderBuilder {
         };
     }
 
-    public KrimsonReaderBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
-        return OverrideSchemaRegistryConfig(
-            cfg => {
-                cfg.Url                        = url;
-                cfg.BasicAuthUserInfo          = $"{apiKey}:{apiSecret}";
-                cfg.BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo;
-            }
-        );
-    }
+    // public KrimsonReaderBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
+    //     return OverrideSchemaRegistryConfig(
+    //         cfg => {
+    //             cfg.Url                        = url;
+    //             cfg.BasicAuthUserInfo          = $"{apiKey}:{apiSecret}";
+    //             cfg.BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo;
+    //         }
+    //     );
+    // }
 
     public KrimsonReaderBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
         Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
@@ -103,15 +102,15 @@ public record KrimsonReaderBuilder {
         };
     }
 
-    public KrimsonReaderBuilder SchemaRegistry(Func<ISchemaRegistryClient> factory) {
-        Ensure.NotNull(factory, nameof(factory));
-
-        return this with {
-            Options = Options with {
-                RegistryFactory = factory
-            }
-        };
-    }
+    // public KrimsonReaderBuilder SchemaRegistry(Func<ISchemaRegistryClient> factory) {
+    //     Ensure.NotNull(factory, nameof(factory));
+    //
+    //     return this with {
+    //         Options = Options with {
+    //             RegistryFactory = factory
+    //         }
+    //     };
+    // }
 
     public KrimsonReaderBuilder Intercept(InterceptorModule interceptor, bool prepend = false) {
         Ensure.NotNull(interceptor, nameof(interceptor));
@@ -132,15 +131,7 @@ public record KrimsonReaderBuilder {
             }
         };
     }
-
-    public KrimsonReaderBuilder LoggerFactory(ILoggerFactory loggerFactory) {
-        return this with {
-            Options = Options with {
-                LoggerFactory = Ensure.NotNull(loggerFactory, nameof(loggerFactory))
-            }
-        };
-    }
-
+    
     public KrimsonReaderBuilder EnableConsumerDebug(bool enable = true, string? context = null) {
         return OverrideConsumerConfig(cfg => cfg.EnableDebug(enable, context));
     }
@@ -155,11 +146,11 @@ public record KrimsonReaderBuilder {
                 configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.ConsumerConfiguration.SecurityProtocol!.Value),
                 configuration.GetValue("Krimson:Connection:SaslMechanism", Options.ConsumerConfiguration.SaslMechanism!.Value)
             )
-            .SchemaRegistry(
-                configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url),
-                configuration.GetValue("Krimson:SchemaRegistry:ApiKey", ""),
-                configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")
-            )
+            // .SchemaRegistry(
+            //     configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url),
+            //     configuration.GetValue("Krimson:SchemaRegistry:ApiKey", ""),
+            //     configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")
+            // )
             .ClientId(
                 configuration.GetValue(
                     "Krimson:Input:ClientId",

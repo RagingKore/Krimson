@@ -25,3 +25,17 @@ public record ProducerRequest {
     public bool HasKey   => Key != MessageKey.None;
     public bool HasTopic => Topic is not null;
 }
+
+public static class Voodo {
+    public static ProducerRequestBuilder ProduceRequest(this object source) => 
+        ProducerRequest.Builder.Message(source);
+
+    public static ProducerRequest ToProduceRequest(this object source) => 
+        ProducerRequest.Builder.Message(source).Create();
+    
+    public static ProducerRequest ToProduceRequest(this object source, MessageKey key) => 
+        ProducerRequest.Builder.Message(source).Key(key).Create();
+    
+    public static ProducerRequest ToProduceRequest(this object source, MessageKey key, Guid requestId) => 
+        ProducerRequest.Builder.Message(source).Key(key).RequestId(requestId).Create();
+}

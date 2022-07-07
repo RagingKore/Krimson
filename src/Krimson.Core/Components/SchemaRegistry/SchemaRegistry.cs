@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 
 namespace Krimson.SchemaRegistry;
 
-public static class SchemaRegistry {
+public class KrimsonSchemaRegistry {
     /// <summary>
     /// Serialization format:
     ///       byte 0:           A magic byte that identifies this as a message with

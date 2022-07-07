@@ -1,29 +1,12 @@
 using System.Runtime.CompilerServices;
 using Confluent.Kafka;
+using Krimson.Processors;
 using OneOf.Types;
 using static System.TimeSpan;
 
-namespace Krimson.Processors;
+namespace Krimson;
 
-
-public delegate void OnPartitionEndReached(TopicPartitionOffset position);
-public delegate void OnConsumeException(ConsumeException exception);
-
-class ConsumeResult<TValue> : OneOfBase<ConsumeResult<byte[], TValue>, None, Exception, TopicPartitionOffset> {
-    ConsumeResult(OneOf<ConsumeResult<byte[], TValue>, None, Exception, TopicPartitionOffset> input) : base(input) { }
-    
-    public static implicit operator ConsumeResult<TValue>(ConsumeResult<byte[], TValue> _) => new ConsumeResult<TValue>(_);
-    public static implicit operator ConsumeResult<TValue>(None _)                          => new ConsumeResult<TValue>(_);
-    public static implicit operator ConsumeResult<TValue>(Exception _)                     => new ConsumeResult<TValue>(_);
-    public static implicit operator ConsumeResult<TValue>(TopicPartitionOffset _)          => new ConsumeResult<TValue>(_);
-    
-    public static explicit operator ConsumeResult<byte[], TValue>(ConsumeResult<TValue> _) => _.AsT0;
-    public static explicit operator None(ConsumeResult<TValue> _)                          => _.AsT1;
-    public static explicit operator Exception(ConsumeResult<TValue> _)                     => _.AsT2;
-    public static explicit operator TopicPartitionOffset(ConsumeResult<TValue> _)          => _.AsT3;
-}
-
-static class ConfluentConsumerExtensions {
+public static class ConfluentConsumerExtensions {
     static readonly TimeSpan DefaultRequestTimeout = FromSeconds(10);
 
     public static IAsyncEnumerable<KrimsonRecord> Records<TValue>(this IConsumer<byte[], TValue> consumer, OnPartitionEndReached partitionEndReached, CancellationToken cancellationToken = default) {
@@ -178,6 +161,22 @@ static class ConfluentConsumerExtensions {
 
         return gap;
     }
+}
+
+public delegate void OnPartitionEndReached(TopicPartitionOffset position);
+
+class ConsumeResult<TValue> : OneOfBase<ConsumeResult<byte[], TValue>, None, Exception, TopicPartitionOffset> {
+    ConsumeResult(OneOf<ConsumeResult<byte[], TValue>, None, Exception, TopicPartitionOffset> input) : base(input) { }
+    
+    public static implicit operator ConsumeResult<TValue>(ConsumeResult<byte[], TValue> _) => new ConsumeResult<TValue>(_);
+    public static implicit operator ConsumeResult<TValue>(None _)                          => new ConsumeResult<TValue>(_);
+    public static implicit operator ConsumeResult<TValue>(Exception _)                     => new ConsumeResult<TValue>(_);
+    public static implicit operator ConsumeResult<TValue>(TopicPartitionOffset _)          => new ConsumeResult<TValue>(_);
+    
+    public static explicit operator ConsumeResult<byte[], TValue>(ConsumeResult<TValue> _) => _.AsT0;
+    public static explicit operator None(ConsumeResult<TValue> _)                          => _.AsT1;
+    public static explicit operator Exception(ConsumeResult<TValue> _)                     => _.AsT2;
+    public static explicit operator TopicPartitionOffset(ConsumeResult<TValue> _)          => _.AsT3;
 }
 
 [PublicAPI]

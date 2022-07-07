@@ -5,7 +5,7 @@ using Krimson.Interceptors;
 using Krimson.Processors;
 using Krimson.Processors.Interceptors;
 using Krimson.Readers.Configuration;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Krimson.Readers;
 
@@ -17,12 +17,11 @@ public sealed class KrimsonReader {
         Options  = options;
         ClientId = options.ConsumerConfiguration.ClientId;
         GroupId  = options.ConsumerConfiguration.GroupId;
-        Logger   = options.LoggerFactory.CreateLogger(ClientId);
+        Logger   = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
         Registry = options.RegistryFactory();
 
         Intercept = options.Interceptors
             .Prepend(new ConfluentProcessorLogger())
-            .WithLoggerFactory(options.LoggerFactory)
             .Intercept;
     }
 
@@ -34,13 +33,8 @@ public sealed class KrimsonReader {
     public string ClientId { get; }
     public string GroupId  { get; }
 
-    public async IAsyncEnumerable<KrimsonRecord> Records(TopicPartitionOffset position, [EnumeratorCancellation] CancellationToken cancellationToken) {
-        var config = new ConsumerConfig(new Dictionary<string, string>(Options.ConsumerConfiguration)) {
-            EnableAutoCommit      = false,
-            EnableAutoOffsetStore = false
-        };
-
-        using var consumer = new ConsumerBuilder<byte[], object?>(config)
+    public async IAsyncEnumerable<KrimsonRecord> Records(TopicPartitionOffset startPosition, [EnumeratorCancellation] CancellationToken cancellationToken) {
+        using var consumer = new ConsumerBuilder<byte[], object?>(DefaultConfigs.DefaultReaderConfig)
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory(Registry))
@@ -60,23 +54,29 @@ public sealed class KrimsonReader {
             // )
             .Build();
 
-        consumer.Assign(position);
+        consumer.Assign(startPosition);
 
         using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         // ReSharper disable once AccessToDisposedClosure
-        await foreach (var record in consumer.Records(_ => cancellator.Cancel(), cancellator.Token).ConfigureAwait(false))
+        await foreach (var record in consumer.Records(partitionEndReached: _ => cancellator.Cancel(), cancellator.Token).ConfigureAwait(false))
             yield return record;
 
         await consumer.Stop().ConfigureAwait(false);
     }
 
-    public async Task Process(TopicPartitionOffset position, Func<KrimsonRecord, Task> process, CancellationToken cancellationToken) {
-        await foreach (var record in Records(position, cancellationToken).ConfigureAwait(false)) {
-            await process(record).ConfigureAwait(false);
+    public async Task Process(TopicPartitionOffset startPosition, Func<KrimsonRecord, Task> handler, CancellationToken cancellationToken) {
+        await foreach (var record in Records(startPosition, cancellationToken).ConfigureAwait(false)) {
+            await handler(record).ConfigureAwait(false);
         }
     }
 
+    public IAsyncEnumerable<KrimsonRecord> Records(string topic, CancellationToken cancellationToken) =>
+        Records(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), cancellationToken);
+
+    public Task Process(string topic, Func<KrimsonRecord, Task> handler, CancellationToken cancellationToken) =>
+        Process(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), handler, cancellationToken);
+    
     public ValueTask DisposeAsync() {
         Registry.Dispose();
         return ValueTask.CompletedTask;

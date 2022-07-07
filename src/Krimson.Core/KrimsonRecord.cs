@@ -4,12 +4,12 @@ namespace Krimson.Processors;
 
 [PublicAPI]
 public record KrimsonRecord {
-    public RecordId                             Id          { get; internal init; } = null!;
-    public MessageKey                           Key         { get; internal init; } = MessageKey.None;
-    public object                               Value       { get; internal init; } = null!;
-    public Timestamp                            Timestamp   { get; internal init; }
-    public IReadOnlyDictionary<string, string?> Headers     { get; internal init; } = null!;
-    public Type                                 MessageType { get; internal init; } = null!;
+    public RecordId                     Id          { get; internal init; } = null!;
+    public MessageKey                   Key         { get; internal init; } = MessageKey.None;
+    public object                       Value       { get; internal init; } = null!;
+    public Timestamp                    Timestamp   { get; internal init; }
+    public IDictionary<string, string?> Headers     { get; internal init; } = null!;
+    public Type                         MessageType { get; internal init; } = null!;
 
 
     public TopicPartitionOffset Position  => Id.Position;

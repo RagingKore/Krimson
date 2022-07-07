@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Confluent.SchemaRegistry.Serdes.Protobuf" Version="1.9.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.21.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Krimson.Core\Krimson.Core.csproj" />
+  </ItemGroup>
+
+</Project>

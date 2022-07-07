@@ -1,8 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Krimson.SchemaRegistry.Protobuf")]
-[assembly: InternalsVisibleTo("Krimson.SchemaRegistry.Json")]
+[assembly: InternalsVisibleTo("Krimson.Serializers.ConfluentProtobuf")]
+[assembly: InternalsVisibleTo("Krimson.Serializers.ConfluentJson")]
 [assembly: InternalsVisibleTo("Krimson.Tests")]
 
-[assembly: InternalsVisibleTo("Krimson.Core")]
+[assembly: InternalsVisibleTo("Krimson")]
+[assembly: InternalsVisibleTo("Krimson.Hosting")]
+[assembly: InternalsVisibleTo("Krimson.OpenTelemetry")]
 [assembly: InternalsVisibleTo("Sherlock")]

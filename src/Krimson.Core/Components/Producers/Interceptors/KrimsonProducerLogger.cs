@@ -1,7 +1,6 @@
 // ReSharper disable TemplateIsNotCompileTimeConstantProblem
 
 using Krimson.Interceptors;
-using Microsoft.Extensions.Logging;
 
 namespace Krimson.Producers.Interceptors;
 
@@ -9,7 +8,7 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
     public KrimsonProducerLogger() {
         On<BeforeProduce>(
             evt => {
-                Logger.LogDebug(
+                Logger.Debug(
                     "{ProducerName} | {RequestId} | sending {MessageType} ({Key}) >> {Topic}",
                     evt.ProducerName, evt.Request.RequestId,
                     evt.Request.Message.GetType().Name, evt.Request.Key, evt.Request.Topic
@@ -17,10 +16,10 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
             }
         );
 
-        On<ProducerResultReceived>(
+        On<ProduceResultReceived>(
             evt => {
                 if (!evt.Result.Success) {
-                    Logger.LogError(
+                    Logger.Error(
                         evt.Result.Exception,
                         "{ProducerName} | {RequestId} | failed to send message: {ErrorMessage}",
                         evt.ProducerName, evt.Result.RequestId, evt.Result.Exception!.Message
@@ -37,9 +36,9 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
             }
         );
 
-        On<ProducerResultUserHandlingError>(
+        On<ProduceResultUserHandlingError>(
             evt => {
-                Logger.LogError(
+                Logger.Error(
                     evt.UserException,
                     "{ProducerName} | {RequestId} | failed handling callback: {ErrorMessage}",
                     evt.ProducerName, evt.Result.RequestId, evt.UserException.Message
@@ -47,9 +46,9 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
             }
         );
 
-        On<ProducerResultError>(
+        On<ProduceResultError>(
             evt => {
-                Logger.LogError(
+                Logger.Error(
                     evt.Exception,
                     "{ProducerName} | {RequestId} | failed handling callback: {ErrorMessage}",
                     evt.ProducerName, evt.RequestId, evt.Exception.Message

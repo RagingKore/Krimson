@@ -1,5 +1,4 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+using Serilog;
 
 namespace Krimson.Interceptors;
 
@@ -8,15 +7,14 @@ public delegate void Intercept(InterceptorEvent evt);
 [PublicAPI]
 public abstract class InterceptorModule {
     Dictionary<string, Func<object, CancellationToken, Task>> Handlers { get; } = new();
-
-    protected InterceptorModule() {
-        Name   = GetType().Name;
-        Logger = new NullLoggerFactory().CreateLogger(Name);
+    
+    protected InterceptorModule(string? name = null) {
+        Name   = name ?? GetType().Name;
+        Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, Name);
     }
 
-    public virtual string Name { get; set; }
-
-    protected ILogger Logger { get; private set; }
+    public   string  Name   { get; private set; }
+    internal ILogger Logger { get; private set; }
     
     protected void On<T>(Func<T, CancellationToken, Task> handler) where T : InterceptorEvent {
         var key = typeof(T).FullName!;
@@ -41,14 +39,16 @@ public abstract class InterceptorModule {
         if (Handlers.TryGetValue(key, out var handler))
             await handler(interceptorEvent, cancellationToken).ConfigureAwait(false);
     }
-    
-    public void SetLoggerFactory(ILoggerFactory loggerFactory) {
-        Ensure.NotNull(loggerFactory, nameof(loggerFactory));
-        Logger = loggerFactory.CreateLogger(Name);
-    }
 
-    public void SetName(string name) {
+    
+    public InterceptorModule WithName(string name) {
         Ensure.NotNullOrWhiteSpace(name, nameof(name));
-        Name = name;
+        
+        Name   = name;
+        Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, name);
+        
+        return this;
     }
+    
+    public virtual ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

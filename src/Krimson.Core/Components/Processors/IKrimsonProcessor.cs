@@ -1,15 +1,17 @@
 namespace Krimson.Processors;
 
-public interface IKrimsonProcessor {
-    string                 ClientId { get; }
-    string                 GroupId  { get; }
-    string[]               Topics   { get; }
-    KrimsonProcessorStatus Status   { get; }
+public interface IKrimsonProcessorInfo {
+    string                 ClientId         { get; }
+    string                 GroupId          { get; }
+    string[]               Topics           { get; }
+    KrimsonProcessorStatus Status           { get; }
+    string                 BootstrapServers { get; }
+}
 
-    Task                                            Start(CancellationToken stoppingToken, OnProcessorStop? onStop = null);
+public interface IKrimsonProcessor : IKrimsonProcessorInfo, IAsyncDisposable {
+    Task                                            Activate(CancellationToken terminationToken, OnProcessorTerminated? onTerminated = null);
     Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGap();
-    Task                                            Stop();
-    ValueTask                                       DisposeAsync();
+    Task                                            Terminate();
 }
 
 // public class KrimsonMasterProcessor : IKrimsonProcessor {

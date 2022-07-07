@@ -9,8 +9,6 @@ using Serilog.Core;
 using Serilog.Core.Enrichers;
 using Serilog.Events;
 using Serilog.Exceptions;
-using Serilog.Exceptions.Filters;
-using Serilog.Filters;
 using Serilog.Sinks.SystemConsole.Themes;
 using SerilogTimings;
 using SerilogTimings.Extensions;

@@ -1,5 +1,4 @@
 using Confluent.Kafka;
-using Humanizer;
 
 namespace Krimson; 
 

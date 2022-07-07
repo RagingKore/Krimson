@@ -1,23 +1,40 @@
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.Producers.Interceptors;
-using Krimson.SchemaRegistry;
+using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Krimson.Producers;
 
 [PublicAPI]
 public record KrimsonProducerBuilder {
     public KrimsonProducerOptions Options { get; init; } = new();
+    
+    public KrimsonProducerBuilder OverrideConfiguration(Action<ProducerConfig> configureProducer) {
+        Ensure.NotNull(configureProducer, nameof(configureProducer));
 
+        return this with {
+            Options = Options with {
+                Configuration = new ProducerConfig(Options.Configuration).With(configureProducer)
+            }
+        };
+    }
+
+    public KrimsonProducerBuilder OverrideConfiguration(ProducerConfig configuration) {
+        return this with {
+            Options = Options with {
+                Configuration = Ensure.NotNull(configuration, nameof(configuration))
+            }
+        };
+    }
+
+    
     public KrimsonProducerBuilder Connection(
         string bootstrapServers, string? username = null, string? password = null,
         SecurityProtocol protocol = SecurityProtocol.Plaintext,
         SaslMechanism mechanism = SaslMechanism.Plain
     ) {
-        return OverrideProducerConfig(
+        return OverrideConfiguration(
             cfg => {
                 cfg.BootstrapServers = bootstrapServers;
                 cfg.SaslUsername     = username ?? "";
@@ -36,42 +53,10 @@ public record KrimsonProducerBuilder {
     }
 
     public KrimsonProducerBuilder ClientId(string clientId) {
-        return OverrideProducerConfig(cfg => cfg.ClientId = clientId);
+        return OverrideConfiguration(cfg => cfg.ClientId = clientId);
     }
 
-    public KrimsonProducerBuilder OverrideSchemaRegistryConfig(Action<SchemaRegistryConfig> configureSchemaRegistry) {
-        Ensure.NotNull(configureSchemaRegistry, nameof(configureSchemaRegistry));
-
-        var options = Options with { };
-
-        configureSchemaRegistry(options.RegistryConfiguration);
-
-        return this with {
-            Options = options
-        };
-    }
-
-    public KrimsonProducerBuilder SchemaRegistry(string url, string apiKey, string apiSecret) {
-        return OverrideSchemaRegistryConfig(
-            cfg => {
-                cfg.Url                        = url;
-                cfg.BasicAuthUserInfo          = $"{apiKey}:{apiSecret}";
-                cfg.BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo;
-            }
-        );
-    }
-
-    public KrimsonProducerBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
-        Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
-
-        return this with {
-            Options = Options with {
-                RegistryFactory = () => schemaRegistryClient
-            }
-        };
-    }
-
-    public KrimsonProducerBuilder Serializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
+    public KrimsonProducerBuilder Serializer(Func<IDynamicSerializer> getSerializer) {
         return this with {
             Options = Options with {
                 SerializerFactory = Ensure.NotNull(getSerializer, nameof(getSerializer))
@@ -83,24 +68,6 @@ public record KrimsonProducerBuilder {
         return this with {
             Options = Options with {
                 DefaultTopic = topic
-            }
-        };
-    }
-
-    public KrimsonProducerBuilder OverrideProducerConfig(Action<ProducerConfig> configureProducer) {
-        Ensure.NotNull(configureProducer, nameof(configureProducer));
-
-        return this with {
-            Options = Options with {
-                ProducerConfiguration = new ProducerConfig(Options.ProducerConfiguration).With(configureProducer)
-            }
-        };
-    }
-
-    public KrimsonProducerBuilder Configuration(ProducerConfig configuration) {
-        return this with {
-            Options = Options with {
-                ProducerConfiguration = Ensure.NotNull(configuration, nameof(configuration))
             }
         };
     }
@@ -117,59 +84,44 @@ public record KrimsonProducerBuilder {
         };
     }
     
-    public KrimsonProducerBuilder LoggerFactory(ILoggerFactory loggerFactory) {
-        return this with {
-            Options = Options with {
-                LoggerFactory = Ensure.NotNull(loggerFactory, nameof(loggerFactory))
-            }
-        };
-    }
-
     public KrimsonProducerBuilder EnableDebug(bool enable = true, string? context = null) {
-        return OverrideProducerConfig(cfg => cfg.EnableDebug(enable, context));
+        return OverrideConfiguration(cfg => cfg.EnableDebug(enable, context));
     }
     
     public KrimsonProducerBuilder ReadSettings(IConfiguration configuration) {
         Ensure.NotNull(configuration, nameof(configuration));
 
         return Connection(
-                configuration.GetValue("Krimson:Connection:BootstrapServers", Options.ProducerConfiguration.BootstrapServers),
-                configuration.GetValue("Krimson:Connection:Username", Options.ProducerConfiguration.SaslUsername),
-                configuration.GetValue("Krimson:Connection:Password", Options.ProducerConfiguration.SaslPassword),
-                configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.ProducerConfiguration.SecurityProtocol!.Value),
-                configuration.GetValue("Krimson:Connection:SaslMechanism", Options.ProducerConfiguration.SaslMechanism!.Value)
-            )
-            .SchemaRegistry(
-                configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url),
-                configuration.GetValue("Krimson:SchemaRegistry:ApiKey", ""),
-                configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")
+                configuration.GetValue("Krimson:Connection:BootstrapServers", Options.Configuration.BootstrapServers),
+                configuration.GetValue("Krimson:Connection:Username", Options.Configuration.SaslUsername),
+                configuration.GetValue("Krimson:Connection:Password", Options.Configuration.SaslPassword),
+                configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.Configuration.SecurityProtocol!.Value),
+                configuration.GetValue("Krimson:Connection:SaslMechanism", Options.Configuration.SaslMechanism!.Value)
             )
             .ClientId(
                 configuration.GetValue(
                     "Krimson:Output:ClientId",
-                    configuration.GetValue("Krimson:ClientId", Options.ProducerConfiguration.ClientId)
+                    configuration.GetValue("Krimson:ClientId", Options.Configuration.ClientId)
                 )
             )
             .Topic(configuration.GetValue("Krimson:Output:Topic", ""));
+            // .SchemaRegistry(builder => builder.ReadSettings(configuration));
     }
-
-
+    
     public KrimsonProducer Create() {
         //TODO SS: replace ensure by more specific and granular validation
-        Ensure.NotNullOrWhiteSpace(Options.ProducerConfiguration.ClientId, nameof(ClientId));
-        Ensure.NotNullOrWhiteSpace(Options.ProducerConfiguration.BootstrapServers, nameof(Options.ProducerConfiguration.BootstrapServers));
-        Ensure.NotNullOrWhiteSpace(Options.RegistryConfiguration.Url, nameof(Options.RegistryConfiguration.Url));
+        Ensure.NotNullOrWhiteSpace(Options.Configuration.ClientId, nameof(ClientId));
+        Ensure.NotNullOrWhiteSpace(Options.Configuration.BootstrapServers, nameof(Options.Configuration.BootstrapServers));
         Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
-  
+
         var interceptors = Options.Interceptors
-            .Prepend(new KrimsonProducerLogger())
-            .Prepend(new ConfluentProducerLogger())
-            .WithLoggerFactory(Options.LoggerFactory);
+            .Prepend(new KrimsonProducerLogger().WithName($"KrimsonProducer({Options.Configuration.ClientId})"))
+            .Prepend(new ConfluentProducerLogger());
 
         return new KrimsonProducer(
-            Options.ProducerConfiguration,
+            Options.Configuration,
             interceptors.Intercept,
-            Options.SerializerFactory(Options.RegistryFactory()),
+            Options.SerializerFactory(),
             Options.DefaultTopic
         );
     }

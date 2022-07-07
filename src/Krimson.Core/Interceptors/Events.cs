@@ -3,6 +3,10 @@ using Confluent.Kafka;
 namespace Krimson.Interceptors;
 
 public abstract record InterceptorEvent {
+    protected InterceptorEvent() => EventTypeName = GetType().Name;
+
+    public string EventTypeName { get; }
+
     public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
 }
 

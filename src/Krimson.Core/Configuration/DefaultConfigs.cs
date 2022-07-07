@@ -15,7 +15,7 @@ public static class DefaultConfigs {
         SocketKeepaliveEnable = true,                       // seems to help with network issues
         SaslMechanism         = SaslMechanism.Plain,        // default
         SecurityProtocol      = SecurityProtocol.Plaintext, // default
-        BrokerAddressFamily   = BrokerAddressFamily.V4      // cause V6 will just create chaos
+        BrokerAddressFamily   = BrokerAddressFamily.V4      // cause V6 will just create chaos (at least when using docker)
     };
 
     public static ConsumerConfig DefaultConsumerConfig =>
@@ -27,10 +27,14 @@ public static class DefaultConfigs {
             EnablePartitionEof          = true,              // enable message marker to signal that the consumer has caught up
             SessionTimeoutMs            = 45000,             // allows for better handling of transient networks issues
             // HeartbeatIntervalMs         = 15000,             // 1/3 of session timeout
-            PartitionAssignmentStrategy = CooperativeSticky, // enable incremental rebalancing to avoid stop-the-world rebalances
-            // Debug                       = "consumer,cgrp,topic,fetch"
+            PartitionAssignmentStrategy = CooperativeSticky  // enable incremental rebalancing to avoid stop-the-world rebalances
         };
-
+    
+    public static ConsumerConfig DefaultReaderConfig =>
+        new(new Dictionary<string, string>(DefaultConsumerConfig)) {
+            EnableAutoCommit      = false
+        };
+    
     public static ProducerConfig DefaultProducerConfig =>
         new(new Dictionary<string, string>(DefaultClientConfig)) {
             CompressionType      = Zstd, // cause it is that good
@@ -38,7 +42,6 @@ public static class DefaultConfigs {
             EnableIdempotence    = true, // there are no reasons to not want it enabled
             LingerMs             = 5,    // the default is now 5, funny
             DeliveryReportFields = "all" // default
-            //, EnableGaplessGuarantee = true
         };
 
     public static SchemaRegistryConfig DefaultSchemaRegistryConfig =>

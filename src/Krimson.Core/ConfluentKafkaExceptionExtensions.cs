@@ -2,7 +2,7 @@ using Confluent.Kafka;
 
 namespace Krimson;
 
-static class ConfluentKafkaExceptionExtensions {
+public static class ConfluentKafkaExceptionExtensions {
     public static bool IsUseless(this KafkaException exception)   => exception.Error.IsUseless();
     public static bool IsTerminal(this KafkaException exception)  => exception.Error.IsTerminal();
     public static bool IsRetryable(this KafkaException exception) => exception is KafkaRetriableException;
