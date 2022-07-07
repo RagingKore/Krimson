@@ -1,6 +1,6 @@
 using Confluent.Kafka;
 
-namespace Krimson.SchemaRegistry;
+namespace Krimson.Serializers;
 
 public interface IDynamicSerializer : ISerializer<object?> { }
 

@@ -4,9 +4,10 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using JetBrains.Annotations;
+using Krimson.SchemaRegistry;
 using NJsonSchema.Generation;
 
-namespace Krimson.SchemaRegistry.Json;
+namespace Krimson.Serializers.ConfluentJson;
 
 [PublicAPI]
 public class JsonDynamicDeserializer : IDynamicDeserializer {

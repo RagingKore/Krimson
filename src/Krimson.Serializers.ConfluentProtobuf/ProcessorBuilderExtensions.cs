@@ -1,7 +1,7 @@
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.Processors.Configuration;
 
-namespace Krimson.SchemaRegistry.Protobuf;
+namespace Krimson.Serializers.ConfluentProtobuf;
 
 public static class ProcessorBuilderExtensions {
     public static KrimsonProcessorBuilder UseProtobuf(

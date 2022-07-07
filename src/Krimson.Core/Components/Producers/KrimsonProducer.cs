@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Krimson.Interceptors;
 using Krimson.Producers.Interceptors;
 using Krimson.SchemaRegistry;
+using Krimson.Serializers;
 using static System.String;
 
 namespace Krimson.Producers;

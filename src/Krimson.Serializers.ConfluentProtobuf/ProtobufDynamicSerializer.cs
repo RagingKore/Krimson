@@ -3,42 +3,33 @@ using System.Runtime.Serialization;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
-using JetBrains.Annotations;
-using NJsonSchema.Generation;
+using Krimson.SchemaRegistry;
 using static System.Activator;
 using static System.Array;
 
-namespace Krimson.SchemaRegistry.Json;
+namespace Krimson.Serializers.ConfluentProtobuf;
 
 [PublicAPI]
-public class JsonDynamicSerializer : IDynamicSerializer {
-    static readonly Type ConfluentSerializerType = typeof(JsonSerializer<>);
+public class ProtobufDynamicSerializer : IDynamicSerializer {
+    static readonly Type ConfluentSerializerType = typeof(ProtobufSerializer<>);
     
-    public static readonly JsonSerializerConfig DefaultConfig = new() {
+    public static readonly ProtobufSerializerConfig DefaultConfig = new() {
         SubjectNameStrategy = SubjectNameStrategy.Record,
         AutoRegisterSchemas = true
     };
-
-    public static readonly JsonSchemaGeneratorSettings DefaultGeneratorSettings = new();
-
-    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerConfig serializerConfig, JsonSchemaGeneratorSettings generatorSettings) {
+    
+    public ProtobufDynamicSerializer(ISchemaRegistryClient registryClient, ProtobufSerializerConfig serializerConfig) {
         RegistryClient = registryClient;
         Serializers    = new ConcurrentDictionary<Type, dynamic>();
         
         GetSerializer = messageType => Serializers.GetOrAdd(
-            messageType, static (type, ctx) => CreateInstance(ConfluentSerializerType.MakeGenericType(type), ctx.Client, ctx.Config, ctx.Settings)!,
-            (Client: RegistryClient, Config: serializerConfig, Settings: generatorSettings)
+            messageType, static (type, ctx) => CreateInstance(ConfluentSerializerType.MakeGenericType(type), ctx.Client, ctx.Config)!,
+            (Client: RegistryClient, Config: serializerConfig)
         );
     }
 
-    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerConfig serializerConfig)
-        : this(registryClient, serializerConfig, DefaultGeneratorSettings) { }
-
-    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSchemaGeneratorSettings generatorSettings)
-        : this(registryClient, DefaultConfig, generatorSettings) { }
-
-    public JsonDynamicSerializer(ISchemaRegistryClient registryClient)
-        : this(registryClient, DefaultConfig, DefaultGeneratorSettings) { }
+    public ProtobufDynamicSerializer(ISchemaRegistryClient registryClient)
+        : this(registryClient, DefaultConfig) { }
 
     ISchemaRegistryClient               RegistryClient { get; }
     Func<Type, dynamic>                 GetSerializer  { get; }

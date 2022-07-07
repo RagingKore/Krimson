@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
 using Confluent.SchemaRegistry;
 using JetBrains.Annotations;
+using Krimson.SchemaRegistry;
 
-namespace Krimson.SchemaRegistry.Json;
+namespace Krimson.Serializers.ConfluentJson;
 
 static class Constants {
     /// <summary>
@@ -49,7 +50,7 @@ public static class SchemaRegistryClientJsonExtensions {
         //     : NJsonSchema.JsonSchema.FromType<T>(this.jsonSchemaGeneratorSettings);
         //
        
-        return Cache.GetOrAdd(SchemaRegistry.ParseSchemaId(data), static (id, registry) => {
+        return Cache.GetOrAdd(SchemaRegistry.SchemaRegistry.ParseSchemaId(data), static (id, registry) => {
 
             //var schemaId   = SchemaRegistry.ParseSchemaId(data);
             var schema     = registry.GetSchemaAsync(id).GetAwaiter().GetResult();

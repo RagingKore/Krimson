@@ -3,8 +3,9 @@ using System.Runtime.Serialization;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
+using Krimson.SchemaRegistry;
 
-namespace Krimson.SchemaRegistry.Protobuf;
+namespace Krimson.Serializers.ConfluentProtobuf;
 
 [PublicAPI]
 public class ProtobufDynamicDeserializer : IDynamicDeserializer {

@@ -1,6 +1,5 @@
-using Krimson.Producers;
-using Krimson.Producers.Hosting;
-using Krimson.SchemaRegistry.Protobuf;
+using Krimson.Hosting;
+using Krimson.Serializers.ConfluentProtobuf;
 
 var builder = WebApplication.CreateBuilder(args);
 

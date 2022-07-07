@@ -3,8 +3,9 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
+using Krimson.SchemaRegistry;
 
-namespace Krimson.SchemaRegistry.Protobuf;
+namespace Krimson.Serializers.ConfluentProtobuf;
 
 [PublicAPI]
 public static class SchemaRegistryClientExtensions {

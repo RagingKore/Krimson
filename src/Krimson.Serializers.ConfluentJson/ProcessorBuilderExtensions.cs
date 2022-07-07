@@ -1,7 +1,7 @@
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.Processors.Configuration;
 
-namespace Krimson.SchemaRegistry.Json;
+namespace Krimson.Serializers.ConfluentJson;
 
 public static class ProcessorBuilderExtensions {
     public static KrimsonProcessorBuilder UseJson(

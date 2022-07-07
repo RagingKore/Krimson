@@ -7,7 +7,7 @@ using Krimson.OpenTelemetry;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
-using Krimson.SchemaRegistry.Protobuf;
+using Krimson.Serializers.ConfluentProtobuf;
 using Krimson.Tests.Messages;
 using Microsoft.Extensions.Configuration;
 using OpenTelemetry;

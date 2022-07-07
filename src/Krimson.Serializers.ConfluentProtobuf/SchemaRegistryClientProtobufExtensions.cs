@@ -2,8 +2,9 @@ using System.Collections.Concurrent;
 using Confluent.SchemaRegistry;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
+using Krimson.SchemaRegistry;
 
-namespace Krimson.SchemaRegistry.Protobuf;
+namespace Krimson.Serializers.ConfluentProtobuf;
 
 [PublicAPI]
 public static class SchemaRegistryClientProtobufExtensions {
@@ -22,7 +23,7 @@ public static class SchemaRegistryClientProtobufExtensions {
             return MessageSchema.Unknown;
 
         return Cache.GetOrAdd(
-            SchemaRegistry.ParseSchemaId(data), 
+            SchemaRegistry.SchemaRegistry.ParseSchemaId(data), 
             static (schemaId, registryClient) => AddMessageSchema(schemaId, registryClient), 
             client
         );

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
+    <ProjectReference Include="..\..\src\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj" />
     <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
     <ProjectReference Include="..\Telemetry.Contracts\Telemetry.Contracts.csproj" />
   </ItemGroup>

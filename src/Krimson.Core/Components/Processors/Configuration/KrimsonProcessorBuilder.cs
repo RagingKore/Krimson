@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.SchemaRegistry;
+using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using static System.String;
 
@@ -161,6 +162,12 @@ public record KrimsonProcessorBuilder {
                 Router = Ensure.NotNull(module, nameof(module)).Router
             }
         };
+    }
+    
+    public KrimsonProcessorBuilder Module(Func<KrimsonProcessorModule?> getModule) {
+        Ensure.NotNull(getModule, nameof(getModule));
+        var module = getModule();
+        return module is not null ? Module(module) : this;
     }
 
     public KrimsonProcessorBuilder Module<T>() where T : KrimsonProcessorModule, new() {

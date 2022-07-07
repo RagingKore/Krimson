@@ -1,20 +1,17 @@
 using Krimson.Examples.Messages.Telemetry;
 using Krimson.Extensions.DependencyInjection;
 using Krimson.Processors;
-using Krimson.SchemaRegistry.Protobuf;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimson()
-    .SchemaRegistry()
+    .UseProtobuf()
     .Processor(
-        (configuration, serviceProvider, processor) => processor
+        (provider, proc) => proc
             .GroupId("telemetry-processor")
             .InputTopic("telemetry")
-            .UseProtobuf()
             .Module<TelemetryModule>()
     );
-
 
 builder.Build().Run();
 

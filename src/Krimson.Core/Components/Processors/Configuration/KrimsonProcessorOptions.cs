@@ -4,6 +4,7 @@ using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.SchemaRegistry;
 using Krimson.SchemaRegistry.Configuration;
+using Krimson.Serializers;
 
 namespace Krimson.Processors.Configuration;
 

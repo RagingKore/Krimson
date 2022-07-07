@@ -1,5 +1,5 @@
 using Confluent.Kafka;
 
-namespace Krimson.SchemaRegistry;
+namespace Krimson.Serializers;
 
 public interface IDynamicDeserializer : IAsyncDeserializer<object?>, IDeserializer<object?> { }

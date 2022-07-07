@@ -1,6 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <EnablePackInference>false</EnablePackInference>
+  </PropertyGroup>
+  
   <ItemGroup>
-    <ProjectReference Include="..\Krimson.SchemaRegistry.Protobuf\Krimson.SchemaRegistry.Protobuf.csproj" />
-<!--    <ProjectReference Include="..\Krimson.SchemaRegistry.Json\Krimson.SchemaRegistry.Json.csproj" />-->
+    <ProjectReference Include="..\Krimson.Hosting\Krimson.Hosting.csproj" />
+    <ProjectReference Include="..\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj" />
+    <ProjectReference Include="..\Krimson.Serializers.ConfluentJson\Krimson.Serializers.ConfluentJson.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Update="KrimsonBuilderSerializersExtensions.cs">
+      <CodeLanguage>cs</CodeLanguage>
+      <DefaultPackFolder>content</DefaultPackFolder>
+      <BuildAction>Compile</BuildAction>
+    </Compile>
+  </ItemGroup>
+
+<!--  -->
+<!--  <ItemDefinitionGroup>-->
+<!--    <PackageReference>-->
+<!--      <Pack>false</Pack>-->
+<!--    </PackageReference>-->
+<!--  </ItemDefinitionGroup>-->
 </Project>

@@ -10,7 +10,7 @@ using Krimson.Examples.Messages.Telemetry;
 using Krimson.Processors;
 using Krimson.Producers;
 using Krimson.SchemaRegistry.Configuration;
-using Krimson.SchemaRegistry.Protobuf;
+using Krimson.Serializers.ConfluentProtobuf;
 using Nito.AsyncEx.Synchronous;
 using Serilog;
 using Serilog.Exceptions;

@@ -4,6 +4,7 @@ using Krimson.Interceptors;
 using Krimson.Producers.Interceptors;
 using Krimson.SchemaRegistry;
 using Krimson.SchemaRegistry.Configuration;
+using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 
 namespace Krimson.Producers;

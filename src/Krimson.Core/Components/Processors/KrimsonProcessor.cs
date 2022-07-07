@@ -9,6 +9,7 @@ using Krimson.Processors.Configuration;
 using Krimson.Processors.Interceptors;
 using Krimson.Producers;
 using Krimson.SchemaRegistry;
+using Krimson.Serializers;
 using Serilog;
 
 namespace Krimson.Processors;

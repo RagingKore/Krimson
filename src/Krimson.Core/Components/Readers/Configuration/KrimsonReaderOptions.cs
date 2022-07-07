@@ -3,6 +3,7 @@ using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.Processors;
 using Krimson.SchemaRegistry;
+using Krimson.Serializers;
 
 namespace Krimson.Readers.Configuration;
 
