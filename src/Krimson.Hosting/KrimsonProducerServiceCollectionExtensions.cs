@@ -3,7 +3,7 @@ using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Krimson.Hosting;
+namespace Krimson;
 
 [PublicAPI]
 public static class KrimsonProducerServiceCollectionExtensions {

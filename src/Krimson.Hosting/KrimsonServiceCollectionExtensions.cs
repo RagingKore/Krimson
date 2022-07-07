@@ -1,8 +1,6 @@
-// ReSharper disable CheckNamespace
-
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Krimson.Extensions.DependencyInjection;
+namespace Krimson;
 
 [PublicAPI]
 public static class KrimsonServiceCollectionExtensions {

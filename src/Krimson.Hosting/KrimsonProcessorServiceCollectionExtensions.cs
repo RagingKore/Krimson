@@ -1,3 +1,4 @@
+using Krimson.Hosting;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Serializers;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Krimson.Hosting;
+namespace Krimson;
 
 [PublicAPI]
 public static class KrimsonProcessorServiceCollectionExtensions {

@@ -10,7 +10,7 @@ using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Krimson.Extensions.DependencyInjection;
+namespace Krimson;
 
 [PublicAPI]
 public class KrimsonBuilder {
