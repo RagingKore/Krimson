@@ -1,4 +1,6 @@
-using Krimson.Hosting;
+using Confluent.SchemaRegistry;
+using Krimson;
+using Krimson.Extensions.DependencyInjection;
 using Krimson.Serializers.ConfluentProtobuf;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,24 +13,47 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // you can register a producer in many ways...
-builder.Services.AddKrimsonProducer(
-    (configuration, serviceProvider, producer) => producer.UseProtobuf()
+
+builder.UseKrimson(
+    krs => {
+        krs.AddProducer(
+            pdr => pdr
+                .ClientId("telemetry-gateway")
+                .Topic("telemetry")
+        );
+    }
 );
 
-// builder.Services.AddKrimsonProducer(
-//     producer => producer
-//         .ReadSettings(builder.Configuration)
-//         .ClientId("telemetry-gateway")
-//         .Topic("telemetry")
-//         .UseProtobuf()
-// );
-//
-// builder.Services.AddSingleton(
-//     serviceProvider => KrimsonProducer.Builder
-//         .ReadSettings(serviceProvider.GetRequiredService<IConfiguration>())
-//         .UseProtobuf()
-//         .Create()
-// );
+builder.UseKrimson()
+    .AddProducer(
+        pdr => pdr
+            .ClientId("telemetry-gateway")
+            .Topic("telemetry")
+    );
+
+builder.Services.AddKrimson()
+    .AddProtobuf()
+    .AddProducer(pdr => pdr
+        .ClientId("telemetry-gateway")
+        .Topic("telemetry")
+    );
+
+builder.Services.AddKrimson()
+    .AddProducer(
+        (provider, pdr) => pdr
+            .ClientId("telemetry-gateway")
+            .Topic("telemetry")
+            .UseProtobuf(provider.GetRequiredService<ISchemaRegistryClient>())
+    );
+
+builder.Services.AddKrimson(
+    krs => krs.AddProducer(
+        (provider, pdr) => pdr
+            .ClientId("telemetry-gateway")
+            .Topic("telemetry")
+            .UseProtobuf(provider.GetRequiredService<ISchemaRegistryClient>())
+    )
+);
 
 var app = builder.Build();
 

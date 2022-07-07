@@ -1,4 +1,3 @@
-using Confluent.Kafka;
 using FluentAssertions;
 using Krimson.Fixie;
 

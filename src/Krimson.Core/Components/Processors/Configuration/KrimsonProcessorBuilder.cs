@@ -1,7 +1,5 @@
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
-using Krimson.SchemaRegistry;
 using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using static System.String;
@@ -113,16 +111,16 @@ public record KrimsonProcessorBuilder {
     //         }
     //     };
     // }
-
-    public KrimsonProcessorBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
-        Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
-        
-        return this with {
-            Options = Options with {
-                RegistryFactory = () => schemaRegistryClient
-            }
-        };
-    }
+    //
+    // public KrimsonProcessorBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
+    //     Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
+    //     
+    //     return this with {
+    //         Options = Options with {
+    //             RegistryFactory = () => schemaRegistryClient
+    //         }
+    //     };
+    // }
     
     // public KrimsonProcessorBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
     //     return SchemaRegistry(builder => builder.Connection(url, apiKey, apiSecret));
@@ -140,7 +138,7 @@ public record KrimsonProcessorBuilder {
         };
     }
 
-    public KrimsonProcessorBuilder Serializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
+    public KrimsonProcessorBuilder Serializer(Func<IDynamicSerializer> getSerializer) {
         return this with {
             Options = Options with {
                 SerializerFactory = Ensure.NotNull(getSerializer, nameof(getSerializer))
@@ -148,7 +146,7 @@ public record KrimsonProcessorBuilder {
         };
     }
 
-    public KrimsonProcessorBuilder Deserializer(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
+    public KrimsonProcessorBuilder Deserializer(Func<IDynamicDeserializer> getDeserializer) {
         return this with {
             Options = Options with {
                 DeserializerFactory = Ensure.NotNull(getDeserializer, nameof(getDeserializer))

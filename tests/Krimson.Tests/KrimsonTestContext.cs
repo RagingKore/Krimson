@@ -186,11 +186,10 @@ public class KrimsonTestContext : TestContext {
         
         await using var producer = KrimsonProducer.Builder
             .Connection(ClientConnection)
-            .SchemaRegistry(SchemaRegistry)
+            .UseProtobuf(SchemaRegistry)
             .ClientId(topic)
             .Topic(topic)
             //.EnableDebug()
-            .UseProtobuf()
             .Intercept(new OpenTelemetryProducerInterceptor(nameof(Krimson.Tests)))
             .Create();
 
@@ -228,6 +227,14 @@ public class KrimsonTestContext : TestContext {
                 Order     = order,
                 Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
             };
+           
+            return msg.ToProduceRequest(msg.Order, id);
+            
+            return msg
+                .ProduceRequest()
+                .Key(msg.Order)
+                .RequestId(id)
+                .Create();
 
             return ProducerRequest.Builder
                 .Message(msg)
@@ -263,10 +270,9 @@ public class KrimsonTestContext : TestContext {
             await using var processor = KrimsonProcessor.Builder
                 .With(buildProcessor)
                 .Connection(ClientConnection)
-                .SchemaRegistry(SchemaRegistry)
+                .UseProtobuf(SchemaRegistry)
                 .Process<KrimsonTestMessage>(TestMessageHandler)
-                .UseProtobuf()
-                .Intercept(new OpenTelemetryProcessorInterceptor(nameof(Krimson.Tests)))
+                .Intercept(new OpenTelemetryProcessorInterceptor("Krimson.Tests"))
                 .Create();
 
             var gap = await processor

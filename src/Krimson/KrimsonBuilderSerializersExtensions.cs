@@ -9,12 +9,12 @@ namespace Krimson.Extensions.DependencyInjection;
 public static class KrimsonBuilderSerializersExtensions {
    
     static KrimsonBuilder UseProtobufSerializer(this KrimsonBuilder builder, Action<ProtobufSerializerConfig>? configureSerializer = null) =>
-        builder.Serializer(registry => new ProtobufDynamicSerializer(registry, ProtobufDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
+        builder.AddSerializer(registry => new ProtobufDynamicSerializer(registry, ProtobufDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
 
     static KrimsonBuilder UseProtobufDeserializer(this KrimsonBuilder builder, Action<ProtobufDeserializerConfig>? configureDeserializer = null) =>
-        builder.Deserializer(registry => new ProtobufDynamicDeserializer(registry, ProtobufDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))));
+        builder.AddDeserializer(registry => new ProtobufDynamicDeserializer(registry, ProtobufDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))));
 
-    public static KrimsonBuilder UseProtobuf(
+    public static KrimsonBuilder AddProtobuf(
         this KrimsonBuilder builder,
         Action<ProtobufDeserializerConfig>? configureDeserializer = null,
         Action<ProtobufSerializerConfig>? configureSerializer = null

@@ -18,23 +18,23 @@ public class KrimsonBuilder {
 
     internal IServiceCollection Services { get; }
     
-    public KrimsonBuilder SchemaRegistry(Func<IConfiguration, IServiceProvider, KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> build) {
+    public KrimsonBuilder AddSchemaRegistry(Func<IConfiguration, IServiceProvider, KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> build) {
         Services.AddKrimsonSchemaRegistry(build);
         return this;
     }
 
-    public KrimsonBuilder SchemaRegistry(Func<IConfiguration, KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> build) {
+    public KrimsonBuilder AddSchemaRegistry(Func<IConfiguration, KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> build) {
         Services.AddKrimsonSchemaRegistry(build);
         return this;
     }
     
         
-    public KrimsonBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") { 
+    public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "") { 
         Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret));
         return this;
     }
     
-    public KrimsonBuilder SchemaRegistry() {
+    public KrimsonBuilder AddSchemaRegistry() {
         Services.AddKrimsonSchemaRegistry();
         return this;
     }
@@ -55,7 +55,7 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder Processor(
+    public KrimsonBuilder AddProcessor(
         int tasks,
         Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
@@ -64,7 +64,7 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder Processor(
+    public KrimsonBuilder AddProcessor(
         Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) { 
@@ -72,7 +72,7 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder Processor(
+    public KrimsonBuilder AddProcessor(
         int tasks,
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
@@ -81,7 +81,7 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder Processor(
+    public KrimsonBuilder AddProcessor(
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) { 
@@ -89,7 +89,7 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder Processor(
+    public KrimsonBuilder AddProcessor(
         Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) { 
@@ -97,42 +97,42 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder Producer(Func<IConfiguration, IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
+    public KrimsonBuilder AddProducer(Func<IConfiguration, IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
          Services.AddKrimsonProducer(build);
          return this;
     }
 
-    public KrimsonBuilder Producer(Func<IConfiguration, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
+    public KrimsonBuilder AddProducer(Func<IConfiguration, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
         Services.AddKrimsonProducer(build);
         return this;
     }
     
-    public KrimsonBuilder Producer(Func<IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
+    public KrimsonBuilder AddProducer(Func<IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
         Services.AddKrimsonProducer(build);
         return this;
     }
 
-    public KrimsonBuilder Producer(Func<KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
+    public KrimsonBuilder AddProducer(Func<KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
         Services.AddKrimsonProducer(build);
         return this;
     }
 
-    public KrimsonBuilder Serializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
+    public KrimsonBuilder AddSerializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
         Services.AddSingleton(ctx => getSerializer(ctx.GetRequiredService<ISchemaRegistryClient>()));
         return this;
     }
 
-    public KrimsonBuilder Deserializer(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
+    public KrimsonBuilder AddDeserializer(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
         Services.AddSingleton(ctx => getDeserializer(ctx.GetRequiredService<ISchemaRegistryClient>()));
         return this;
     }
     
-    public KrimsonBuilder SerializerFactory(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
+    public KrimsonBuilder AddSerializerFactory(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
         Services.AddSingleton(getSerializer);
         return this;
     }
 
-    public KrimsonBuilder DeserializerFactory(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
+    public KrimsonBuilder AddDeserializerFactory(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
         Services.AddSingleton(getDeserializer);
         return this;
     }

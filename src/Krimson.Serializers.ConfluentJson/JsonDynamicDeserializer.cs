@@ -3,7 +3,6 @@ using System.Runtime.Serialization;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
-using JetBrains.Annotations;
 using Krimson.SchemaRegistry;
 using NJsonSchema.Generation;
 

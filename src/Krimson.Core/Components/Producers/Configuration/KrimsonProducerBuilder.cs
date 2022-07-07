@@ -1,9 +1,6 @@
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.Producers.Interceptors;
-using Krimson.SchemaRegistry;
-using Krimson.SchemaRegistry.Configuration;
 using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 
@@ -59,32 +56,7 @@ public record KrimsonProducerBuilder {
         return OverrideConfiguration(cfg => cfg.ClientId = clientId);
     }
 
-    // public KrimsonProducerBuilder SchemaRegistry(Func<KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> buildSchemaRegistry) {
-    //     var builder = buildSchemaRegistry(Options.RegistryBuilder);
-    //     
-    //     return this with {
-    //         Options = Options with {
-    //             RegistryBuilder = builder,
-    //             RegistryFactory = () => builder.Create()
-    //         }
-    //     };
-    // }
-
-    public KrimsonProducerBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
-        Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
-        
-        return this with {
-            Options = Options with {
-                RegistryFactory = () => schemaRegistryClient
-            }
-        };
-    }
-    
-    // public KrimsonProducerBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
-    //     return SchemaRegistry(builder => builder.Connection(url, apiKey, apiSecret));
-    // }
-    
-    public KrimsonProducerBuilder Serializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
+    public KrimsonProducerBuilder Serializer(Func<IDynamicSerializer> getSerializer) {
         return this with {
             Options = Options with {
                 SerializerFactory = Ensure.NotNull(getSerializer, nameof(getSerializer))
@@ -149,7 +121,7 @@ public record KrimsonProducerBuilder {
         return new KrimsonProducer(
             Options.Configuration,
             interceptors.Intercept,
-            Options.SerializerFactory(Options.RegistryFactory()),
+            Options.SerializerFactory(),
             Options.DefaultTopic
         );
     }

@@ -3,7 +3,6 @@ using System.Runtime.Serialization;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
-using Krimson.SchemaRegistry;
 using static System.Activator;
 using static System.Array;
 

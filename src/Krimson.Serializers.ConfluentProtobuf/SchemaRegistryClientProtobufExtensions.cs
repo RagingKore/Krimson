@@ -23,7 +23,7 @@ public static class SchemaRegistryClientProtobufExtensions {
             return MessageSchema.Unknown;
 
         return Cache.GetOrAdd(
-            SchemaRegistry.SchemaRegistry.ParseSchemaId(data), 
+            KrimsonSchemaRegistry.ParseSchemaId(data), 
             static (schemaId, registryClient) => AddMessageSchema(schemaId, registryClient), 
             client
         );

@@ -233,10 +233,9 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
 
     await using var producer = KrimsonProducer.Builder
         .Connection(connection)
-        .SchemaRegistry(registryClient)
         .ClientId("krimson-sherlock-generator")
         .Topic(inputTopic)
-        .UseProtobuf()
+        .UseProtobuf(registryClient)
         .Create();
 
     var generatedMessages = new ConcurrentQueue<(TopicPartitionOffset Sequence, InputMessage Message)>();
@@ -321,7 +320,7 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
         .ClientId($"krimson-sherlock-{processorId:00}")
         .GroupId(subscriptionName ?? "krimson-sherlock")
         .Connection(connection)
-        .SchemaRegistry(registryClient)
+        .UseProtobuf(registryClient)
         .InputTopic(inputTopic)
         .OutputTopic(outputTopic)
         .Process<InputMessage>(
@@ -342,7 +341,6 @@ static async Task<List<KrimsonRecord>> ProcessMessages(
                 return CompletedTask;
             }
         )
-        .UseProtobuf()
         .Create();
 
     await processor.RunUntilCompletion(cancellator.Token).ConfigureAwait(false);
@@ -376,11 +374,11 @@ static async Task<List<KrimsonRecord>> ReadMessages(
 
     var processor = KrimsonProcessor.Builder
         .Connection(connection)
-        .SchemaRegistry(registryClient)
+        .UseProtobuf(registryClient)
         .ClientId($"krimson-sherlock-reader-{processorId ?? DateTimeOffset.Now.ToUnixTimeSeconds()}")
         .InputTopic(topic)
         .Process<InputMessage>((message, ctx) => records.Add(ctx.Record))
-        .UseProtobuf()
+      
         .Create();
 
     await processor.Activate(cancellator.Token).ConfigureAwait(false);

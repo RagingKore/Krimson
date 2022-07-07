@@ -1,4 +1,3 @@
-using Confluent.SchemaRegistry;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Serializers;
@@ -30,16 +29,14 @@ public static class KrimsonProcessorServiceCollectionExtensions {
 
         IHostedService AddWorker(IServiceProvider ctx, int order) {
             var configuration  = ctx.GetRequiredService<IConfiguration>();
-            var registryClient = ctx.GetRequiredService<ISchemaRegistryClient>();
             var serializer     = ctx.GetRequiredService<IDynamicSerializer>();
             var deserializer   = ctx.GetRequiredService<IDynamicDeserializer>();
-            var module         = (KrimsonProcessorModule)ctx.GetService(typeof(KrimsonProcessorModule));
+            var module         = ctx.GetService<KrimsonProcessorModule>();
             
             var builder = KrimsonProcessor.Builder
                 .ReadSettings(configuration)
-                .SchemaRegistry(registryClient)
-                .Serializer(_ => serializer)
-                .Deserializer(_ => deserializer)
+                .Serializer(() => serializer)
+                .Deserializer(() => deserializer)
                 .Module(() => module)
                 .With(x => build(configuration, ctx, x));
 

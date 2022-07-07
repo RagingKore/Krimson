@@ -1,5 +1,5 @@
-using Confluent.SchemaRegistry;
 using Krimson.Producers;
+using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,11 +11,11 @@ public static class KrimsonProducerServiceCollectionExtensions {
         services.AddSingleton(
             serviceProvider => {
                 var configuration  = serviceProvider.GetRequiredService<IConfiguration>();
-                var registryClient = serviceProvider.GetRequiredService<ISchemaRegistryClient>();
+                var serializer     = serviceProvider.GetRequiredService<IDynamicSerializer>();
                 
                 return KrimsonProducer.Builder
                     .ReadSettings(configuration)
-                    .SchemaRegistry(registryClient)
+                    .Serializer(() => serializer)
                     .With(x => build(configuration, serviceProvider, x))
                     .Create();
             }

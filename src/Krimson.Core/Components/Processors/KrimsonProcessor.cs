@@ -2,14 +2,11 @@
 
 using System.Collections.Concurrent;
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.Logging;
 using Krimson.Processors.Configuration;
 using Krimson.Processors.Interceptors;
 using Krimson.Producers;
-using Krimson.SchemaRegistry;
-using Krimson.Serializers;
 using Serilog;
 
 namespace Krimson.Processors;
@@ -37,10 +34,9 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
             .Prepend(new KrimsonProcessorLogger().WithName($"KrimsonProcessor({ClientId})"))
             .Prepend(new ConfluentProcessorLogger())
             .Intercept;
-        
-        ISchemaRegistryClient registry     = options.RegistryFactory();
-        IDynamicSerializer    serializer   = options.SerializerFactory(registry);
-        IDynamicDeserializer  deserializer = options.DeserializerFactory(registry);
+
+        var serializer   = options.SerializerFactory();
+        var deserializer = options.DeserializerFactory();
         
         Producer = new KrimsonProducer(
             options.ProducerConfiguration,
