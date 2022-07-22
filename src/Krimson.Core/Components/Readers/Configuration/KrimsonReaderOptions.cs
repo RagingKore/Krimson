@@ -10,7 +10,7 @@ namespace Krimson.Readers.Configuration;
 public record KrimsonReaderOptions {
     public KrimsonReaderOptions() {
         Interceptors          = new InterceptorCollection();
-        ConsumerConfiguration = DefaultConfigs.DefaultConsumerConfig;
+        ConsumerConfiguration = DefaultConfigs.DefaultReaderConfig;
     }
     
     public InterceptorCollection      Interceptors          { get; init; }
