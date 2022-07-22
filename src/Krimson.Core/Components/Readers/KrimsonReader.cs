@@ -75,7 +75,17 @@ public sealed class KrimsonReader {
 
     public Task Process(string topic, Func<KrimsonRecord, Task> handler, CancellationToken cancellationToken) =>
         Process(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), handler, cancellationToken);
-    
+
+    public async ValueTask<KrimsonRecord?> GetLastRecord(string topic, CancellationToken cancellationToken = default) {
+        var lastStoredPosition = new TopicPartitionOffset(new TopicPartition(topic, Partition.Any), Offset.Stored);
+
+        var record = await Records(lastStoredPosition, cancellationToken)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return record;
+    }
+
     public ValueTask DisposeAsync() {
         return ValueTask.CompletedTask;
     }
