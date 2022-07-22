@@ -12,14 +12,10 @@ public record KrimsonReaderOptions {
         Router                = new KrimsonProcessorRouter();
         Interceptors          = new InterceptorCollection();
         ConsumerConfiguration = DefaultConfigs.DefaultConsumerConfig;
-        RegistryConfiguration = DefaultConfigs.DefaultSchemaRegistryConfig;
-        RegistryFactory       = () => new CachedSchemaRegistryClient(RegistryConfiguration);
     }
 
-    public KrimsonProcessorRouter                            Router                { get; init; }
-    public InterceptorCollection                             Interceptors          { get; init; }
-    public ConsumerConfig                                    ConsumerConfiguration { get; init; }
-    public SchemaRegistryConfig                              RegistryConfiguration { get; init; }
-    public Func<ISchemaRegistryClient>                       RegistryFactory       { get; init; }
-    public Func<ISchemaRegistryClient, IDynamicDeserializer> DeserializerFactory   { get; init; }
+    public KrimsonProcessorRouter     Router                { get; init; }
+    public InterceptorCollection      Interceptors          { get; init; }
+    public ConsumerConfig             ConsumerConfiguration { get; init; }
+    public Func<IDynamicDeserializer> DeserializerFactory   { get; init; }
 }

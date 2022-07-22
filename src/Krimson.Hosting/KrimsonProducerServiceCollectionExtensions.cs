@@ -29,5 +29,4 @@ public static class KrimsonProducerServiceCollectionExtensions {
     
     public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) =>
         AddKrimsonProducer(services, (_, serviceProvider, builder) => build(serviceProvider, builder));
-
 }

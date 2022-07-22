@@ -84,40 +84,6 @@ services:
       KAFKA_CLUSTERS_0_JMXPORT: 9997
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
   
-  datadog-agent:
-    image: datadog/agent:latest
-    container_name: datadog-agent
-    hostname: datadog-agent
-    ports:
-      - '8125:8125/udp'
-      - '8126:8126/tcp'
-      - '4317:4317'
-      - '4318:4318'
-      - '5555:5555'
-    environment:
-      DD_API_KEY: 25887a5f2cc59019c4bab838cbc5e845
-      DD_SITE: 'datadoghq.eu'
-      DOCKER_CONTENT_TRUST: 1
-      DD_DOGSTATSD_NON_LOCAL_TRAFFIC: 'true'
-      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: 'true'
-      DD_LOGS_ENABLED: 'true'
-      DD_HEALTH_PORT: '5555'
-      DD_APM_ENABLED: 'true'
-      DD_TAGS: env:development
-      DD_DOCKER_ENV_AS_TAGS:
-      DD_PROCESS_AGENT_ENABLED: 'true'
-      DD_TRACE_SAMPLE_RATE: 1
-      DD_LOGS_INJECTION: 'true'
-      DD_OTLP_CONFIG_TRACES_ENABLED: 'true'
-      DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT: http://0.0.0.0:4317
-      DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT: http://0.0.0.0:4318
-      DD_OTLP_CONFIG_METRICS_ENABLED: 'true'
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-      - /etc/passwd:/etc/passwd:ro
-  
 #  kouncil:
 #    image: consdata/kouncil:latest
 #    container_name: kouncil

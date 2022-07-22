@@ -18,7 +18,6 @@ public sealed class KrimsonReader {
         ClientId = options.ConsumerConfiguration.ClientId;
         GroupId  = options.ConsumerConfiguration.GroupId;
         Logger   = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
-        Registry = options.RegistryFactory();
 
         Intercept = options.Interceptors
             .Prepend(new ConfluentProcessorLogger())
@@ -37,7 +36,7 @@ public sealed class KrimsonReader {
         using var consumer = new ConsumerBuilder<byte[], object?>(DefaultConfigs.DefaultReaderConfig)
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
-            .SetValueDeserializer(Options.DeserializerFactory(Registry))
+            .SetValueDeserializer(Options.DeserializerFactory())
             // .SetPartitionsAssignedHandler((_, partitions) => Intercept(new PartitionsAssigned(ClientId, partitions)))
             // .SetOffsetsCommittedHandler((_, committed) => Intercept(new PositionsCommitted(ClientId, committed.Offsets, committed.Error)))
             // .SetPartitionsRevokedHandler(
@@ -78,7 +77,6 @@ public sealed class KrimsonReader {
         Process(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), handler, cancellationToken);
     
     public ValueTask DisposeAsync() {
-        Registry.Dispose();
         return ValueTask.CompletedTask;
     }
 }

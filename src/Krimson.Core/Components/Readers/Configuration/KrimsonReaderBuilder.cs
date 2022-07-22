@@ -1,5 +1,4 @@
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
 using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
@@ -69,49 +68,7 @@ public record KrimsonReaderBuilder {
             }
         };
     }
-
-    public KrimsonReaderBuilder OverrideSchemaRegistryConfig(Action<SchemaRegistryConfig> configureSchemaRegistry) {
-        Ensure.NotNull(configureSchemaRegistry, nameof(configureSchemaRegistry));
-
-        var options = Options with { };
-
-        configureSchemaRegistry(options.RegistryConfiguration);
-
-        return this with {
-            Options = options
-        };
-    }
-
-    // public KrimsonReaderBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
-    //     return OverrideSchemaRegistryConfig(
-    //         cfg => {
-    //             cfg.Url                        = url;
-    //             cfg.BasicAuthUserInfo          = $"{apiKey}:{apiSecret}";
-    //             cfg.BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo;
-    //         }
-    //     );
-    // }
-
-    public KrimsonReaderBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
-        Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
-
-        return this with {
-            Options = Options with {
-                RegistryFactory = () => schemaRegistryClient
-            }
-        };
-    }
-
-    // public KrimsonReaderBuilder SchemaRegistry(Func<ISchemaRegistryClient> factory) {
-    //     Ensure.NotNull(factory, nameof(factory));
-    //
-    //     return this with {
-    //         Options = Options with {
-    //             RegistryFactory = factory
-    //         }
-    //     };
-    // }
-
+    
     public KrimsonReaderBuilder Intercept(InterceptorModule interceptor, bool prepend = false) {
         Ensure.NotNull(interceptor, nameof(interceptor));
 
@@ -124,7 +81,7 @@ public record KrimsonReaderBuilder {
         };
     }
     
-    public KrimsonReaderBuilder Deserializer(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
+    public KrimsonReaderBuilder Deserializer(Func<IDynamicDeserializer> getDeserializer) {
         return this with {
             Options = Options with {
                 DeserializerFactory = Ensure.NotNull(getDeserializer, nameof(getDeserializer))
@@ -165,7 +122,6 @@ public record KrimsonReaderBuilder {
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.ClientId, nameof(ClientId));
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.GroupId, nameof(GroupId));
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.BootstrapServers, nameof(Options.ConsumerConfiguration.BootstrapServers));
-        Ensure.NotNullOrWhiteSpace(Options.RegistryConfiguration.Url, nameof(Options.RegistryConfiguration.Url));
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
 
         Ensure.Valid(Options.Router, nameof(Options.Router), router => router.HasRoutes);

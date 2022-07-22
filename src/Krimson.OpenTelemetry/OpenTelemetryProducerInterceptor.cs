@@ -94,7 +94,7 @@ public sealed class OpenTelemetryProducerInterceptor : InterceptorModule {
         );
     }
 
-    ActivitySource                        ActivitySource { get; }
+    ActivitySource                       ActivitySource { get; }
     ConcurrentDictionary<Guid, Activity> Activities     { get; }
 
     public override ValueTask DisposeAsync() {
