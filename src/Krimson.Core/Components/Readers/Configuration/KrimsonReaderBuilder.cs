@@ -124,8 +124,6 @@ public record KrimsonReaderBuilder {
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.BootstrapServers, nameof(Options.ConsumerConfiguration.BootstrapServers));
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
 
-        Ensure.Valid(Options.Router, nameof(Options.Router), router => router.HasRoutes);
-
         return new KrimsonReader(Options with { });
     }
 }
