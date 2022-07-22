@@ -33,7 +33,7 @@ public sealed class KrimsonReader {
     public string GroupId  { get; }
 
     public async IAsyncEnumerable<KrimsonRecord> Records(TopicPartitionOffset startPosition, [EnumeratorCancellation] CancellationToken cancellationToken) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(DefaultConfigs.DefaultReaderConfig)
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration)
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
