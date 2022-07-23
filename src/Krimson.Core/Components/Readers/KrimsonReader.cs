@@ -1,16 +1,22 @@
 using System.Runtime.CompilerServices;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
+using Krimson.Consumers.Interceptors;
 using Krimson.Interceptors;
-using Krimson.Processors;
-using Krimson.Processors.Interceptors;
 using Krimson.Readers.Configuration;
+using Krimson.Readers.Interceptors;
 using Serilog;
 
 namespace Krimson.Readers;
 
+public interface IKrimsonReaderInfo {
+    string   ClientId         { get; }
+    string   GroupId          { get; }
+    string   BootstrapServers { get; }
+}
+
 [PublicAPI]
-public sealed class KrimsonReader {
+public sealed class KrimsonReader : IKrimsonReaderInfo {
     public static KrimsonReaderBuilder Builder => new();
 
     public KrimsonReader(KrimsonReaderOptions options) {
@@ -20,7 +26,8 @@ public sealed class KrimsonReader {
         Logger   = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
-            .Prepend(new ConfluentProcessorLogger())
+            .Prepend(new KrimsonReaderLogger().WithName($"KrimsonReader({ClientId})"))
+            .Prepend(new ConfluentConsumerLogger())
             .Intercept;
     }
 
@@ -29,8 +36,9 @@ public sealed class KrimsonReader {
     ISchemaRegistryClient Registry  { get; }
     Intercept             Intercept { get; }
 
-    public string ClientId { get; }
-    public string GroupId  { get; }
+    public string ClientId         { get; }
+    public string GroupId          { get; }
+    public string BootstrapServers { get; }
 
     public async IAsyncEnumerable<KrimsonRecord> Records(TopicPartitionOffset startPosition, [EnumeratorCancellation] CancellationToken cancellationToken) {
         using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration)
@@ -75,49 +83,40 @@ public sealed class KrimsonReader {
 
     public Task Process(string topic, Func<KrimsonRecord, Task> handler, CancellationToken cancellationToken) =>
         Process(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), handler, cancellationToken);
-    
-    public async Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGap(string topic, CancellationToken cancellationToken = default) {
+
+    public async Task<List<TopicPartitionOffset>> GetLatestPositions(string topic, CancellationToken cancellationToken = default) {
         using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration)
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
             .Build();
 
-
         using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var gap = await consumer.GetSubscriptionGap(cancellator.Token);
+        var positions = await consumer
+            .GetTopicLatestPositions(topic, cancellator.Token)
+            .ToListAsync(cancellator.Token);
 
-        await consumer.Stop().ConfigureAwait(false);
-
-        return gap;
-    }
-    
-    public async Task<List<TopicPartitionOffset>> GetTopicLatestPositions(string topic, CancellationToken cancellationToken = default) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration)
-            .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
-            .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
-            .SetValueDeserializer(Options.DeserializerFactory())
-            .Build();
-
-
-        using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-        var positions = await consumer.GetTopicLatestPositions(topic, cancellator.Token).ToListAsync(cancellator.Token);
-
-        await consumer.Stop().ConfigureAwait(false);
+        await consumer
+            .Stop()
+            .ConfigureAwait(false);
 
         return positions;
     }
 
-     async ValueTask<KrimsonRecord?> GetLastRecord(string topic, CancellationToken cancellationToken = default) {
-        var lastStoredPosition = new TopicPartitionOffset(new TopicPartition(topic, Partition.Any), Offset.Stored);
-
-        var record = await Records(lastStoredPosition, cancellationToken)
-            .FirstOrDefaultAsync(cancellationToken)
+    public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+        var positions = await GetLatestPositions(topic, cancellationToken)
             .ConfigureAwait(false);
 
-        return record;
+        var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
+        
+        foreach (var position in lastPositions) {
+            var record = await Records(position, cancellationToken)
+                .LastAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            yield return record;
+        }
     }
 
     public ValueTask DisposeAsync() {

@@ -5,10 +5,10 @@ using Krimson.Interceptors;
 using Krimson.Logging;
 using Serilog.Events;
 
-namespace Krimson.Processors.Interceptors;
+namespace Krimson.Consumers.Interceptors;
 
-public sealed class ConfluentProcessorLogger : InterceptorModule {
-    public ConfluentProcessorLogger() {
+public sealed class ConfluentConsumerLogger : InterceptorModule {
+    public ConfluentConsumerLogger() {
         On<ConfluentConsumerLog>(
             evt => {
                 Logger.Write(

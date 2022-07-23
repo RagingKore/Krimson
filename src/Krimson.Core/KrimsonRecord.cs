@@ -1,6 +1,6 @@
 using Confluent.Kafka;
 
-namespace Krimson.Processors;
+namespace Krimson;
 
 [PublicAPI]
 public record KrimsonRecord {

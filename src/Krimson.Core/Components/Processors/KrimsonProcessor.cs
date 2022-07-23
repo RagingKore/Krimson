@@ -2,6 +2,7 @@
 
 using System.Collections.Concurrent;
 using Confluent.Kafka;
+using Krimson.Consumers.Interceptors;
 using Krimson.Interceptors;
 using Krimson.Logging;
 using Krimson.Processors.Configuration;
@@ -32,7 +33,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
 
         Intercept = options.Interceptors
             .Prepend(new KrimsonProcessorLogger().WithName($"KrimsonProcessor({ClientId})"))
-            .Prepend(new ConfluentProcessorLogger())
+            .Prepend(new ConfluentConsumerLogger())
             .Intercept;
 
         var serializer   = options.SerializerFactory();
