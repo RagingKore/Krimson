@@ -95,17 +95,10 @@ public abstract class PullSourceConnector : IPullSourceConnector {
             return DefaultCheckpoint;
 
         var records = new List<KrimsonRecord>();
-        
+
         await foreach (var record in Reader.LastRecords(Producer.Topic!, cancellationToken).ConfigureAwait(false)) {
-            try {
-                Log.Debug("last record {RecordId}", record.Id);
-                Log.Debug("last record {RecordId} {Timestamp}", record.Id, ((SourceRecord)record.Value).Timestamp.ToDateTimeOffset());
-                records.Add(record);
-            }
-            catch (Exception ex) {
-                Log.Debug("what the actual fook?!", ex);
-                throw;
-            }
+            Log.Debug("last record {RecordId} {Timestamp}", record.Id, ((SourceRecord)record.Value).Timestamp.ToDateTimeOffset());
+            records.Add(record);
         }
        
         var checkpoint = records
