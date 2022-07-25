@@ -18,7 +18,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
         Log        = ForContext(SourceContextPropertyName, GetType().Name);
         State      = new Dictionary<string, SourceRecord>();
         Checkpoint = DefaultCheckpoint;
-        IsFirstRun = new InterlockedBoolean(true);
+        IsFirstRun = true;
         IsBusy     = new InterlockedBoolean();
     }
 
@@ -29,16 +29,17 @@ public abstract class PullSourceConnector : IPullSourceConnector {
     Dictionary<string, SourceRecord> State    { get; }
 
     Timestamp          Checkpoint { get; set; }
-    InterlockedBoolean IsFirstRun { get; set; }
     InterlockedBoolean IsBusy     { get; set; }
+    bool               IsFirstRun { get; set; }
 
     public virtual async Task Execute(CancellationToken stoppingToken) {
         try {
             if (IsBusy.EnsureCalledOnce())
                 return;
             
-            if (IsFirstRun.CompareExchange(false, false)) {
+            if (IsFirstRun) {
                 Checkpoint = await LoadCheckpoint(stoppingToken).ConfigureAwait(false);
+                IsFirstRun = false;
                 Log.Information("starting from checkpoint at {Checkpoint}", Checkpoint.ToDateTimeOffset());
             }
 
@@ -67,13 +68,14 @@ public abstract class PullSourceConnector : IPullSourceConnector {
 
             if (lastTimestamp is not null) {
                 Checkpoint = lastTimestamp;
+                
                 Log.Information(
-                    "checkpoint tracked at {Checkpoint} after pulling {RecordCount} records from source", Checkpoint.ToDateTimeOffset(), recordCount
+                    "checkpoint tracked at {Checkpoint} after pulling {RecordCount} records from source", 
+                    Checkpoint.ToDateTimeOffset(), recordCount
                 );
             }
-            else {
+            else
                 Log.Debug("no records available from source");
-            }
         }
         catch (OperationCanceledException) {
             // be kind and don't crash 
@@ -92,11 +94,20 @@ public abstract class PullSourceConnector : IPullSourceConnector {
         if (Producer.Topic is null)
             return DefaultCheckpoint;
 
-        var records = await Reader
-            .LastRecords(Producer.Topic!, cancellationToken)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
+        var records = new List<KrimsonRecord>();
+        
+        await foreach (var record in Reader.LastRecords(Producer.Topic!, cancellationToken).ConfigureAwait(false)) {
+            try {
+                Log.Debug("last record {RecordId}", record.Id);
+                Log.Debug("last record {RecordId} {Timestamp}", record.Id, ((SourceRecord)record.Value).Timestamp.ToDateTimeOffset());
+                records.Add(record);
+            }
+            catch (Exception ex) {
+                Log.Debug("what the actual fook?!", ex);
+                throw;
+            }
+        }
+       
         var checkpoint = records
             .Select(x => ((SourceRecord)x.Value).Timestamp)
             .MaxBy(x => x);
