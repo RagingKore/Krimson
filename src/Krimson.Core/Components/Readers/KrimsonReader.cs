@@ -86,7 +86,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
         var positions = await consumer
             .GetTopicLatestPositions(topic, cancellator.Token)
-            .ToListAsync(cancellator.Token);
+            .ToListAsync(cancellator.Token)
+            .ConfigureAwait(false);
 
         try {
             consumer.Close();
@@ -98,21 +99,6 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         return positions;
     }
 
-    // public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
-    //     var positions = await GetLatestPositions(topic, cancellationToken)
-    //         .ConfigureAwait(false);
-    //
-    //     var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
-    //     
-    //     foreach (var position in lastPositions) {
-    //         var record = await Records(position, cancellationToken)
-    //             .LastAsync(cancellationToken)
-    //             .ConfigureAwait(false);
-    //
-    //         yield return record;
-    //     }
-    // }
-    
     public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
         using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N")[26..]}"))
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
@@ -124,7 +110,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
         var positions = await consumer
             .GetTopicLatestPositions(topic, cancellator.Token)
-            .ToListAsync(cancellator.Token);
+            .ToListAsync(cancellator.Token)
+            .ConfigureAwait(false);
         
         var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset == 0 ? Offset.Beginning : x.Offset - 1));
 
