@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package krimson.connectors;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+
+option csharp_namespace = "Krimson.Connectors";
+
+enum SourceOperation {
+  SOURCE_OPERATION_UNSPECIFIED = 0;
+  SOURCE_OPERATION_SNAPSHOT    = 1;
+  SOURCE_OPERATION_INSERT      = 2;
+  SOURCE_OPERATION_UPDATE      = 3;
+  SOURCE_OPERATION_DELETE      = 4;
+}
+
+message SourceRecord {
+  string                      id        = 1;  // (required) id of record
+  google.protobuf.Struct      data      = 2;  // (required) content
+  google.protobuf.Timestamp   timestamp = 3;  // (required) last date of modification
+  string                      type      = 4;  // (required) record type or entity name
+  SourceOperation             operation = 5;  // (required) operation type
+  google.protobuf.StringValue source    = 6;  // (optional) origin of the data
+}

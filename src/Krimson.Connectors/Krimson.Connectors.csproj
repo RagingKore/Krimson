@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Krimson.Core\Krimson.Core.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.21.3" />
+    <PackageReference Include="Grpc.Tools" Version="2.47.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf ProtoRoot="protos" Include="**/*.proto" GrpcServices="None" />
+  </ItemGroup>
+</Project>

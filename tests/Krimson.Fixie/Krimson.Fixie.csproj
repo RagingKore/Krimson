@@ -9,6 +9,6 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.1.1" />
-    <PackageReference Include="SerilogTimings" Version="3.0.0" />
+    <PackageReference Include="SerilogTimings" Version="3.0.1" />
   </ItemGroup>
 </Project>
