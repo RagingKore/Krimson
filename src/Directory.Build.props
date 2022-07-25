@@ -1,5 +1,4 @@
 <Project>
-  
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -22,13 +21,14 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RepositoryUrl>https://github.com/RagingKore/Krimson</RepositoryUrl>
     <PackageTags>kafka dotnet protobuf streaming event-driven</PackageTags>
-
+    
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedAllSources>true</EmbedAllSources>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>full</DebugType>
-
+    
     <UpdateVersionProperties>true</UpdateVersionProperties>
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerMinimumMajorMinor>1.1</MinVerMinimumMajorMinor>
@@ -51,5 +51,4 @@
     <Using Include="JetBrains.Annotations"/>
     <Using Include="OneOf"/>
   </ItemGroup>
-
 </Project>
