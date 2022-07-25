@@ -92,10 +92,14 @@ public abstract class PullSourceConnector : IPullSourceConnector {
         if (Producer.Topic is null)
             return DefaultCheckpoint;
 
-        var checkpoint = await Reader
+        var records = await Reader
             .LastRecords(Producer.Topic!, cancellationToken)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var checkpoint = records
             .Select(x => ((SourceRecord)x.Value).Timestamp)
-            .FirstOrDefaultAsync(cancellationToken);
+            .MaxBy(x => x);
 
         return checkpoint ?? DefaultCheckpoint;
     }
@@ -106,8 +110,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
         return ValueTask.FromResult(record.Timestamp > checkpoint);
     }
 
-    public virtual async ValueTask<ProducerResult>
-        DispatchRecord(KrimsonProducer producer, SourceRecord record, CancellationToken cancellationToken = default) =>
+    public virtual async ValueTask<ProducerResult> DispatchRecord(KrimsonProducer producer, SourceRecord record, CancellationToken cancellationToken = default) =>
         await producer.Produce(record, record.Id).ConfigureAwait(false);
 }
 

@@ -123,10 +123,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
             using var recordReaderCancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellator.Token);
 
-            yield return await consumer
-                .Records(_ => recordReaderCancellator.Cancel(), cancellator.Token)
-                .FirstOrDefaultAsync(recordReaderCancellator.Token)
-                .ConfigureAwait(false);
+            await foreach (var record in consumer.Records(_ => recordReaderCancellator.Cancel(), cancellator.Token).ConfigureAwait(false))
+                yield return record;
 
             recordReaderCancellator.Cancel();
             consumer.Unassign();
