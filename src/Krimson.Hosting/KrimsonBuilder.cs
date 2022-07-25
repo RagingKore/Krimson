@@ -1,6 +1,7 @@
 // ReSharper disable CheckNamespace
 
 using Confluent.SchemaRegistry;
+using Krimson.Connectors;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
@@ -55,22 +56,22 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder AddProcessor(
-        int tasks,
-        Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
-        Func<IServiceProvider, CancellationToken, Task>? initialize = null
-    ) { 
-        Services.AddKrimsonProcessor(tasks, build, initialize);
-        return this;
-    }
-    
-    public KrimsonBuilder AddProcessor(
-        Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
-        Func<IServiceProvider, CancellationToken, Task>? initialize = null
-    ) { 
-        Services.AddKrimsonProcessor(build, initialize);
-        return this;
-    }
+    // public KrimsonBuilder AddProcessor(
+    //     int tasks,
+    //     Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+    //     Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    // ) { 
+    //     Services.AddKrimsonProcessor(tasks, build, initialize);
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder AddProcessor(
+    //     Func<IConfiguration, IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+    //     Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    // ) { 
+    //     Services.AddKrimsonProcessor(build, initialize);
+    //     return this;
+    // }
     
     public KrimsonBuilder AddProcessor(
         int tasks,
@@ -97,15 +98,15 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder AddProducer(Func<IConfiguration, IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
-         Services.AddKrimsonProducer(build);
-         return this;
-    }
-
-    public KrimsonBuilder AddProducer(Func<IConfiguration, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
-        Services.AddKrimsonProducer(build);
-        return this;
-    }
+    // public KrimsonBuilder AddProducer(Func<IConfiguration, IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
+    //      Services.AddKrimsonProducer(build);
+    //      return this;
+    // }
+    //
+    // public KrimsonBuilder AddProducer(Func<IConfiguration, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
+    //     Services.AddKrimsonProducer(build);
+    //     return this;
+    // }
     
     public KrimsonBuilder AddProducer(Func<IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
         Services.AddKrimsonProducer(build);
@@ -117,15 +118,15 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder AddReader(Func<IConfiguration, IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
-        Services.AddKrimsonReader(build);
-        return this;
-    }
-
-    public KrimsonBuilder AddReader(Func<IConfiguration, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
-        Services.AddKrimsonReader((cfg, ctx, builder) => build(cfg, builder));
-        return this;
-    }
+    // public KrimsonBuilder AddReader(Func<IConfiguration, IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
+    //     Services.AddKrimsonReader(build);
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder AddReader(Func<IConfiguration, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
+    //     Services.AddKrimsonReader((cfg, ctx, builder) => build(cfg, builder));
+    //     return this;
+    // }
     
     public KrimsonBuilder AddReader(Func<IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
         Services.AddKrimsonReader((cfg, ctx, builder) => build(ctx, builder));
@@ -156,4 +157,11 @@ public class KrimsonBuilder {
         Services.AddSingleton(getDeserializer);
         return this;
     }
+    
+    public KrimsonBuilder AddPeriodicSourceConnector<T>(Action<PeriodicSourceConnectorOptions>? configure = null) where T : PullSourceConnector {
+        Services.AddKrimsonPeriodicSourceConnector<T>(configure);
+        return this;
+    }
+    
+    
 }
