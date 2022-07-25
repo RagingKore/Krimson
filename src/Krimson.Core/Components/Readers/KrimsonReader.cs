@@ -126,7 +126,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             .GetTopicLatestPositions(topic, cancellator.Token)
             .ToListAsync(cancellator.Token);
         
-        var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
+        var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset == 0 ? Offset.Beginning : x.Offset - 1));
 
         foreach (var position in lastPositions) {
             if (position.Offset == Offset.Beginning)
@@ -138,7 +138,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
             yield return await consumer
                 .Records(_ => recordReaderCancellator.Cancel(), cancellator.Token)
-                .FirstAsync(recordReaderCancellator.Token)
+                .FirstOrDefaultAsync(recordReaderCancellator.Token)
                 .ConfigureAwait(false);
 
             recordReaderCancellator.Cancel();
