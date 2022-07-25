@@ -32,7 +32,10 @@ public static class DefaultConfigs {
     
     public static ConsumerConfig DefaultReaderConfig =>
         new(new Dictionary<string, string>(DefaultConsumerConfig)) {
-            EnableAutoCommit      = false
+            EnableAutoCommit            = false,
+            PartitionAssignmentStrategy = RoundRobin,
+            ReconnectBackoffMaxMs       = 10000,
+            SocketKeepaliveEnable       = false,
         };
     
     public static ProducerConfig DefaultProducerConfig =>

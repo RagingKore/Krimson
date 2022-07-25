@@ -15,24 +15,22 @@ public static class ConfluentConsumerExtensions {
         IEnumerable<KrimsonRecord> Consume() {
             while (!cancellationToken.IsCancellationRequested) {
                 var result = TryConsume(() => consumer.Consume(cancellationToken));
-
+                
                 if (result.Value is ConsumeResult<byte[], TValue> consumeResult) {
                     yield return KrimsonRecord.From(consumeResult);
                     continue;
                 }
-                
-                if (result.Value is OperationCanceledException)
-                    yield break;
 
-                if (result.Value is ConsumeException cex) {
-                    if (cex.IsTerminal())
-                        throw cex;
-                        
+                if (result.Value is TopicPartitionOffset position) {
+                    partitionEndReached(position);
                     continue;
                 }
 
-                if (result.Value is TopicPartitionOffset position)
-                    partitionEndReached(position);
+                if (result.Value is OperationCanceledException or None) // not sure about none here...
+                    yield break;
+
+                if (result.Value is ConsumeException cex && cex.IsTerminal())
+                    throw cex;
             }
         }
         

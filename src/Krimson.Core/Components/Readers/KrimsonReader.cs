@@ -11,7 +11,6 @@ namespace Krimson.Readers;
 
 public interface IKrimsonReaderInfo {
     string   ClientId         { get; }
-    string   GroupId          { get; }
     string   BootstrapServers { get; }
 }
 
@@ -21,8 +20,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
     public KrimsonReader(KrimsonReaderOptions options) {
         Options  = options;
-        ClientId = options.ConsumerConfiguration.ClientId;
-        GroupId  = options.ConsumerConfiguration.GroupId;
+        ClientId = $"{options.ConsumerConfiguration.ClientId}-reader";
         Logger   = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
@@ -37,28 +35,13 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     Intercept             Intercept { get; }
 
     public string ClientId         { get; }
-    public string GroupId          { get; }
     public string BootstrapServers { get; }
 
     public async IAsyncEnumerable<KrimsonRecord> Records(TopicPartitionOffset startPosition, [EnumeratorCancellation] CancellationToken cancellationToken) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration)
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N").Substring(26,31)}"))
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
-            // .SetPartitionsAssignedHandler((_, partitions) => Intercept(new PartitionsAssigned(ClientId, partitions)))
-            // .SetOffsetsCommittedHandler((_, committed) => Intercept(new PositionsCommitted(ClientId, committed.Offsets, committed.Error)))
-            // .SetPartitionsRevokedHandler(
-            //     (_, positions) => {
-            //         Intercept(new PartitionsRevoked(ClientId, positions));
-            //         Flush(positions);
-            //     }
-            // )
-            // .SetPartitionsLostHandler(
-            //     (_, positions) => {
-            //         Intercept(new PartitionsLost(ClientId, positions));
-            //         Flush(positions);
-            //     }
-            // )
             .Build();
 
         consumer.Assign(startPosition);
@@ -69,7 +52,13 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         await foreach (var record in consumer.Records(partitionEndReached: _ => cancellator.Cancel(), cancellator.Token).ConfigureAwait(false))
             yield return record;
 
-        await consumer.Stop().ConfigureAwait(false);
+        try {
+            consumer.Unassign();
+            consumer.Close();
+        }
+        catch (KafkaException kex) when (kex.IsTransient()) {
+            // only throw on terminal error
+        }
     }
 
     public async Task Process(TopicPartitionOffset startPosition, Func<KrimsonRecord, Task> handler, CancellationToken cancellationToken) {
@@ -85,7 +74,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         Process(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), handler, cancellationToken);
 
     public async Task<List<TopicPartitionOffset>> GetLatestPositions(string topic, CancellationToken cancellationToken = default) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration)
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N").Substring(26,31)}"))
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
@@ -97,25 +86,65 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             .GetTopicLatestPositions(topic, cancellator.Token)
             .ToListAsync(cancellator.Token);
 
-        await consumer
-            .Stop()
-            .ConfigureAwait(false);
+        try {
+            consumer.Close();
+        }
+        catch (KafkaException kex) when (kex.IsTransient()) {
+            // only throw on terminal error
+        }
 
         return positions;
     }
 
+    // public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    //     var positions = await GetLatestPositions(topic, cancellationToken)
+    //         .ConfigureAwait(false);
+    //
+    //     var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
+    //     
+    //     foreach (var position in lastPositions) {
+    //         var record = await Records(position, cancellationToken)
+    //             .LastAsync(cancellationToken)
+    //             .ConfigureAwait(false);
+    //
+    //         yield return record;
+    //     }
+    // }
+    
     public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
-        var positions = await GetLatestPositions(topic, cancellationToken)
-            .ConfigureAwait(false);
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N").Substring(26,31)}"))
+            .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
+            .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
+            .SetValueDeserializer(Options.DeserializerFactory())
+            .Build();
 
-        var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
+        using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        var positions = await consumer
+            .GetTopicLatestPositions(topic, cancellator.Token)
+            .ToListAsync(cancellator.Token);
         
+        var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
+
         foreach (var position in lastPositions) {
-            var record = await Records(position, cancellationToken)
-                .LastAsync(cancellationToken)
+            consumer.Assign(position);
+
+            using var recordReaderCancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellator.Token);
+
+            yield return await consumer
+                .Records(_ => recordReaderCancellator.Cancel(), cancellator.Token)
+                .FirstAsync(recordReaderCancellator.Token)
                 .ConfigureAwait(false);
 
-            yield return record;
+            recordReaderCancellator.Cancel();
+            consumer.Unassign();
+        }
+        
+        try {
+            consumer.Close();
+        }
+        catch (KafkaException kex) when (kex.IsTransient()) {
+            // only throw on terminal error
         }
     }
 
