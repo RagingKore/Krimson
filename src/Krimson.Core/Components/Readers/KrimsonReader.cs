@@ -38,7 +38,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     public string BootstrapServers { get; }
 
     public async IAsyncEnumerable<KrimsonRecord> Records(TopicPartitionOffset startPosition, [EnumeratorCancellation] CancellationToken cancellationToken) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N").Substring(26,31)}"))
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N")[26..]}"))
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
@@ -74,7 +74,9 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         Process(new TopicPartitionOffset(topic, Partition.Any, Offset.Beginning), handler, cancellationToken);
 
     public async Task<List<TopicPartitionOffset>> GetLatestPositions(string topic, CancellationToken cancellationToken = default) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N").Substring(26,31)}"))
+        // I really really hate this... there must be another way...
+        
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N")[26..]}"))
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
@@ -112,7 +114,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     // }
     
     public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N").Substring(26,31)}"))
+        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N")[26..]}"))
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
