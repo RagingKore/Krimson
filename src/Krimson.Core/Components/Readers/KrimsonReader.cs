@@ -129,6 +129,9 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1));
 
         foreach (var position in lastPositions) {
+            if (position.Offset == Offset.Beginning)
+                continue;
+
             consumer.Assign(position);
 
             using var recordReaderCancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellator.Token);
