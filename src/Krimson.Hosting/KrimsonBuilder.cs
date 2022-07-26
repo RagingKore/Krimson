@@ -19,17 +19,6 @@ public class KrimsonBuilder {
 
     internal IServiceCollection Services { get; }
     
-    public KrimsonBuilder AddSchemaRegistry(Func<IConfiguration, IServiceProvider, KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> build) {
-        Services.AddKrimsonSchemaRegistry(build);
-        return this;
-    }
-
-    public KrimsonBuilder AddSchemaRegistry(Func<IConfiguration, KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> build) {
-        Services.AddKrimsonSchemaRegistry(build);
-        return this;
-    }
-    
-        
     public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "") { 
         Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret));
         return this;
@@ -39,7 +28,6 @@ public class KrimsonBuilder {
         Services.AddKrimsonSchemaRegistry();
         return this;
     }
-    
     
     public KrimsonBuilder ProcessorModule<T>() where T : KrimsonProcessorModule, new() {
         Services.AddSingleton<KrimsonProcessorModule>(new T());
@@ -129,12 +117,12 @@ public class KrimsonBuilder {
     // }
     
     public KrimsonBuilder AddReader(Func<IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
-        Services.AddKrimsonReader((cfg, ctx, builder) => build(ctx, builder));
+        Services.AddKrimsonReader(build);
         return this;
     }
 
     public KrimsonBuilder AddReader(Func<KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
-        Services.AddKrimsonReader((cfg, ctx, builder) => build(builder));
+        Services.AddKrimsonReader((_, builder) => build(builder));
         return this;
     }
 

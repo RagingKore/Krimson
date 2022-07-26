@@ -1,4 +1,4 @@
-namespace Krimson.Processors; 
+namespace Krimson.Processors;
 
 [PublicAPI]
 public abstract class KrimsonProcessorModule {
@@ -8,6 +8,15 @@ public abstract class KrimsonProcessorModule {
     protected void On<T>(ProcessMessage<T> handler)      => Router.Register(handler);
 
     public Task Process(KrimsonProcessorContext context) => Router.Process(context);
-    
-    public bool SubscribesTo(KrimsonRecord record)  => Router.CanRoute(record.Value.GetType());
+
+    public bool SubscribesTo(KrimsonRecord record) => Router.CanRoute(record.Value.GetType());
+}
+
+[PublicAPI]
+public sealed class KrimsonFluentProcessorModule<T> : KrimsonProcessorModule {
+    public KrimsonFluentProcessorModule(ProcessMessageAsync<T> handler) => On(handler);
+    public KrimsonFluentProcessorModule(ProcessMessage<T> handler) => On(handler);
+
+    public static KrimsonProcessorModule ForHandler(ProcessMessageAsync<T> handler) => new KrimsonFluentProcessorModule<T>(handler);
+    public static KrimsonProcessorModule ForHandler(ProcessMessage<T> handler)      => new KrimsonFluentProcessorModule<T>(handler);
 }

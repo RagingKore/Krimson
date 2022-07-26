@@ -78,7 +78,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
     IConsumer<byte[], object?> Consumer  { get; }
     KrimsonProducer            Producer  { get; }
     Intercept                  Intercept { get; }
-    KrimsonProcessorRouter     Router    { get; }
+    KrimsonMasterRouter        Router    { get; }
 
     CancellationTokenSource Cancellator  { get; set; } = null!;
     OnProcessorTerminated   OnTerminated { get; set; } = null!;
@@ -146,7 +146,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
                 .Process(context)
                 .ConfigureAwait(false);
             
-            Intercept(new InputConsumed(this, record, context.GeneratedOutput()));
+            Intercept(new InputConsumed(this, record, context.OutputMessages()));
         }
         catch (OperationCanceledException) {
             return;
@@ -156,7 +156,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
             throw;
         }
 
-        ProcessOutput(context.GeneratedOutput());
+        ProcessOutput(context.OutputMessages());
 
         void ProcessOutput(IReadOnlyCollection<ProducerRequest> requests) {
             if (requests.Count == 0) {

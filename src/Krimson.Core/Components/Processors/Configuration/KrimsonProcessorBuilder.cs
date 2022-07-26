@@ -30,7 +30,6 @@ public record KrimsonProcessorBuilder {
         };
     }
 
-    
     public KrimsonProcessorBuilder Connection(
         string bootstrapServers, string? username = null, string? password = null,
         SecurityProtocol protocol = SecurityProtocol.Plaintext,
@@ -157,7 +156,15 @@ public record KrimsonProcessorBuilder {
     public KrimsonProcessorBuilder Module(KrimsonProcessorModule module) {
         return this with {
             Options = Options with {
-                Router = Ensure.NotNull(module, nameof(module)).Router
+                Router = Options.Router.WithModule(module)
+            }
+        };
+    }
+    
+    public KrimsonProcessorBuilder Modules(IEnumerable<KrimsonProcessorModule> modules) {
+        return this with {
+            Options = Options with {
+                Router = Options.Router.WithModules(modules)
             }
         };
     }
@@ -168,28 +175,14 @@ public record KrimsonProcessorBuilder {
         return module is not null ? Module(module) : this;
     }
 
-    public KrimsonProcessorBuilder Module<T>() where T : KrimsonProcessorModule, new() {
-        return this with {
-            Options = Options with {
-                Router = new T().Router
-            }
-        };
-    }
-
     public KrimsonProcessorBuilder Process<T>(ProcessMessageAsync<T> handler) {
-        return this with {
-            Options = Options with {
-                Router = Options.Router.Register(Ensure.NotNull(handler, nameof(handler)))
-            }
-        };
+        Ensure.NotNull(handler, nameof(handler));
+        return Module(handler.AsModule());
     }
 
     public KrimsonProcessorBuilder Process<T>(ProcessMessage<T> handler) {
-        return this with {
-            Options = Options with {
-                Router = Options.Router.Register(Ensure.NotNull(handler, nameof(handler)))
-            }
-        };
+        Ensure.NotNull(handler, nameof(handler));
+        return Module(handler.AsModule());
     }
 
     public KrimsonProcessorBuilder EnableConsumerDebug(bool enable = true, string? context = null) {
@@ -271,7 +264,6 @@ public record KrimsonProcessorBuilder {
             .GroupId(configuration.GetValue("Krimson:GroupId", Options.ConsumerConfiguration.GroupId))
             .InputTopic(configuration.GetValues("Krimson:Input:Topic"))
             .OutputTopic(configuration.GetValue("Krimson:Output:Topic", ""));
-            //.SchemaRegistry(builder => builder.ReadSettings(configuration));
     }
 
     public KrimsonProcessor Create() {
@@ -283,7 +275,6 @@ public record KrimsonProcessorBuilder {
         Ensure.NotNullOrEmpty(Options.InputTopics, nameof(InputTopic));
         Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
-
         Ensure.Valid(Options.Router, nameof(Options.Router), router => router.HasRoutes);
 
         return new KrimsonProcessor(Options with { });

@@ -8,6 +8,11 @@ public delegate void ProcessMessage<in T>(T message, KrimsonProcessorContext con
 
 public record ProcessorRoute(string RoutingKey, ProcessRecord Processor);
 
+public static class ProcessMessageHandlersExtensions {
+    public static KrimsonProcessorModule AsModule<T>(this ProcessMessageAsync<T> handler) => KrimsonFluentProcessorModule<T>.ForHandler(handler);
+    public static KrimsonProcessorModule AsModule<T>(this ProcessMessage<T> handler)      => KrimsonFluentProcessorModule<T>.ForHandler(handler);
+}
+
 [PublicAPI]
 public class KrimsonProcessorRouter {
     Dictionary<string, ProcessRecord> Handlers { get; } = new();
@@ -41,4 +46,45 @@ public class KrimsonProcessorRouter {
     public bool CanRoute(string messageTypeName) => Handlers.ContainsKey(messageTypeName);
     public bool CanRoute(Type messageType)       => CanRoute(messageType.FullName!);
     public bool CanRoute(KrimsonRecord record)   => CanRoute(record.Value.GetType());
+}
+
+[PublicAPI]
+public class KrimsonMasterRouter {
+    List<KrimsonProcessorModule> Modules { get; } = new();
+   
+    public bool HasRoutes => Modules.Any(x => x.Router.HasRoutes);
+    
+    //TODO SS: might need to consider strategies in the future
+    public Task Process(KrimsonProcessorContext context) =>
+        Modules
+            .Where(x => x.SubscribesTo(context.Record))
+            .Select(x => x.Process(context))
+            .WhenAll();
+    
+    public bool CanRoute(KrimsonRecord record) =>
+        Modules.Any(x => x.SubscribesTo(record));
+
+    public KrimsonMasterRouter WithModule(KrimsonProcessorModule module) {
+        if (!module.Router.HasRoutes)
+            throw new InvalidOperationException($"Module {module.GetType().Name} has no routes");
+
+        Modules.Add(module);
+        
+        return this;
+    }
+    
+    public KrimsonMasterRouter WithModules(IEnumerable<KrimsonProcessorModule> modules) {
+        foreach (var module in modules) WithModule(module);
+        return this;
+    }
+    
+    public KrimsonMasterRouter WithHandler<T>(ProcessMessageAsync<T> handler) {
+        Modules.Add(KrimsonFluentProcessorModule<T>.ForHandler(handler));
+        return this;
+    }
+    
+    public KrimsonMasterRouter WithHandler<T>(ProcessMessage<T> handler) {
+        Modules.Add(KrimsonFluentProcessorModule<T>.ForHandler(handler));
+        return this;
+    }
 }

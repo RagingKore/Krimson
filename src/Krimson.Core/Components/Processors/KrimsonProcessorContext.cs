@@ -9,7 +9,7 @@ public class KrimsonProcessorContext {
         Record            = record;
         Logger            = logger;
         CancellationToken = cancellationToken;
-        OutputMessages    = new Queue<ProducerRequest>();
+        MessageQueue      = new Queue<ProducerRequest>();
         QueueLocked       = new InterlockedBoolean();
     }
 
@@ -17,17 +17,17 @@ public class KrimsonProcessorContext {
     public ILogger           Logger            { get; }
     public CancellationToken CancellationToken { get; }
 
-    Queue<ProducerRequest> OutputMessages { get; }
-    InterlockedBoolean     QueueLocked    { get; }
+    Queue<ProducerRequest> MessageQueue { get; }
+    InterlockedBoolean     QueueLocked  { get; }
 
     /// <summary>
     /// Enqueues message to be sent on exit
     /// </summary>
     public void Output(ProducerRequest request) {
         if (QueueLocked.CurrentValue)
-            throw new InvalidOperationException("Message already processed. Make sure any async operations are awaited.");
+            throw new InvalidOperationException("Messages already processed. Make sure any async operations are awaited.");
 
-        OutputMessages.Enqueue(request);
+        MessageQueue.Enqueue(request);
     }
     
     /// <summary>
@@ -60,8 +60,8 @@ public class KrimsonProcessorContext {
     public void Output(object message, MessageKey key, string topic) => 
         Output(x => x.Message(message).Key(key).Topic(topic));
 
-    public IReadOnlyCollection<ProducerRequest> GeneratedOutput() {
+    public IReadOnlyCollection<ProducerRequest> OutputMessages() {
         QueueLocked.EnsureCalledOnce();
-        return OutputMessages;
+        return MessageQueue;
     }
 }
