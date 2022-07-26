@@ -60,8 +60,15 @@ public class KrimsonProcessorContext {
     public void Output(object message, MessageKey key, string topic) => 
         Output(x => x.Message(message).Key(key).Topic(topic));
 
-    public IReadOnlyCollection<ProducerRequest> OutputMessages() {
+    public IReadOnlyCollection<ProducerRequest> OutputMessages(bool clear = false) {
         QueueLocked.EnsureCalledOnce();
-        return MessageQueue;
+
+        var messages = MessageQueue.ToArray();
+        
+        if (clear) MessageQueue.Clear();
+        
+        return messages;
     }
+
+    public void ClearOutput() => MessageQueue.Clear();
 }
