@@ -44,6 +44,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
             }
 
             var unseenRecords = PullRecords(stoppingToken)
+                .Where(record => !record.Equals(SourceRecord.Empty))
                 .WhereAwaitWithCancellation((record, ct) => FilterRecord(record, Checkpoint, ct))
                 .Select(
                     record => State.Any()
