@@ -32,7 +32,7 @@ public static class KrimsonProcessorServiceCollectionExtensions {
             var configuration  = ctx.GetRequiredService<IConfiguration>();
             var serializer     = ctx.GetRequiredService<IDynamicSerializer>();
             var deserializer   = ctx.GetRequiredService<IDynamicDeserializer>();
-            var modules         = ctx.GetServices<KrimsonProcessorModule>();
+            var modules        = ctx.GetServices<KrimsonProcessorModule>();
             
             var builder = KrimsonProcessor.Builder
                 .ReadSettings(configuration)
@@ -77,8 +77,11 @@ public static class KrimsonProcessorServiceCollectionExtensions {
     public static IServiceCollection AddKrimsonModules(this IServiceCollection services) =>
         services.Scan(
             scan => scan.FromApplicationDependencies()
-                .AddClasses(classes => classes.AssignableTo<KrimsonProcessorModule>())
-                .AsSelf()
+                .AddClasses(classes => classes
+                    .AssignableTo<KrimsonProcessorModule>()
+                    .NotInNamespaceOf<KrimsonProcessorModule>()
+                )
+                .As<KrimsonProcessorModule>()
                 .WithSingletonLifetime()
         );
 }

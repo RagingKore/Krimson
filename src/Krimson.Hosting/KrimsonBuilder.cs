@@ -29,18 +29,23 @@ public class KrimsonBuilder {
         return this;
     }
     
-    public KrimsonBuilder ProcessorModule<T>() where T : KrimsonProcessorModule, new() {
-        Services.AddSingleton<KrimsonProcessorModule>(new T());
-        return this;
-    }
-    
-    public KrimsonBuilder ProcessorModule<T>(T module) where T : KrimsonProcessorModule, new() {
-        Services.AddSingleton<KrimsonProcessorModule>(module);
-        return this;
-    }
-    
-    public KrimsonBuilder ProcessorModule<T>(Func<IServiceProvider, T> getModule) where T : KrimsonProcessorModule, new() {
-        Services.AddSingleton<KrimsonProcessorModule>(getModule);
+    // public KrimsonBuilder Module<T>() where T : KrimsonProcessorModule, new() {
+    //     Services.AddSingleton<KrimsonProcessorModule, T>();
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder Module<T>(T module) where T : KrimsonProcessorModule, new() {
+    //     Services.AddSingleton<KrimsonProcessorModule>(module);
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder Module<T>(Func<IServiceProvider, T> getModule) where T : KrimsonProcessorModule, new() {
+    //     Services.AddSingleton<KrimsonProcessorModule>(getModule);
+    //     return this;
+    // }
+    //
+    public KrimsonBuilder AddModules() {
+        Services.AddKrimsonModules();
         return this;
     }
     
