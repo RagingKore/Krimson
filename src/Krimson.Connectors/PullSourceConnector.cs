@@ -44,7 +44,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
                 Log.Information("starting from checkpoint {Checkpoint}", Checkpoint.ToDateTimeOffset());
             }
 
-            Log.Information("checking source for unseen records...");
+            Log.Verbose("checking source for unseen records...");
 
             var unseenRecords = PullRecords(stoppingToken)
                 .Where(record => !record.Equals(SourceRecord.Empty))
@@ -79,10 +79,11 @@ public abstract class PullSourceConnector : IPullSourceConnector {
                 );
             }
             else
-                Log.Debug("no unseen records available from source");
+                Log.Information("no unseen records available from source");
         }
         catch (OperationCanceledException) {
             // be kind and don't crash 
+            Log.Debug("operation canceled...");
         }
         catch (Exception ex) {
             Log.Fatal(ex, "Failed to pull records!");
