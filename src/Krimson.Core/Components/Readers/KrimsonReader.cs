@@ -123,6 +123,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             consumer.Assign(position);
 
             using var recordReaderCancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellator.Token);
+            
+            recordReaderCancellator.CancelAfter(TimeSpan.FromSeconds(5));
 
             KrimsonRecord? lastRecord = null;
 
