@@ -126,15 +126,15 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
             KrimsonRecord? lastRecord = null;
 
-            try {
+            // try {
                 await foreach (var record in consumer.Records(recordReaderCancellator.Token).ConfigureAwait(false)) {
                     lastRecord = record;
                     recordReaderCancellator.Cancel();
                 }
-            }
-            catch (KafkaException kex) when (kex.Error == ErrorCode.OffsetOutOfRange) {
-                // catch ErrorCode.OffsetOutOfRange
-            }
+            // }
+            // catch (KafkaException kex) when (kex.Error == ErrorCode.OffsetOutOfRange) {
+            //     // catch ErrorCode.OffsetOutOfRange
+            // }
 
             if (lastRecord is not null)
                 yield return lastRecord;

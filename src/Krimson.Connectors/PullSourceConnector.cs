@@ -9,7 +9,7 @@ namespace Krimson.Connectors;
 
 [PublicAPI]
 public abstract class PullSourceConnector : IPullSourceConnector {
-    static readonly Timestamp DefaultCheckpoint = Timestamp.FromDateTimeOffset(DateTimeOffset.MinValue);
+    protected static readonly Timestamp DefaultCheckpoint = Timestamp.FromDateTimeOffset(DateTimeOffset.MinValue);
 
     protected PullSourceConnector(KrimsonProducer producer, KrimsonReader reader) {
         Producer = producer;
@@ -24,9 +24,10 @@ public abstract class PullSourceConnector : IPullSourceConnector {
 
     protected ILogger Log { get; }
 
-    KrimsonProducer                  Producer { get; }
-    KrimsonReader                    Reader   { get; }
-    Dictionary<string, SourceRecord> State    { get; }
+    protected KrimsonProducer Producer { get; }
+    protected KrimsonReader   Reader   { get; }
+
+    Dictionary<string, SourceRecord> State { get; }
 
     Timestamp          Checkpoint { get; set; }
     InterlockedBoolean IsBusy     { get; set; }
