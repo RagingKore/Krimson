@@ -6,6 +6,7 @@ using Krimson.Interceptors;
 using Krimson.Readers.Configuration;
 using Krimson.Readers.Interceptors;
 using Serilog;
+using static Serilog.Core.Constants;
 
 namespace Krimson.Readers;
 
@@ -21,7 +22,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     public KrimsonReader(KrimsonReaderOptions options) {
         Options  = options;
         ClientId = $"{options.ConsumerConfiguration.ClientId}-reader";
-        Logger   = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
+        Logger   = Log.ForContext(SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
             .Prepend(new KrimsonReaderLogger().WithName("Krimson.Reader"))
@@ -123,10 +124,20 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
             using var recordReaderCancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellator.Token);
 
-            await foreach (var record in consumer.Records(recordReaderCancellator.Token).ConfigureAwait(false)) {
-                yield return record;
-                recordReaderCancellator.Cancel();
+            KrimsonRecord? lastRecord = null;
+
+            try {
+                await foreach (var record in consumer.Records(recordReaderCancellator.Token).ConfigureAwait(false)) {
+                    lastRecord = record;
+                    recordReaderCancellator.Cancel();
+                }
             }
+            catch (KafkaException kex) when (kex.IsTransient() || kex.Error == ErrorCode.OffsetOutOfRange) {
+                // only throw on terminal error except ErrorCode.OffsetOutOfRange
+            }
+
+            if (lastRecord is not null)
+                yield return lastRecord;
             
             consumer.Unassign();
         }

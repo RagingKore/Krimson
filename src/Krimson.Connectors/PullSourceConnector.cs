@@ -43,6 +43,8 @@ public abstract class PullSourceConnector : IPullSourceConnector {
                 Log.Information("starting from checkpoint {Checkpoint}", Checkpoint.ToDateTimeOffset());
             }
 
+            Log.Information("checking source for unseen records...");
+
             var unseenRecords = PullRecords(stoppingToken)
                 .Where(record => !record.Equals(SourceRecord.Empty))
                 .WhereAwaitWithCancellation((record, ct) => FilterRecord(record, Checkpoint, ct))

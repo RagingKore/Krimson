@@ -12,6 +12,7 @@ public static class ConfluentErrorExtensions {
          or ErrorCode.Local_ValueSerialization
          or ErrorCode.Local_KeyDeserialization
          or ErrorCode.Local_ValueDeserialization
+         or ErrorCode.OffsetOutOfRange
          or ErrorCode.OffsetMetadataTooLarge
          or ErrorCode.ClusterAuthorizationFailed
          or ErrorCode.TopicAuthorizationFailed

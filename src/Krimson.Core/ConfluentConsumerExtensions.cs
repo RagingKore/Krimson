@@ -31,6 +31,9 @@ public static class ConfluentConsumerExtensions {
 
                 if (result.Value is ConsumeException cex && cex.IsTerminal())
                     throw cex;
+
+                // if (result.Value is ConsumeException cex && cex.IsTerminal())
+                //     throw cex;
             }
         }
         
