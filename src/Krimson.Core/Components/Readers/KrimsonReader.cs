@@ -132,8 +132,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
                     recordReaderCancellator.Cancel();
                 }
             }
-            catch (KafkaException kex) when (kex.IsTransient() || kex.Error == ErrorCode.OffsetOutOfRange) {
-                // only throw on terminal error except ErrorCode.OffsetOutOfRange
+            catch (KafkaException kex) when (kex.Error == ErrorCode.OffsetOutOfRange) {
+                // catch ErrorCode.OffsetOutOfRange
             }
 
             if (lastRecord is not null)
