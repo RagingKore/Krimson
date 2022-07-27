@@ -29,7 +29,7 @@ public static class ConfluentConsumerExtensions {
                 if (result.Value is OperationCanceledException or None) // not sure about none here...
                     yield break;
 
-                if (result.Value is ConsumeException cex && cex.IsTerminal())
+                if (result.Value is ConsumeException cex)
                     throw cex;
 
                 // if (result.Value is ConsumeException cex && cex.IsTerminal())
