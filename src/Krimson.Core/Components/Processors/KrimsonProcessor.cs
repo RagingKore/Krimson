@@ -32,20 +32,16 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
-            .Prepend(new KrimsonProcessorLogger().WithName($"KrimsonProcessor({ClientId})"))
-            .Prepend(new ConfluentConsumerLogger())
+            .Prepend(new KrimsonProcessorLogger().WithName("Krimson.Processor"))
+            .Prepend(new ConfluentConsumerLogger().WithName("Confluent.Consumer"))
             .Intercept;
 
-        var serializer   = options.SerializerFactory();
-        var deserializer = options.DeserializerFactory();
-        
-        Producer = new KrimsonProducer(
-            options.ProducerConfiguration,
-            Intercept,
-            serializer,
-            options.OutputTopic?.Name
-        );
-        
+        Producer = KrimsonProducer.Builder
+            .OverrideConfiguration(options.ProducerConfiguration)
+            .Serializer(options.SerializerFactory)
+            .Topic(options.OutputTopic?.Name)
+            .Create();
+
         // All handlers (except the log handler) are executed as a
         // side-effect of, and on the same thread as the Consume or
         // Close methods. Any exception thrown in a handler (with
@@ -56,7 +52,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         // consume loop and handled by the try/catch block there.
         
         Consumer = new ConsumerBuilder<byte[], object?>(options.ConsumerConfiguration)
-            .SetValueDeserializer(deserializer)
+            .SetValueDeserializer(options.DeserializerFactory())
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetPartitionsAssignedHandler((_, partitions) => Intercept(new PartitionsAssigned(this, partitions)))

@@ -1,4 +1,5 @@
 using Serilog;
+using static Serilog.Core.Constants;
 
 namespace Krimson.Interceptors;
 
@@ -6,7 +7,7 @@ namespace Krimson.Interceptors;
 public record InterceptorCollection : IReadOnlyCollection<InterceptorModule>, IAsyncDisposable {
     public InterceptorCollection() {
         Interceptors = new HashSet<InterceptorModule>();
-        Logger       = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, nameof(Interceptors));
+        Logger       = Log.ForContext(SourceContextPropertyName, nameof(Interceptors));
     }
 
     HashSet<InterceptorModule> Interceptors  { get; init; }

@@ -1,4 +1,5 @@
 using Serilog;
+using static Serilog.Core.Constants;
 
 namespace Krimson.Interceptors;
 
@@ -10,7 +11,7 @@ public abstract class InterceptorModule {
     
     protected InterceptorModule(string? name = null) {
         Name   = name ?? GetType().Name;
-        Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, Name);
+        Logger = Log.ForContext(SourceContextPropertyName, Name);
     }
 
     public   string  Name   { get; private set; }
@@ -45,7 +46,7 @@ public abstract class InterceptorModule {
         Ensure.NotNullOrWhiteSpace(name, nameof(name));
         
         Name   = name;
-        Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, name);
+        Logger = Log.ForContext(SourceContextPropertyName, name);
         
         return this;
     }

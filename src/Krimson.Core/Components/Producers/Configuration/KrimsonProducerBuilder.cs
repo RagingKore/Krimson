@@ -105,7 +105,6 @@ public record KrimsonProducerBuilder {
                 )
             )
             .Topic(configuration.GetValue("Krimson:Output:Topic", ""));
-            // .SchemaRegistry(builder => builder.ReadSettings(configuration));
     }
     
     public KrimsonProducer Create() {
@@ -113,16 +112,7 @@ public record KrimsonProducerBuilder {
         Ensure.NotNullOrWhiteSpace(Options.Configuration.ClientId, nameof(ClientId));
         Ensure.NotNullOrWhiteSpace(Options.Configuration.BootstrapServers, nameof(Options.Configuration.BootstrapServers));
         Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
-
-        var interceptors = Options.Interceptors
-            .Prepend(new KrimsonProducerLogger().WithName($"KrimsonProducer({Options.Configuration.ClientId})"))
-            .Prepend(new ConfluentProducerLogger());
-
-        return new KrimsonProducer(
-            Options.Configuration,
-            interceptors.Intercept,
-            Options.SerializerFactory(),
-            Options.DefaultTopic
-        );
+        
+        return new KrimsonProducer(Options);
     }
 }

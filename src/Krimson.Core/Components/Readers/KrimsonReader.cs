@@ -24,8 +24,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         Logger   = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
-            .Prepend(new KrimsonReaderLogger().WithName($"KrimsonReader({ClientId})"))
-            .Prepend(new ConfluentConsumerLogger())
+            .Prepend(new KrimsonReaderLogger().WithName("Krimson.Reader"))
+            .Prepend(new ConfluentConsumerLogger().WithName("Confluent.Consumer"))
             .Intercept;
     }
 

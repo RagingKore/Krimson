@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <EnablePackInference>false</EnablePackInference>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   
@@ -9,11 +8,4 @@
     <ProjectReference Include="..\Krimson.Hosting\Krimson.Hosting.csproj" />
     <ProjectReference Include="..\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj" />
   </ItemGroup>
-
-<!--  <ItemGroup>-->
-<!--    <PackageReference Include="NuGetizer" Version="0.8.0">-->
-<!--      <PrivateAssets>all</PrivateAssets>-->
-<!--      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>-->
-<!--    </PackageReference>-->
-<!--  </ItemGroup>-->
 </Project>

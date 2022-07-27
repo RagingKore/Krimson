@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - master
     tags:
       - '*'
     paths-ignore:
@@ -27,9 +26,6 @@ jobs:
           NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
       - name: Create and push NuGet package
         run: |
-          # dotnet tool install -g dotnet-nugetize --version 0.8.0
-          # dotnet build -c Release
-          # nugetize -p:Configuration=Release
           dotnet pack -c Release -o nuget -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
           dotnet nuget push nuget/**/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           dotnet nuget push nuget/**/*.nupkg --skip-duplicate --api-key ${{ github.token }}

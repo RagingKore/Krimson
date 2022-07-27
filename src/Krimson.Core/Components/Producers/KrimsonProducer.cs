@@ -29,7 +29,25 @@ public class KrimsonProducer : IAsyncDisposable {
         new Error(ErrorCode.TopicException, "Please provide a destination topic")
     );
     
-    // static ManualResetEventSlim Gatekeeper { get; } = new(true);
+    public KrimsonProducer(KrimsonProducerOptions options) {
+        Options  = options;
+        ClientId = Options.Configuration.ClientId;
+        Topic    = Options.DefaultTopic;
+      
+        var interceptors = Options.Interceptors
+            .Prepend(new KrimsonProducerLogger().WithName("Krimson.Producer"))
+            .Prepend(new ConfluentProducerLogger().WithName("Confluent.Producer"));
+        
+        Intercept = interceptors.Intercept;
+
+        Client = new ProducerBuilder<byte[], object?>(Options.Configuration)
+            .SetValueSerializer(Options.SerializerFactory())
+            .SetLogHandler((pdr, log) => Intercept(new ConfluentProducerLog(ClientId, pdr.GetInstanceName(), log)))
+            .SetErrorHandler((pdr, err) => Intercept(new ConfluentProducerError(ClientId, pdr.GetInstanceName(), err)))
+            .Build();
+
+        InFlightMessageCounter = new();
+    }
     
     public KrimsonProducer(
         ProducerConfig configuration,
@@ -40,16 +58,7 @@ public class KrimsonProducer : IAsyncDisposable {
         ClientId  = configuration.ClientId;
         Intercept = intercept;
         Topic     = defaultTopic;
-        
-        // // ReSharper disable once SuspiciousTypeConversion.Global
-        // if (serializer is ISerializer<byte[]> bytesSerializer) {
-        //     var Client = new ProducerBuilder<byte[], byte[]>(configuration)
-        //         .SetValueSerializer(Serializers.ByteArray)
-        //         .SetLogHandler((pdr, log) => Intercept(new ConfluentProducerLog(ClientId, pdr.GetInstanceName(), log)))
-        //         .SetErrorHandler((pdr, err) => Intercept(new ConfluentProducerError(ClientId, pdr.GetInstanceName(), err)))
-        //         .Build();
-        // }
-        
+
         Client = new ProducerBuilder<byte[], object?>(configuration)
             .SetValueSerializer(serializer)
             .SetLogHandler((pdr, log) => Intercept(new ConfluentProducerLog(ClientId, pdr.GetInstanceName(), log)))
@@ -59,8 +68,10 @@ public class KrimsonProducer : IAsyncDisposable {
         InFlightMessageCounter = new();
     }
     
+
     protected internal IProducer<byte[], object?> Client { get; }
 
+    KrimsonProducerOptions Options                { get; }
     Intercept              Intercept              { get; }
     InFlightMessageCounter InFlightMessageCounter { get; }
 

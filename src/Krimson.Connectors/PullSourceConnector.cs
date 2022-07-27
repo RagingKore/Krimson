@@ -40,7 +40,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
             if (IsFirstRun) {
                 Checkpoint = await LoadCheckpoint(stoppingToken).ConfigureAwait(false);
                 IsFirstRun = false;
-                Log.Information("starting from checkpoint at {Checkpoint}", Checkpoint.ToDateTimeOffset());
+                Log.Information("starting from checkpoint {Checkpoint}", Checkpoint.ToDateTimeOffset());
             }
 
             var unseenRecords = PullRecords(stoppingToken)
@@ -76,7 +76,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
                 );
             }
             else
-                Log.Debug("no records available from source");
+                Log.Debug("no unseen records available from source");
         }
         catch (OperationCanceledException) {
             // be kind and don't crash 
@@ -98,7 +98,7 @@ public abstract class PullSourceConnector : IPullSourceConnector {
         var records = new List<KrimsonRecord>();
 
         await foreach (var record in Reader.LastRecords(Producer.Topic!, cancellationToken).ConfigureAwait(false)) {
-            Log.Debug("last record {RecordId} {Timestamp}", record.Id, ((SourceRecord)record.Value).Timestamp.ToDateTimeOffset());
+            Log.Information("last found record {RecordId} {Timestamp}", record.Id, ((SourceRecord)record.Value).Timestamp.ToDateTimeOffset());
             records.Add(record);
         }
        
