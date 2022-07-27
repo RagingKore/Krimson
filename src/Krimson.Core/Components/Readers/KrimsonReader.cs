@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Consumers.Interceptors;
 using Krimson.Interceptors;
 using Krimson.Readers.Configuration;
@@ -20,10 +19,11 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     public static KrimsonReaderBuilder Builder => new();
 
     public KrimsonReader(KrimsonReaderOptions options) {
-        Options  = options;
-        ClientId = $"{options.ConsumerConfiguration.ClientId}-reader";
-        Logger   = Log.ForContext(SourceContextPropertyName, ClientId);
-
+        Options          = options;
+        ClientId         = $"{options.ConsumerConfiguration.ClientId}-reader";
+        Logger           = Log.ForContext(SourceContextPropertyName, ClientId);
+        BootstrapServers = options.ConsumerConfiguration.BootstrapServers;
+        
         Intercept = options.Interceptors
             .Prepend(new KrimsonReaderLogger().WithName("Krimson.Reader"))
             .Prepend(new ConfluentConsumerLogger().WithName("Confluent.Consumer"))
@@ -32,7 +32,6 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
     KrimsonReaderOptions  Options   { get; }
     ILogger               Logger    { get; }
-    ISchemaRegistryClient Registry  { get; }
     Intercept             Intercept { get; }
 
     public string ClientId         { get; }
@@ -101,7 +100,11 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     }
 
     public async IAsyncEnumerable<KrimsonRecord> LastRecords(string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default) {
-        using var consumer = new ConsumerBuilder<byte[], object?>(Options.ConsumerConfiguration.With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N")[26..]}"))
+        var options = Options.ConsumerConfiguration
+            .With(x => x.GroupId = $"{ClientId}-{Guid.NewGuid().ToString("N")[26..]}")
+            .With(x => x.AutoOffsetReset = AutoOffsetReset.Latest);
+        
+        using var consumer = new ConsumerBuilder<byte[], object?>(options)
             .SetLogHandler((csr, log) => Intercept(new ConfluentConsumerLog(ClientId, csr.GetInstanceName(), log)))
             .SetErrorHandler((csr, err) => Intercept(new ConfluentConsumerError(ClientId, csr.GetInstanceName(), err)))
             .SetValueDeserializer(Options.DeserializerFactory())
@@ -109,39 +112,33 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
         using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var positions = await consumer
+        var lastPositions = await consumer
             .GetTopicLatestPositions(topic, cancellator.Token)
+            .Where(x => x.Offset > 0)
+            .Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1))
             .ToListAsync(cancellator.Token)
             .ConfigureAwait(false);
         
-        var lastPositions = positions.Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset == 0 ? Offset.Beginning : x.Offset - 1));
-
         foreach (var position in lastPositions) {
-            if (position.Offset == Offset.Beginning)
-                continue;
-
             consumer.Assign(position);
 
-            using var recordReaderCancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellator.Token);
+            var cts = CancellationTokenSource
+                .CreateLinkedTokenSource(cancellator.Token)
+                .With(x => x.CancelAfter(TimeSpan.FromSeconds(3)));
             
-            recordReaderCancellator.CancelAfter(TimeSpan.FromSeconds(5));
-
-            KrimsonRecord? lastRecord = null;
-
-            // try {
-                await foreach (var record in consumer.Records(recordReaderCancellator.Token).ConfigureAwait(false)) {
-                    lastRecord = record;
-                    recordReaderCancellator.Cancel();
+            using (cts) {
+                await foreach (var record in consumer.Records(_ => cts.Cancel(), cts.Token).ConfigureAwait(false)) {
+                    yield return record;
+                    cts.Cancel();
                 }
-            // }
-            // catch (KafkaException kex) when (kex.Error == ErrorCode.OffsetOutOfRange) {
-            //     // catch ErrorCode.OffsetOutOfRange
-            // }
-
-            if (lastRecord is not null)
-                yield return lastRecord;
+            }
             
-            consumer.Unassign();
+            try {
+                consumer.Unassign();
+            }
+            catch (KafkaException kex) when (kex.IsTransient()) {
+                // only throw on terminal error
+            }
         }
         
         try {

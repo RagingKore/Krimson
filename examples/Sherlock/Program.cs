@@ -267,7 +267,7 @@ static async Task<Dictionary<TopicPartition, Dictionary<TopicPartitionOffset, In
             producerMessage, result => {
                 if (!result.Success) {
                     Log.Error(
-                        result.Exception, "{GlobalOrder} message delivery failed: {ErrorMessage}",
+                        result.Exception!, "{GlobalOrder} message delivery failed: {ErrorMessage}",
                         inputMessage.GlobalOrder, result.Exception!.Message
                     );
 
