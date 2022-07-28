@@ -75,7 +75,7 @@ public sealed class OpenTelemetryProducerInterceptor : InterceptorModule {
 
         On<ProduceResultReceived>(
             evt => {
-                if (!Activities.TryRemove(evt.Result.RequestId, out var activity) || activity is null) return;
+                if (!Activities.TryRemove(evt.Result.RequestId, out var activity)) return;
 
                 if (evt.Result.Success) {
                     activity

@@ -35,10 +35,13 @@ public abstract class PullSourceConnector : IPullSourceConnector {
 
     public virtual async Task Execute(CancellationToken stoppingToken) {
         try {
-            if (IsBusy.EnsureCalledOnce())
+            if (IsBusy.EnsureCalledOnce()) {
+                Log.Debug("connector busy...");
                 return;
-            
+            }
+
             if (IsFirstRun) {
+                Log.Debug("first run");
                 Checkpoint = await LoadCheckpoint(stoppingToken).ConfigureAwait(false);
                 IsFirstRun = false;
                 Log.Information("starting from checkpoint {Checkpoint}", Checkpoint.ToDateTimeOffset());
@@ -96,8 +99,12 @@ public abstract class PullSourceConnector : IPullSourceConnector {
     public virtual IAsyncEnumerable<SourceRecord> LoadState(CancellationToken cancellationToken = default) => AsyncEnumerable.Empty<SourceRecord>();
 
     public virtual async ValueTask<Timestamp> LoadCheckpoint(CancellationToken cancellationToken = default) {
-        if (Producer.Topic is null)
+        Log.Debug("loading checkpoint...");
+
+        if (Producer.Topic is null) {
+            Log.Debug("using default checkpoint since producer has no default topic");
             return DefaultCheckpoint;
+        }
 
         var records = new List<KrimsonRecord>();
 

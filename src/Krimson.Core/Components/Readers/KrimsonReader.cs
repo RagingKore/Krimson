@@ -112,14 +112,28 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
         using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
+        Logger.Debug("{Topic} finding last positions", topic);
+
         var lastPositions = await consumer
             .GetTopicLatestPositions(topic, cancellator.Token)
             .Where(x => x.Offset > 0)
             .Select(x => new TopicPartitionOffset(x.Topic, x.Partition, x.Offset - 1))
             .ToListAsync(cancellator.Token)
             .ConfigureAwait(false);
+
+        if (lastPositions.Any()) {
+            Logger.Debug(
+                "{Topic} found last positions: {LastPositions}", 
+                topic, lastPositions.Select(x=> $"{x.Partition.Value}@{x.Offset.Value}")
+            );
+        }
         
         foreach (var position in lastPositions) {
+            Logger.Debug(
+                "{Topic} {Position} attempting to load record from position...", 
+                topic, $"{position.Partition.Value}@{position.Offset.Value}"
+            );
+            
             consumer.Assign(position);
 
             var cts = CancellationTokenSource
@@ -127,8 +141,22 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
                 .With(x => x.CancelAfter(TimeSpan.FromSeconds(3)));
             
             using (cts) {
-                await foreach (var record in consumer.Records(_ => cts.Cancel(), cts.Token).ConfigureAwait(false)) {
+                await foreach (var record in consumer.Records(pos => {
+                    Logger.Information(
+                        "{Event} {Topic} |> [{Partition}] @ {Offset}",
+                        "PartitionEndReached", pos.Topic,
+                        pos.Partition.Value, pos.Offset.Value
+                    );
+                    
+                    cts.Cancel();
+                }, cts.Token).ConfigureAwait(false)) {
+                    Logger.Debug(
+                        "{Topic} {Position} record loaded", 
+                        topic, $"{position.Partition.Value}@{position.Offset.Value}"
+                    );
+                    
                     yield return record;
+                    
                     cts.Cancel();
                 }
             }
