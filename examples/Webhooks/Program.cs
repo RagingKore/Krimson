@@ -1,18 +1,22 @@
-﻿using Elaway.Toolkit.Http;
-using Krimson;
+﻿using Krimson;
 using Krimson.Connectors.Http;
+using Microsoft.AspNetCore.Builder;
 
-await HttpApplication
-    .Build(
-        builder => {
-            builder.UseKrimson()
-                .AddReader(rdr => rdr.ClientId(builder.Configuration["Application:Name"]))
-                .AddProducer(
-                    pdr => pdr
-                        .ClientId(builder.Configuration["Application:Name"])
-                        .Topic("elw.platform.device-registry.sources.volte")
-                ).AddWebhookHandler<WebhookHandler>();
-        }
+var builder = WebApplication.CreateBuilder(args);
+
+builder.UseKrimson()
+    .AddReader(rdr => rdr.ClientId(builder.Configuration["Application:Name"]))
+    .AddProducer(
+        pdr => pdr
+            .ClientId(builder.Configuration["Application:Name"])
+            .Topic("foo.bar.baz")
     )
-    .Configure(application => { application.AddWebhookConnector("/mywebhook"); })
-    .Run();
+    .AddWebhookHandler<WebhookHandler>();
+
+var app = builder.Build();
+
+app.AddWebhookConnector("/mywebhook");
+
+app.MapGet("/", () => "Hello World!");
+
+app.Run();

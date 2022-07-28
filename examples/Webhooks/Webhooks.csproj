@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
-    <PackageReference Include="Elaway.Toolkit.Http" Version="1.0.0-preview.0.91" />
 
   </ItemGroup>
 
