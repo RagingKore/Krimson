@@ -58,12 +58,13 @@ public class KrimsonTestContext : TestContext {
         // static ActivitySamplingResult SampleAll(ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
     }
 
-    ClientConnection        ClientConnection   { get; set; }
-    IAdminClient            AdminClient        { get; set; }
-    ISchemaRegistryClient   SchemaRegistry     { get; set; }
-    List<string>            CreatedTopics      { get; }
-    TracerProvider          TracerProvider     { get; }
-    List<Activity>          InMemoryActivities { get; } = new();
+    public ClientConnection      ClientConnection   { get; private set; }
+    public IAdminClient          AdminClient        { get; private set; }
+    public ISchemaRegistryClient SchemaRegistry     { get; private set; }
+
+    List<string>   CreatedTopics      { get; }
+    TracerProvider TracerProvider     { get; }
+    List<Activity> InMemoryActivities { get; } = new();
 
     protected override async ValueTask SetUp() {
         var configuration = new ConfigurationBuilder()

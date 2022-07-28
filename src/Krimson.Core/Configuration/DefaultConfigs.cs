@@ -36,6 +36,7 @@ public static class DefaultConfigs {
             PartitionAssignmentStrategy = RoundRobin,
             ReconnectBackoffMaxMs       = 10000,
             SocketKeepaliveEnable       = false,
+            // AutoOffsetReset             = Latest,
         };
     
     public static ProducerConfig DefaultProducerConfig =>
@@ -49,7 +50,7 @@ public static class DefaultConfigs {
 
     public static SchemaRegistryConfig DefaultSchemaRegistryConfig =>
         new() {
-            Url                        = "localhost:8081",              // ready for docker
-            BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo
+            Url                        = "localhost:8081",               // ready for docker
+            BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo, // default
         };
 }
