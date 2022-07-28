@@ -4,7 +4,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\Krimson.Connectors\Krimson.Connectors.csproj" />
     <ProjectReference Include="..\Krimson.Hosting\Krimson.Hosting.csproj" />
     <ProjectReference Include="..\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj" />
   </ItemGroup>

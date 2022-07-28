@@ -2,6 +2,7 @@
 
 using Confluent.SchemaRegistry;
 using Krimson.Connectors;
+using Krimson.Connectors.Http;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;
@@ -100,6 +101,9 @@ public class KrimsonBuilder {
         Services.AddKrimsonPeriodicSourceConnector<T>(configure);
         return this;
     }
-    
-    
+
+    public KrimsonBuilder AddWebhookHandler<T>() where T : class, IWebhookHandler {
+        Services.AddSingleton<IWebhookHandler, T>();
+        return this;
+    }
 }

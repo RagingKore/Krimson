@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
+    <PackageReference Include="Elaway.Toolkit.Http" Version="1.0.0-preview.0.91" />
+
+  </ItemGroup>
+
+</Project>
