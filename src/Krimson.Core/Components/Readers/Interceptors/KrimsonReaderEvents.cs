@@ -1,5 +1,4 @@
 using Krimson.Interceptors;
-using Krimson.Processors;
 
 namespace Krimson.Readers.Interceptors;
 

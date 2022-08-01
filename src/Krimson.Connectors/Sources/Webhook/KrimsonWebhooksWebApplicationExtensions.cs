@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace Krimson.Connectors.Sources.Webhook;
+﻿namespace Krimson.Connectors.Sources;
 
 public static class KrimsonWebhooksWebApplicationExtensions {
     static WebApplication UseKrimsonWebhook(this WebApplication app, IKrimsonWebhook webhook) {

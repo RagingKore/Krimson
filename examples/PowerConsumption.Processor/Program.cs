@@ -1,4 +1,3 @@
-using Krimson;
 using Krimson.Examples.Messages.Telemetry;
 using Krimson.Processors;
 

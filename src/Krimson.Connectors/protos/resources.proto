@@ -6,7 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
-option csharp_namespace = "Krimson.Connectors";
+option csharp_namespace = "Krimson.Connectors.Sources";
 
 enum SourceOperation {
   SOURCE_OPERATION_UNSPECIFIED = 0;

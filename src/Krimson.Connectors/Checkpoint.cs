@@ -1,4 +1,5 @@
 using Google.Protobuf.WellKnownTypes;
+using Krimson.Connectors.Sources;
 
 namespace Krimson.Connectors;
 
@@ -7,5 +8,5 @@ public record Checkpoint(RecordId RecordId, Timestamp Timestamp) {
     
     public static Checkpoint From(ProcessedSourceRecord processed) => new Checkpoint(processed.RecordId, processed.SourceRecord.Timestamp);
 
-    public override string ToString() => $"{RecordId} {Timestamp}";
+    public override string ToString() => $"{RecordId} {Timestamp.ToDateTimeOffset():O}";
 }

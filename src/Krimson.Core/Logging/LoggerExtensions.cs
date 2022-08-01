@@ -1,4 +1,3 @@
-using Krimson.Processors;
 using Serilog;
 using Serilog.Core.Enrichers;
 

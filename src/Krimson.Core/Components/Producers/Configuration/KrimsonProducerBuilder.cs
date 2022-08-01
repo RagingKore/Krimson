@@ -1,6 +1,5 @@
 using Confluent.Kafka;
 using Krimson.Interceptors;
-using Krimson.Producers.Interceptors;
 using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 

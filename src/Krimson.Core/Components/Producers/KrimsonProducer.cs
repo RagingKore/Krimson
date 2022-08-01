@@ -30,18 +30,17 @@ public class KrimsonProducer : IAsyncDisposable {
     );
     
     public KrimsonProducer(KrimsonProducerOptions options) {
-        Options  = options;
-        ClientId = Options.Configuration.ClientId;
-        Topic    = Options.DefaultTopic;
+        ClientId = options.Configuration.ClientId;
+        Topic    = options.DefaultTopic;
       
-        var interceptors = Options.Interceptors
+        var interceptors = options.Interceptors
             .Prepend(new KrimsonProducerLogger().WithName("Krimson.Producer"))
             .Prepend(new ConfluentProducerLogger().WithName("Confluent.Producer"));
         
         Intercept = interceptors.Intercept;
 
-        Client = new ProducerBuilder<byte[], object?>(Options.Configuration)
-            .SetValueSerializer(Options.SerializerFactory())
+        Client = new ProducerBuilder<byte[], object?>(options.Configuration)
+            .SetValueSerializer(options.SerializerFactory())
             .SetLogHandler((pdr, log) => Intercept(new ConfluentProducerLog(ClientId, pdr.GetInstanceName(), log)))
             .SetErrorHandler((pdr, err) => Intercept(new ConfluentProducerError(ClientId, pdr.GetInstanceName(), err)))
             .Build();
@@ -49,7 +48,7 @@ public class KrimsonProducer : IAsyncDisposable {
         InFlightMessageCounter = new();
     }
     
-    public KrimsonProducer(
+    KrimsonProducer(
         ProducerConfig configuration,
         Intercept intercept,
         IDynamicSerializer serializer,
@@ -69,9 +68,8 @@ public class KrimsonProducer : IAsyncDisposable {
     }
     
 
-    protected internal IProducer<byte[], object?> Client { get; }
+    IProducer<byte[], object?> Client { get; }
 
-    KrimsonProducerOptions Options                { get; }
     Intercept              Intercept              { get; }
     InFlightMessageCounter InFlightMessageCounter { get; }
 

@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Google.Protobuf.WellKnownTypes;
-using Krimson.Connectors;
+using Krimson.Connectors.Sources;
 using Krimson.Fixie;
 using Krimson.Producers;
 using Krimson.Serializers.ConfluentProtobuf;

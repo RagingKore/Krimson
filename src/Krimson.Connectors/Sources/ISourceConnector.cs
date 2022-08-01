@@ -1,4 +1,4 @@
-namespace Krimson.Connectors;
+namespace Krimson.Connectors.Sources;
 
 public interface ISourceConnector<in TContext, TData> where TContext : ISourceConnectorContext {
 

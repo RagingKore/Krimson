@@ -1,6 +1,6 @@
 using Google.Protobuf.WellKnownTypes;
 
-namespace Krimson.Connectors;
+namespace Krimson.Connectors.Sources;
 
 public partial class SourceRecord {
     public static readonly SourceRecord Empty = new() {

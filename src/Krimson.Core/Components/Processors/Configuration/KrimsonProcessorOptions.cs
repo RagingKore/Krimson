@@ -13,6 +13,8 @@ public record KrimsonProcessorOptions {
         ConsumerConfiguration = DefaultConfigs.DefaultConsumerConfig;
         ProducerConfiguration = DefaultConfigs.DefaultProducerConfig;
         Router                = new KrimsonMasterRouter();
+        DeserializerFactory   = null!;
+        SerializerFactory     = null!;
     }
 
     public string[]                   InputTopics           { get; init; }

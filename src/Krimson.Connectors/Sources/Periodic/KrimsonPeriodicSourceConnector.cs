@@ -1,4 +1,3 @@
-// ReSharper disable CheckNamespace
 using System.Text.Json.Nodes;
 using Confluent.SchemaRegistry;
 using Krimson.Producers;
@@ -8,10 +7,10 @@ using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;
 
-namespace Krimson.Connectors;
+namespace Krimson.Connectors.Sources;
 
 [PublicAPI]
-public abstract class KrimsonPeriodicSourceConnector<TData>: ISourceConnector<KrimsonPeriodicSourceConnectorContext,TData> {
+public abstract class KrimsonPeriodicSourceConnector<TData>: IKrimsonPeriodicSourceConnector<KrimsonPeriodicSourceConnectorContext,TData> {
     protected KrimsonPeriodicSourceConnector() => Log = ForContext(SourceContextPropertyName, GetType().Name);
 
     protected KrimsonPeriodicSourceConnector(TimeSpan? backoffTime = null) {

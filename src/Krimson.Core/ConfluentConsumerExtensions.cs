@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using Confluent.Kafka;
-using Krimson.Processors;
 using OneOf.Types;
 using static System.TimeSpan;
 

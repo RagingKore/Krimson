@@ -1,7 +1,5 @@
 using Confluent.Kafka;
-using Confluent.SchemaRegistry;
 using Krimson.Interceptors;
-using Krimson.Processors;
 using Krimson.Serializers;
 
 namespace Krimson.Readers.Configuration;
@@ -11,6 +9,7 @@ public record KrimsonReaderOptions {
     public KrimsonReaderOptions() {
         Interceptors          = new InterceptorCollection();
         ConsumerConfiguration = DefaultConfigs.DefaultReaderConfig;
+        DeserializerFactory   = null!;
     }
     
     public InterceptorCollection      Interceptors          { get; init; }

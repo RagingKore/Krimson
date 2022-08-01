@@ -1,8 +1,7 @@
 ﻿using System.Text.Json.Nodes;
 using Google.Protobuf.WellKnownTypes;
 using Krimson;
-using Krimson.Connectors;
-using Krimson.Connectors.Sources.Webhook;
+using Krimson.Connectors.Sources;
 
 var builder = WebApplication.CreateBuilder(args);
 

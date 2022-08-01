@@ -1,5 +1,3 @@
-// ReSharper disable CheckNamespace
-
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -10,7 +8,7 @@ using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;
 
-namespace Krimson.Connectors;
+namespace Krimson.Connectors.Sources;
 
 [PublicAPI]
 public abstract class KrimsonWebhook : IKrimsonWebhook {

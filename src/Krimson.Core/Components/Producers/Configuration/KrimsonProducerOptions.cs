@@ -7,8 +7,9 @@ namespace Krimson.Producers;
 [PublicAPI]
 public record KrimsonProducerOptions {
     public KrimsonProducerOptions() {
-        Configuration = DefaultConfigs.DefaultProducerConfig;
-        Interceptors  = new InterceptorCollection();
+        Configuration     = DefaultConfigs.DefaultProducerConfig;
+        Interceptors      = new InterceptorCollection();
+        SerializerFactory = null!;
     }
 
     public ProducerConfig           Configuration     { get; init; }

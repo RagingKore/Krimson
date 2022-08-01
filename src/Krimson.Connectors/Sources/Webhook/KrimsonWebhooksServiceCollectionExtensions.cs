@@ -1,4 +1,4 @@
-namespace Krimson.Connectors.Source.Webhook;
+namespace Krimson.Connectors.Sources;
 
 public static class KrimsonWebhooksServiceCollectionExtensions {
 
