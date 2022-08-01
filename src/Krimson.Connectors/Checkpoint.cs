@@ -1,5 +1,4 @@
 using Google.Protobuf.WellKnownTypes;
-using Krimson.Connectors.Sources;
 
 namespace Krimson.Connectors;
 

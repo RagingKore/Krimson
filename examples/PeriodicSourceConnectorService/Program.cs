@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using Google.Protobuf.WellKnownTypes;
 using Krimson;
-using Krimson.Connectors.Sources;
+using Krimson.Connectors;
 using Krimson.Extensions.DependencyInjection;
 using Refit;
 

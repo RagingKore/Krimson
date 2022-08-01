@@ -1,4 +1,4 @@
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 [PublicAPI]
 public class KrimsonPeriodicSourceConnectorContext : ISourceConnectorContext {

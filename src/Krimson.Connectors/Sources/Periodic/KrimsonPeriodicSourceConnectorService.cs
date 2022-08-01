@@ -1,4 +1,4 @@
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 class KrimsonPeriodicSourceConnectorService<TSourceConnector> : BackgroundService where TSourceConnector : KrimsonPeriodicSourceConnector {
     public KrimsonPeriodicSourceConnectorService(TSourceConnector connector, IServiceProvider services) {

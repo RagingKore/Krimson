@@ -1,4 +1,4 @@
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 public interface IKrimsonPeriodicSourceConnector<in TContext, TData> : ISourceConnector<TContext, TData> where TContext : ISourceConnectorContext {
     TimeSpan BackoffTime { get; }

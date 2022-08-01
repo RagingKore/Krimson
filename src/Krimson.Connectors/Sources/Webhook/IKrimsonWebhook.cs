@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 public interface IKrimsonWebhook<TData> : ISourceConnector<KrimsonWebhookContext, TData> {
     string WebhookPath { get; }

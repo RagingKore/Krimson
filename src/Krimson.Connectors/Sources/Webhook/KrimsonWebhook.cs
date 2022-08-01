@@ -8,7 +8,7 @@ using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;
 
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 [PublicAPI]
 public abstract class KrimsonWebhook : IKrimsonWebhook {

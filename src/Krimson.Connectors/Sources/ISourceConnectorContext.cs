@@ -1,4 +1,4 @@
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 public interface ISourceConnectorContext {
     public CancellationToken CancellationToken { get; }

@@ -1,6 +1,6 @@
 using Krimson.Readers;
 
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 public static class KrimsonReaderCheckpointExtensions {
     public static async ValueTask<Checkpoint> LoadCheckpoint(this KrimsonReader reader, string? topic, CancellationToken cancellationToken) {

@@ -1,6 +1,8 @@
+// ReSharper disable CheckNamespace
+
 using Google.Protobuf.WellKnownTypes;
 
-namespace Krimson.Connectors.Sources;
+namespace Krimson.Connectors;
 
 public partial class SourceRecord {
     public static readonly SourceRecord Empty = new() {

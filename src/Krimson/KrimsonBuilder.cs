@@ -1,7 +1,7 @@
 // ReSharper disable CheckNamespace
 
 using Confluent.SchemaRegistry;
-using Krimson.Connectors.Sources;
+using Krimson.Connectors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;

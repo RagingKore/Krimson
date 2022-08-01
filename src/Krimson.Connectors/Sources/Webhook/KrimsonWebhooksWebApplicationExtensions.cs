@@ -1,4 +1,4 @@
-﻿namespace Krimson.Connectors.Sources;
+﻿namespace Krimson.Connectors;
 
 public static class KrimsonWebhooksWebApplicationExtensions {
     static WebApplication UseKrimsonWebhook(this WebApplication app, IKrimsonWebhook webhook) {
