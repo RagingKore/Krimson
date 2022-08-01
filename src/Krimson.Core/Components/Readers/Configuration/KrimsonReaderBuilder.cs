@@ -95,11 +95,12 @@ public record KrimsonReaderBuilder {
             )
             .ClientId(
                 configuration.GetValue(
-                    "Krimson:Input:ClientId",
-                    configuration.GetValue("Krimson:ClientId", Options.ConsumerConfiguration.ClientId)
+                    "Krimson:Output:ClientId",
+                    configuration.GetValue(
+                        "Krimson:ClientId", 
+                        configuration.GetValue("ASPNETCORE_APPLICATIONNAME", Options.ConsumerConfiguration.ClientId))
                 )
-            )
-            .GroupId(configuration.GetValue("Krimson:GroupId", Options.ConsumerConfiguration.GroupId));
+            );
     }
 
     public KrimsonReader Create() {

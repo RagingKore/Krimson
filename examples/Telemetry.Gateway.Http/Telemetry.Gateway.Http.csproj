@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-  
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
@@ -8,5 +7,4 @@
     <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
     <ProjectReference Include="..\Telemetry.Contracts\Telemetry.Contracts.csproj" />
   </ItemGroup>
-
 </Project>

@@ -2,7 +2,7 @@
 
 using Confluent.SchemaRegistry;
 using Krimson.Connectors;
-using Krimson.Connectors.Http;
+using Krimson.Connectors.Source.Webhook;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;
@@ -97,13 +97,29 @@ public class KrimsonBuilder {
         return this;
     }
 
-    public KrimsonBuilder AddPeriodicSourceConnector<T>(Action<PeriodicSourceConnectorOptions>? configure = null) where T : PullSourceConnector {
-        Services.AddKrimsonPeriodicSourceConnector<T>(configure);
+    public KrimsonBuilder AddPeriodicSourceConnector<T>() where T : KrimsonPeriodicSourceConnector {
+        Services.AddKrimsonPeriodicSourceConnector<T>();
         return this;
     }
 
-    public KrimsonBuilder AddWebhookHandler<T>() where T : class, IWebhookHandler {
-        Services.AddSingleton<IWebhookHandler, T>();
+    public KrimsonBuilder AddWebhook<T>() where T : class, IKrimsonWebhook {
+        Services.AddKrimsonWebhook<T>();
         return this;
+    }
+    
+    public KrimsonBuilder AddWebhooks()  {
+        Services.AddKrimsonWebhooks();
+        return this;
+    }
+}
+
+[PublicAPI]
+public static class KrimsonServiceCollectionExtensions {
+    public static KrimsonBuilder AddKrimson(this IServiceCollection services) => 
+        new KrimsonBuilder(services).AddSchemaRegistry();
+    
+    public static IServiceCollection AddKrimson(this IServiceCollection services, Action<KrimsonBuilder> configure) {
+        configure(new KrimsonBuilder(services).AddSchemaRegistry());
+        return services;
     }
 }

@@ -176,8 +176,4 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             // only throw on terminal error
         }
     }
-
-    public ValueTask DisposeAsync() {
-        return ValueTask.CompletedTask;
-    }
 }

@@ -1,4 +1,3 @@
-using Confluent.Kafka;
 using FluentAssertions;
 using Google.Protobuf.WellKnownTypes;
 using Krimson.Connectors;
@@ -11,8 +10,7 @@ namespace Krimson.Tests.SchemaRegistry;
 
 public class SchemaRegistryTests : TestFixture<KrimsonTestContext> {
     public SchemaRegistryTests(KrimsonTestContext context) : base(context) { }
-
-    [Test]
+    
     public async Task RegistersProtobufSchema() {
         var clientId   = Context.GenerateUniqueProcessorName();
         var inputTopic = "elw.platform.device-registry.sources.volte";
@@ -46,5 +44,4 @@ public class SchemaRegistryTests : TestFixture<KrimsonTestContext> {
         
         processedRecords.Should().HaveCount(1);
     }
-    
 }

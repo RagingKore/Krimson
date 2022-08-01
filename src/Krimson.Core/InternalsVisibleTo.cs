@@ -8,4 +8,5 @@
 [assembly: InternalsVisibleTo("Krimson.Hosting")]
 [assembly: InternalsVisibleTo("Krimson.OpenTelemetry")]
 [assembly: InternalsVisibleTo("Krimson.Connectors")]
+[assembly: InternalsVisibleTo("Krimson.Connectors.Http")]
 [assembly: InternalsVisibleTo("Sherlock")]

@@ -100,31 +100,6 @@ public record KrimsonProcessorBuilder {
         };
     }
     
-    // public KrimsonProcessorBuilder SchemaRegistry(Func<KrimsonSchemaRegistryBuilder, KrimsonSchemaRegistryBuilder> buildSchemaRegistry) {
-    //     var builder = buildSchemaRegistry(Options.RegistryBuilder);
-    //     
-    //     return this with {
-    //         Options = Options with {
-    //             RegistryBuilder = builder,
-    //             RegistryFactory = () => builder.Create()
-    //         }
-    //     };
-    // }
-    //
-    // public KrimsonProcessorBuilder SchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
-    //     Ensure.NotNull(schemaRegistryClient, nameof(schemaRegistryClient));
-    //     
-    //     return this with {
-    //         Options = Options with {
-    //             RegistryFactory = () => schemaRegistryClient
-    //         }
-    //     };
-    // }
-    
-    // public KrimsonProcessorBuilder SchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
-    //     return SchemaRegistry(builder => builder.Connection(url, apiKey, apiSecret));
-    // }
-
     public KrimsonProcessorBuilder Intercept(InterceptorModule interceptor, bool prepend = false) {
         Ensure.NotNull(interceptor, nameof(interceptor));
 
@@ -258,7 +233,9 @@ public record KrimsonProcessorBuilder {
             .ClientId(
                 configuration.GetValue(
                     "Krimson:Input:ClientId",
-                    configuration.GetValue("Krimson:ClientId", Options.ConsumerConfiguration.ClientId)
+                    configuration.GetValue(
+                        "Krimson:ClientId", 
+                        configuration.GetValue("ASPNETCORE_APPLICATIONNAME", Options.ConsumerConfiguration.ClientId))
                 )
             )
             .GroupId(configuration.GetValue("Krimson:GroupId", Options.ConsumerConfiguration.GroupId))
