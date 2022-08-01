@@ -156,9 +156,11 @@ public class KrimsonTestContext : TestContext {
         return this;
     }
 
+    #pragma warning disable CA1822
     public string GenerateUniqueProcessorName()                => $"{Guid.NewGuid().ToString("N").Substring(32 - 5, 5)}-processor".ToLowerInvariant();
     public string GetInputTopicName(string testProcessorName)  => $"{testProcessorName}.input.tst".ToLowerInvariant();
     public string GetOutputTopicName(string testProcessorName) => $"{testProcessorName}.output.tst".ToLowerInvariant();
+    #pragma warning restore CA1822
     
     public async ValueTask<string> CreateTestTopic(string topic, int partitions) {
         var topicCreated = false;

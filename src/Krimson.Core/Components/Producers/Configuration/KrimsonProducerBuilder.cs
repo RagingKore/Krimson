@@ -101,7 +101,9 @@ public record KrimsonProducerBuilder {
             .ClientId(
                 configuration.GetValue(
                     "Krimson:Output:ClientId",
-                    configuration.GetValue("Krimson:ClientId", Options.Configuration.ClientId)
+                    configuration.GetValue(
+                        "Krimson:ClientId", 
+                        configuration.GetValue("ASPNETCORE_APPLICATIONNAME", Options.Configuration.ClientId))
                 )
             )
             .Topic(configuration.GetValue("Krimson:Output:Topic", ""));

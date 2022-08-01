@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Krimson;
 
 [PublicAPI]
-public static class KrimsonReaderServiceCollectionExtensions {
+public static class ReaderServiceCollectionExtensions {
     public static IServiceCollection AddKrimsonReader(this IServiceCollection services, Func<IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) =>
         services.AddSingleton(
             serviceProvider => {
