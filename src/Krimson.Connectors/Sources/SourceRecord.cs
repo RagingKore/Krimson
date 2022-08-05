@@ -1,27 +1,26 @@
 // ReSharper disable CheckNamespace
 
-using Google.Protobuf.WellKnownTypes;
+using Confluent.Kafka;
 
 namespace Krimson.Connectors;
 
-public partial class SourceRecord {
-    public static readonly SourceRecord Empty = new() {
-        Id        = string.Empty,
-        Data      = new Struct(),
-        Timestamp = Timestamp.FromDateTimeOffset(DateTimeOffset.MinValue),
-        Type      = string.Empty,
-        Operation = SourceOperation.Unspecified,
-        Source    = null
-    };
+[PublicAPI]
+public class SourceRecord {
+    public static readonly SourceRecord Empty = new() { Timestamp = Timestamp.Default };
 
-    public static SourceRecord From(string id, string type, DateTimeOffset timestamp, Struct data, string? source = null) {
-        return new SourceRecord {
-            Id        = id,
-            Type      = type,
-            Data      = data,
-            Timestamp = Timestamp.FromDateTimeOffset(timestamp),
-            Operation = SourceOperation.Snapshot,
-            Source    = source
-        };
+    public SourceRecord() {
+        Key       = MessageKey.None;
+        Value     = null!;
+        Headers   = new();
+        Timestamp = new(DateTime.UtcNow);
     }
+
+    public MessageKey                  Key       { get; set; }
+    public object                      Value     { get; set; }
+    public Timestamp                   Timestamp { get; set; }
+    public Dictionary<string, string?> Headers   { get; set; }
+    public string?                     Topic     { get; set; }
+
+    public bool HasKey      => Key != MessageKey.None;
+    public bool HasTopic    => Topic is not null;
 }

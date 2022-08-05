@@ -8,7 +8,9 @@ using Krimson.Logging;
 using Krimson.Processors.Configuration;
 using Krimson.Processors.Interceptors;
 using Krimson.Producers;
+using Krimson.State;
 using Serilog;
+using static Serilog.Core.Constants;
 
 namespace Krimson.Processors;
 
@@ -27,9 +29,9 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         GroupId          = options.ConsumerConfiguration.GroupId;
         Topics           = options.InputTopics;
         BootstrapServers = options.ConsumerConfiguration.BootstrapServers;
-        
-        Router = options.Router;
-        Logger = Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, ClientId);
+        Router           = options.Router;
+        StateStore       = options.StateStoreFactory();
+        Logger           = Log.ForContext(SourceContextPropertyName, ClientId);
 
         Intercept = options.Interceptors
             .Prepend(new KrimsonProcessorLogger().WithName("Krimson.Processor"))
@@ -75,6 +77,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
     KrimsonProducer            Producer  { get; }
     Intercept                  Intercept { get; }
     KrimsonMasterRouter        Router    { get; }
+    IStateStore        StateStore    { get; }
 
     CancellationTokenSource Cancellator  { get; set; } = null!;
     OnProcessorTerminated   OnTerminated { get; set; } = null!;
@@ -135,7 +138,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
 
         Intercept(new InputReady(this, record));
 
-        var context = new KrimsonProcessorContext(record, Logger.WithRecordInfo(record), cancellationToken);
+        var context = new KrimsonProcessorContext(record, Logger.WithRecordInfo(record), StateStore, cancellationToken);
 
         try {
             await Router

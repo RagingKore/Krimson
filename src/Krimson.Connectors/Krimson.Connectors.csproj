@@ -18,4 +18,8 @@
   <ItemGroup>
     <Protobuf ProtoRoot="protos" Include="**/*.proto" GrpcServices="None" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Krimson.Connectors.csproj.DotSettings" />
+  </ItemGroup>
 </Project>

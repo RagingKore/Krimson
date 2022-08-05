@@ -1,6 +1,6 @@
 namespace Krimson.Connectors;
 
-public static class KrimsonWebhooksServiceCollectionExtensions {
+public static class KrimsonWebhooksServicesExtensions {
 
     public static IServiceCollection AddKrimsonWebhook<T>(this IServiceCollection services)  where T : class, IKrimsonWebhook => 
         services.AddSingleton<IKrimsonWebhook, T>();
@@ -14,6 +14,7 @@ public static class KrimsonWebhooksServiceCollectionExtensions {
                         .NotInNamespaceOf<IKrimsonWebhook>()
                 )
                 .As<IKrimsonWebhook>()
+                .AsImplementedInterfaces()
                 .WithSingletonLifetime()
         );
 }

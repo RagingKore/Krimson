@@ -199,7 +199,7 @@ public class KrimsonProducer : IAsyncDisposable {
         return new Message<byte[], object?> {
             Value     = request.Message,
             Headers   = request.Headers.Encode(),
-            Timestamp = new Timestamp(DateTime.UtcNow)
+            Timestamp = request.Timestamp
         }.With(x => x.Key = request.Key, when: request.HasKey);
     }
 }

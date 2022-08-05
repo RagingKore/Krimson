@@ -1,3 +1,5 @@
+using Confluent.Kafka;
+
 namespace Krimson.Producers;
 
 [PublicAPI]
@@ -20,13 +22,14 @@ public record ProducerRequest {
     public Type                        Type      { get; internal init; } = null!;
     public Dictionary<string, string?> Headers   { get; internal init; } = null!;
     public Guid                        RequestId { get; internal init; } = Guid.Empty;
+    public Timestamp                   Timestamp { get; internal init; } = new Timestamp(DateTime.UtcNow);
     public string?                     Topic     { get; internal init; }
 
     public bool HasKey   => Key != MessageKey.None;
     public bool HasTopic => Topic is not null;
 }
 
-public static class Voodo {
+public static class Voodoo {
     public static ProducerRequestBuilder ProduceRequest(this object source) => 
         ProducerRequest.Builder.Message(source);
 

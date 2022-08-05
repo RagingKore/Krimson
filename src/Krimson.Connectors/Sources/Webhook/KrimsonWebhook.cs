@@ -67,9 +67,17 @@ public abstract class KrimsonWebhook : IKrimsonWebhook {
         }
 
         async ValueTask<ProcessedSourceRecord> DispatchSourceRecord(SourceRecord record) {
+            var request = ProducerRequest.Builder
+                .Key(record.Key)
+                .Message(record.Value)
+                .Timestamp(record.Timestamp)
+                .Topic(record.Topic)
+                .Headers(record.Headers)
+                .Create();
+
             var result = await context
                 .GetService<KrimsonProducer>()
-                .Produce(record, record.Id)
+                .Produce(request)
                 .ConfigureAwait(false);
             
             return new ProcessedSourceRecord(record, result.RecordId);
@@ -84,10 +92,24 @@ public abstract class KrimsonWebhook : IKrimsonWebhook {
         if (node is not null)
             yield return node;
     }
+    
+    public virtual IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<JsonNode> data, CancellationToken cancellationToken) {
+        return data.Select(node => {
+            try {
+                return ParseSourceRecord(node);
+            }
+            catch (Exception ex) {
+                Log.ForContext("JsonData", node.ToJsonString()).Error(ex, "Failed to parse source record!");
+                return SourceRecord.Empty;
+            }
+        });
+    }
 
-    public abstract IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<JsonNode> data, CancellationToken cancellationToken);
-
-    public virtual ValueTask<bool> Validate(KrimsonWebhookContext context) => ValueTask.FromResult(true);
+    public abstract SourceRecord ParseSourceRecord(JsonNode node);
+    
+    public abstract Task Subscribe(KrimsonWebhookContext context);
+    
+    public virtual ValueTask<bool> Validate(KrimsonWebhookContext context)  => ValueTask.FromResult(true);
 
     public virtual ValueTask OnSuccess(KrimsonWebhookContext context, List<ProcessedSourceRecord> processedRecords) => 
         context.SetResult(Results.Ok());

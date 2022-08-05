@@ -8,19 +8,44 @@ import "google/protobuf/wrappers.proto";
 
 option csharp_namespace = "Krimson.Connectors";
 
-enum SourceOperation {
-  SOURCE_OPERATION_UNSPECIFIED = 0;
-  SOURCE_OPERATION_SNAPSHOT    = 1;
-  SOURCE_OPERATION_INSERT      = 2;
-  SOURCE_OPERATION_UPDATE      = 3;
-  SOURCE_OPERATION_DELETE      = 4;
-}
+//enum SourceOperation {
+//  SOURCE_OPERATION_UNSPECIFIED = 0;
+//  SOURCE_OPERATION_SNAPSHOT    = 1;
+//  SOURCE_OPERATION_INSERT      = 2;
+//  SOURCE_OPERATION_UPDATE      = 3;
+//  SOURCE_OPERATION_DELETE      = 4;
+//  SOURCE_OPERATION_EVENT       = 5;
+//}
+//
+//message SourceRecord {
+//  string                      key       = 1; // (required) partition key
+//  google.protobuf.Struct      data      = 2; // (required) the record data
+////  google.protobuf.Timestamp   timestamp = 3; // (required) the event time of the record from the source
+//  int64                       event_time = 3; // (required) the event time of the record from the source
+//  string                      type      = 4; // (required) record type or entity name
+//  SourceOperation             operation = 5; // (required) operation type
+//  google.protobuf.StringValue source    = 6; // (optional) origin of the data
+//    string topic = 7; // (optional) destination topic
+//   map<string, string> headers = 8;
+//}
 
-message SourceRecord {
-  string                      id        = 1;  // (required) id of record
-  google.protobuf.Struct      data      = 2;  // (required) content
-  google.protobuf.Timestamp   timestamp = 3;  // (required) last date of modification
-  string                      type      = 4;  // (required) record type or entity name
-  SourceOperation             operation = 5;  // (required) operation type
-  google.protobuf.StringValue source    = 6;  // (optional) origin of the data
-}
+
+//message SourceRecord {
+//    string                      key       = 1; // (required) partition key
+//    google.protobuf.Struct      data      = 2; // (required) the record data
+////  google.protobuf.Timestamp   timestamp = 3; // (required) the event time of the record from the source
+//    int64                       event_time = 3; // (required) the event time of the record from the source
+//    string                      type      = 4; // (required) record type or entity name
+//    string topic = 7; // (optional) destination topic
+//    map<string, string> headers = 8;
+//}
+//
+//message KeyValueRecord {
+//    string                 key   = 1; // (required) partition key
+//    google.protobuf.Struct value = 2; // (required) record data
+//}
+//
+//message SourceData {
+//    string                 key   = 1; // (required) partition key
+//    google.protobuf.Struct value = 2; // (required) record data
+//}

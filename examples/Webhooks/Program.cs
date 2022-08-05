@@ -2,6 +2,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Krimson;
 using Krimson.Connectors;
+using Timestamp = Confluent.Kafka.Timestamp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,32 +28,26 @@ class PowerMetersWebhook : KrimsonWebhook {
     // public override string WebhookPath => "/meters"; // option 2
 
     // public PowerMetersWebhook() : base("/meters") { } // options 3
-    
+
+    public override Task Subscribe(KrimsonWebhookContext context) {
+        return Task.CompletedTask;
+    }
+
     public override ValueTask<bool> Validate(KrimsonWebhookContext context) {
         var header = context.Request.Headers["X-Signature"].ToString();
         return ValueTask.FromResult(header == "this_is_fine");
     }
+    
+    public override SourceRecord ParseSourceRecord(JsonNode node) {
+        var key       = node["id"]!.GetValue<string>();
+        var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
+        var data      = Struct.Parser.ParseJson(node.ToJsonString());
 
-    public override IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<JsonNode> data, CancellationToken cancellationToken) {
-        return data.Select(ParseSourceRecord!);
-
-        static SourceRecord ParseSourceRecord(JsonNode node) {
-            try {
-                var recordId  = node["id"]!.GetValue<string>();
-                var timestamp = Timestamp.FromDateTimeOffset(node["last_modified"]!.GetValue<DateTimeOffset>());
-                var data      = Struct.Parser.ParseJson(node.ToJsonString());
-
-                return new SourceRecord {
-                    Id        = recordId,
-                    Data      = data,
-                    Timestamp = timestamp,
-                    Type      = "power-meters",
-                    Operation = SourceOperation.Snapshot
-                };
-            }
-            catch (Exception) {
-                return SourceRecord.Empty;
-            }
-        }
+        return new() {
+            Key       = key,
+            Value     = data,
+            Timestamp = timestamp,
+            Headers   = new() { { "source", "power-meters" } }
+        };
     }
 }

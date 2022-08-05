@@ -27,15 +27,8 @@ public abstract class KrimsonPeriodicSourceConnector<TData>: IKrimsonPeriodicSou
     public TimeSpan BackoffTime { get; }
     
     public async Task Execute(KrimsonPeriodicSourceConnectorContext context) {
-        var registry = context.Services.GetRequiredService<ISchemaRegistryClient>();
         var reader   = context.Services.GetRequiredService<KrimsonReader>();
         var producer = context.Services.GetRequiredService<KrimsonProducer>();
-        
-        // ensure message is registered before reading checkpoint
-        // because otherwise the schema will be unknown
-        _ = await registry
-            .RegisterMessage(SourceRecord.Descriptor)
-            .ConfigureAwait(false);
 
         // load and set checkpoint
         context.Checkpoint = await LoadCheckpoint(context.CancellationToken).ConfigureAwait(false);
@@ -47,11 +40,11 @@ public abstract class KrimsonPeriodicSourceConnector<TData>: IKrimsonPeriodicSou
                 var processedRecords = await SourceRecords(data, context.CancellationToken)
                     .Where(record => !record.Equals(SourceRecord.Empty))
                     // ReSharper disable once AccessToModifiedClosure
-                    .Where(record => record.Timestamp > context.Checkpoint.Timestamp)
+                    .Where(record => record.Timestamp.UnixTimestampMs > context.Checkpoint.Timestamp.UnixTimestampMs)
                     .OrderBy(record => record.Timestamp)
                     .SelectAwait(
                         async record => {
-                            var result = await producer.Produce(record, record.Id).ConfigureAwait(false);
+                            var result = await producer.Produce(record, record.Key).ConfigureAwait(false);
                             return new ProcessedSourceRecord(record, result.RecordId);
                         }
                     )

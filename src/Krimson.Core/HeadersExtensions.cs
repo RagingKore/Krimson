@@ -1,5 +1,6 @@
 using System.Text;
 using Confluent.Kafka;
+using Confluent.SchemaRegistry;
 
 namespace Krimson;
 
@@ -45,4 +46,22 @@ public static class HeadersExtensions {
     }
 
     public static IDictionary<string, string?> Decode(this Headers? headers) => Decode(headers, Encoding.UTF8.GetString);
+    
+    public static Headers Add(this Headers headers, string key, string? value) {
+        try {
+            var encodedValue = value is null
+                ? Array.Empty<byte>()
+                : Encoding.UTF8.GetBytes(value);
+
+            headers.Add(key, encodedValue);
+            
+            return headers;
+        }
+        catch (Exception ex) {
+            throw new Exception($"Failed to encode header [{key}]", ex);
+        }
+    }
+
+    public static Headers AddSchemaType(this Headers headers, SchemaType schemaType) => 
+        headers.Add(HeaderKeys.SchemaType, schemaType.ToString().ToLower());
 }

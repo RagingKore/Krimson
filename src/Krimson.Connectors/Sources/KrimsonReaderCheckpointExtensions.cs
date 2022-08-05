@@ -9,11 +9,11 @@ public static class KrimsonReaderCheckpointExtensions {
 
         var records = new List<KrimsonRecord>();
 
-        await foreach (var record in reader.LastRecords(topic!, cancellationToken).ConfigureAwait(false))
+        await foreach (var record in reader.LastRecords(topic, cancellationToken).ConfigureAwait(false))
             records.Add(record);
 
         var checkpoint = records
-            .Select(x => new Checkpoint(x.Id, ((SourceRecord)x.Value).Timestamp))
+            .Select(x => new Checkpoint(x.Id, x.Timestamp))
             .MaxBy(x => x);
 
         return checkpoint ?? Checkpoint.None;

@@ -6,6 +6,8 @@ public interface IKrimsonWebhook<TData> : ISourceConnector<KrimsonWebhookContext
     string WebhookPath { get; }
 
     ValueTask<bool> Validate(KrimsonWebhookContext context);
+
+    Task Subscribe(KrimsonWebhookContext context);
 }
 
 public interface IKrimsonWebhook : IKrimsonWebhook<JsonNode> { }

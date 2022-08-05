@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Krimson.Interceptors;
 using Krimson.Serializers;
+using Krimson.State;
 
 namespace Krimson.Processors.Configuration;
 
@@ -15,6 +16,7 @@ public record KrimsonProcessorOptions {
         Router                = new KrimsonMasterRouter();
         DeserializerFactory   = null!;
         SerializerFactory     = null!;
+        StateStoreFactory     = () => new InMemoryStateStore();
     }
 
     public string[]                   InputTopics           { get; init; }
@@ -25,4 +27,5 @@ public record KrimsonProcessorOptions {
     public Func<IDynamicDeserializer> DeserializerFactory   { get; init; }
     public Func<IDynamicSerializer>   SerializerFactory     { get; init; }
     public KrimsonMasterRouter        Router                { get; init; }
+    public Func<IStateStore>          StateStoreFactory     { get; init; }
 }

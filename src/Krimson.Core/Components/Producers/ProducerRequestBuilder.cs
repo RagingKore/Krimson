@@ -1,3 +1,5 @@
+using Confluent.Kafka;
+
 namespace Krimson.Producers;
 
 [PublicAPI]
@@ -7,10 +9,10 @@ public record ProducerRequestBuilder {
         Headers   = new Dictionary<string, string?>()
     };
 
-    public ProducerRequestBuilder Topic(string topic) =>
+    public ProducerRequestBuilder Topic(string? topic) =>
         this with {
             Options = Options with {
-                Topic = Ensure.NotNullOrWhiteSpace(topic, nameof(topic))
+                Topic = topic
             }
         };
 
@@ -47,6 +49,20 @@ public record ProducerRequestBuilder {
         this with {
             Options = Options with {
                 RequestId = Ensure.NotEmptyGuid(requestId, nameof(requestId))
+            }
+        };
+    
+    public ProducerRequestBuilder Timestamp(Timestamp timestamp) =>
+        this with {
+            Options = Options with {
+                Timestamp = timestamp
+            }
+        };
+    
+    public ProducerRequestBuilder Timestamp(DateTimeOffset timestamp) =>
+        this with {
+            Options = Options with {
+                Timestamp = new Timestamp(timestamp)
             }
         };
 

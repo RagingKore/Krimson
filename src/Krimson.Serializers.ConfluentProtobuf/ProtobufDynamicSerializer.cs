@@ -19,7 +19,7 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
     
     public ProtobufDynamicSerializer(ISchemaRegistryClient registryClient, ProtobufSerializerConfig serializerConfig) {
         RegistryClient = registryClient;
-        Serializers    = new ConcurrentDictionary<Type, dynamic>();
+        Serializers    = new();
         
         GetSerializer = messageType => Serializers.GetOrAdd(
             messageType, static (type, ctx) => CreateInstance(ConfluentSerializerType.MakeGenericType(type), ctx.Client, ctx.Config)!,
@@ -45,10 +45,12 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
                 .SerializeAsync((dynamic)data, context)
                 .ConfigureAwait(false);
 
+            context.Headers.AddSchemaType(SchemaType.Protobuf);
+            
             return bytes;
         }
         catch (Exception ex) {
-            throw new SerializationException("Serialization error!", ex);
+            throw new SerializationException("Protobuf serialization error!", ex);
         }
     }
 

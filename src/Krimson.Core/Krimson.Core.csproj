@@ -3,16 +3,17 @@
     <RootNamespace>Krimson</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'True'">
-    <Content Include="/opt/homebrew/Cellar/librdkafka/1.9.0/lib/librdkafka.dylib">
-      <Link>librdkafka.dylib</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+<!--  <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'True'">-->
+<!--    <Content Include="/opt/homebrew/Cellar/librdkafka/1.9.2/lib/librdkafka.dylib">-->
+<!--      <Link>librdkafka.dylib</Link>-->
+<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+<!--    </Content>-->
+<!--  </ItemGroup>-->
   
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="1.9.2" />
     <PackageReference Include="Confluent.SchemaRegistry" Version="1.9.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Include="OneOf" Version="3.0.223" Pack="false" />

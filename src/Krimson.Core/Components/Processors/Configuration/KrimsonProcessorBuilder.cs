@@ -1,6 +1,7 @@
 using Confluent.Kafka;
 using Krimson.Interceptors;
 using Krimson.Serializers;
+using Krimson.State;
 using Microsoft.Extensions.Configuration;
 using static System.String;
 
@@ -170,6 +171,14 @@ public record KrimsonProcessorBuilder {
     
     public KrimsonProcessorBuilder EnableDebug(bool enable = true) {
         return EnableConsumerDebug(enable).EnableProducerDebug(enable);
+    }
+    
+    public KrimsonProcessorBuilder StateStore(Func<IStateStore> getStateStore) {
+        return this with {
+            Options = Options with {
+                StateStoreFactory = Ensure.NotNull(getStateStore, nameof(getStateStore))
+            }
+        };
     }
     
     public KrimsonProcessorBuilder ReadSettings(IConfiguration configuration) {

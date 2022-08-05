@@ -1,20 +1,23 @@
 using Krimson.Producers;
+using Krimson.State;
 using Serilog;
 
 namespace Krimson.Processors;
 
 [PublicAPI]
 public class KrimsonProcessorContext {
-    public KrimsonProcessorContext(KrimsonRecord record, ILogger logger, CancellationToken cancellationToken) {
+    public KrimsonProcessorContext(KrimsonRecord record, ILogger logger, IStateStore state, CancellationToken cancellationToken) {
         Record            = record;
         Logger            = logger;
+        State             = state;
         CancellationToken = cancellationToken;
-        MessageQueue      = new Queue<ProducerRequest>();
-        QueueLocked       = new InterlockedBoolean();
+        MessageQueue      = new();
+        QueueLocked       = new();
     }
 
     public KrimsonRecord     Record            { get; }
     public ILogger           Logger            { get; }
+    public IStateStore       State             { get; }
     public CancellationToken CancellationToken { get; }
 
     Queue<ProducerRequest> MessageQueue { get; }

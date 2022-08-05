@@ -4,6 +4,7 @@ using Krimson;
 using Krimson.Connectors;
 using Krimson.Extensions.DependencyInjection;
 using Refit;
+using Timestamp = Confluent.Kafka.Timestamp;
 
 var host = Host
     .CreateDefaultBuilder(args)
@@ -50,16 +51,15 @@ class PowerMetersConnector : KrimsonPeriodicSourceConnector {
 
         static SourceRecord ParseSourceRecord(JsonNode node) {
             try {
-                var recordId  = node["id"]!.GetValue<string>();
-                var timestamp = Timestamp.FromDateTimeOffset(node["last_modified"]!.GetValue<DateTimeOffset>());
+                var key       = node["id"]!.GetValue<string>();
+                var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
                 var data      = Struct.Parser.ParseJson(node.ToJsonString());
 
                 return new SourceRecord {
-                    Id        = recordId,
-                    Data      = data,
+                    Key       = key,
+                    Value     = data,
                     Timestamp = timestamp,
-                    Type      = "power-meters",
-                    Operation = SourceOperation.Snapshot
+                    Headers   = new () { { "source", "power-meters" } }
                 };
             }
             catch (Exception) {
