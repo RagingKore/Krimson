@@ -45,26 +45,17 @@ class PowerMetersConnector : KrimsonPeriodicSourceConnector {
         foreach (var item in result?.AsArray() ?? new JsonArray())
             yield return item!;
     }
+    
+    public override SourceRecord ParseSourceRecord(JsonNode node) {
+        var key       = node["id"]!.GetValue<string>();
+        var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
+        var data      = Struct.Parser.ParseJson(node.ToJsonString());
 
-    public override IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<JsonNode> data, CancellationToken cancellationToken) {
-        return data.Select(ParseSourceRecord!);
-
-        static SourceRecord ParseSourceRecord(JsonNode node) {
-            try {
-                var key       = node["id"]!.GetValue<string>();
-                var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
-                var data      = Struct.Parser.ParseJson(node.ToJsonString());
-
-                return new SourceRecord {
-                    Key       = key,
-                    Value     = data,
-                    Timestamp = timestamp,
-                    Headers   = new () { { "source", "power-meters" } }
-                };
-            }
-            catch (Exception) {
-                return SourceRecord.Empty;
-            }
-        }
+        return new() {
+            Key       = key,
+            Value     = data,
+            Timestamp = timestamp,
+            Headers   = new () { { "source", "power-meters" } }
+        };
     }
 }

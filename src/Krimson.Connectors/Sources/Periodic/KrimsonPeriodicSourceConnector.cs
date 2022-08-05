@@ -1,8 +1,6 @@
 using System.Text.Json.Nodes;
-using Confluent.SchemaRegistry;
 using Krimson.Producers;
 using Krimson.Readers;
-using Krimson.Serializers.ConfluentProtobuf;
 using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;
@@ -80,7 +78,19 @@ public abstract class KrimsonPeriodicSourceConnector<TData>: IKrimsonPeriodicSou
     
     public abstract IAsyncEnumerable<TData> SourceData(KrimsonPeriodicSourceConnectorContext context);
     
-    public abstract IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<TData> data, CancellationToken cancellationToken);
+    public virtual IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<TData> data, CancellationToken cancellationToken) {
+        return data.Select(node => {
+            try {
+                return ParseSourceRecord(node);
+            }
+            catch (Exception ex) {
+                Log.Error(ex, "Failed to parse source record!");
+                return SourceRecord.Empty;
+            }
+        });
+    }
+
+    public abstract SourceRecord ParseSourceRecord(TData node);
 
     public ValueTask OnSuccess(KrimsonPeriodicSourceConnectorContext context, List<ProcessedSourceRecord> processedRecords) {
         if (processedRecords.Any()) {

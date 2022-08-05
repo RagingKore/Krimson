@@ -8,6 +8,8 @@ public interface ISourceConnector<in TContext, TData> where TContext : ISourceCo
 
     IAsyncEnumerable<SourceRecord> SourceRecords(IAsyncEnumerable<TData> data, CancellationToken cancellationToken);
 
+    SourceRecord ParseSourceRecord(TData node);
+     
     ValueTask OnSuccess(TContext context, List<ProcessedSourceRecord> processedRecords);
 
     ValueTask OnError(TContext context, Exception exception);

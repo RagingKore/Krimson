@@ -1,10 +1,16 @@
+using Krimson.State;
+
 namespace Krimson.Connectors;
 
 [PublicAPI]
 public class KrimsonWebhookContext : ISourceConnectorContext {
-    public KrimsonWebhookContext(HttpContext http) => Http = http;
+    public KrimsonWebhookContext(HttpContext http) {
+        Http  = http;
+        State = http.RequestServices.GetRequiredService<IStateStore>(); // hello darkness my old friend...
+    }
 
-    public HttpContext Http { get; }
+    public HttpContext Http  { get; }
+    public IStateStore State { get; }
     
     public HttpRequest       Request           => Http.Request;
     public HttpResponse      Response          => Http.Response;
