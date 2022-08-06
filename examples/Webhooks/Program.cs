@@ -29,9 +29,8 @@ class PowerMetersWebhook : KrimsonWebhook {
 
     // public PowerMetersWebhook() : base("/meters") { } // options 3
 
-    public override Task Subscribe(KrimsonWebhookContext context) {
-        return Task.CompletedTask;
-    }
+    public override Task Subscribe(IServiceProvider services, CancellationToken cancellationToken) => 
+        Task.CompletedTask;
 
     public override ValueTask<bool> Validate(KrimsonWebhookContext context) {
         var header = context.Request.Headers["X-Signature"].ToString();
