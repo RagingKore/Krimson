@@ -5,9 +5,9 @@ namespace Krimson.Connectors;
 public interface IKrimsonWebhook<TData> : ISourceConnector<KrimsonWebhookContext, TData> {
     string WebhookPath { get; }
 
+    Task Subscribe(IServiceProvider services, CancellationToken cancellationToken);
+    
     ValueTask<bool> Validate(KrimsonWebhookContext context);
-
-    Task Subscribe(KrimsonWebhookContext context);
 }
 
 public interface IKrimsonWebhook : IKrimsonWebhook<JsonNode> { }

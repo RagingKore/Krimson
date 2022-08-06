@@ -107,7 +107,7 @@ public abstract class KrimsonWebhook : IKrimsonWebhook {
 
     public abstract SourceRecord ParseSourceRecord(JsonNode node);
     
-    public abstract Task Subscribe(KrimsonWebhookContext context);
+    public abstract Task Subscribe(IServiceProvider services, CancellationToken cancellationToken);
     
     public virtual ValueTask<bool> Validate(KrimsonWebhookContext context)  => ValueTask.FromResult(true);
 
