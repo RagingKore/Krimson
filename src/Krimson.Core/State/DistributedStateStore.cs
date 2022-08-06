@@ -29,7 +29,7 @@ public class DistributedStateStore : IStateStore {
         return JsonSerializer.Deserialize<T>(bytes);
     }
 
-    public async ValueTask Delete(object key, CancellationToken cancellationToken = default) {
+    public async ValueTask Delete<T>(object key, CancellationToken cancellationToken = default) {
         await Cache
             .RemoveAsync(key.ToString(), cancellationToken)
             .ConfigureAwait(false);
