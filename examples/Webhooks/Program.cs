@@ -2,6 +2,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Krimson;
 using Krimson.Connectors;
+using Krimson.Connectors.Http;
 using Timestamp = Confluent.Kafka.Timestamp;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,7 @@ builder.UseKrimson()
 
 var app = builder.Build();
 
-app.UseKrimsonWebhooks();
+app.UseKrimsonWebhookSources();
 
 app.MapGet("/", () => "Hello World!");
 

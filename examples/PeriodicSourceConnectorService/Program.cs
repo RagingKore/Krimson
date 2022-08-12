@@ -11,7 +11,7 @@ var host = Host
     .ConfigureServices((ctx, services) => {
             services.AddKrimson()
                 .AddProtobuf()
-                .AddPeriodicSourceConnector<PowerMetersConnector>()
+                .AddPeriodicSourceConnector<PowerMetersSource>()
                 .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("foo.bar.baz"))
                 .AddReader(rdr => rdr.ClientId("my_app_name"));
 
@@ -34,12 +34,12 @@ interface IPowerMetersClient {
 }
 
 [BackOffTimeSeconds(30)]
-class PowerMetersConnector : KrimsonPeriodicSourceConnector {
-    public PowerMetersConnector(IPowerMetersClient client) => Client = client;
+class PowerMetersSource : PeriodicSource {
+    public PowerMetersSource(IPowerMetersClient client) => Client = client;
 
     IPowerMetersClient Client { get; }
 
-    public override async IAsyncEnumerable<JsonNode> SourceData(KrimsonPeriodicSourceConnectorContext context) {
+    public override async IAsyncEnumerable<JsonNode> SourceData(PeriodicSourceContext context) {
         var result = await Client.GetMeters().ConfigureAwait(false);
 
         foreach (var item in result?.AsArray() ?? new JsonArray())

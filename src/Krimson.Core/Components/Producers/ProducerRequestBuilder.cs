@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using static System.DateTimeOffset;
 
 namespace Krimson.Producers;
 
@@ -6,7 +7,7 @@ namespace Krimson.Producers;
 public record ProducerRequestBuilder {
     ProducerRequest Options { get; init; } = ProducerRequest.Empty with {
         RequestId = Guid.NewGuid(),
-        Headers   = new Dictionary<string, string?>()
+        Headers   = new()
     };
 
     public ProducerRequestBuilder Topic(string? topic) =>
@@ -16,58 +17,67 @@ public record ProducerRequestBuilder {
             }
         };
 
-    public ProducerRequestBuilder Message(object message) =>
-        this with {
+    public ProducerRequestBuilder Message(object message) {
+        Ensure.NotNull(message, nameof(message));
+
+        return this with {
             Options = Options with {
-                Message = Ensure.NotNull(message, nameof(message)),
+                Message = message,
                 Type    = message.GetType()
             }
         };
+    }
 
-    public ProducerRequestBuilder Key(MessageKey key) =>
-        this with {
+    public ProducerRequestBuilder Key(MessageKey key) {
+        return this with {
             Options = Options with {
-                Key = Ensure.NotNull(key, nameof(key))
+                Key = key
             }
         };
+    }
 
-    public ProducerRequestBuilder Headers(Dictionary<string, string?> headers) =>
-        this with {
+    public ProducerRequestBuilder Headers(Dictionary<string, string?> headers) {
+        Ensure.NotNull(headers, nameof(headers));
+        
+        return this with {
             Options = Options with {
-                Headers = Ensure.NotNull(headers, nameof(headers))
+                Headers = headers
             }
         };
+    }
 
-    public ProducerRequestBuilder Headers(Action<Dictionary<string, string?>> setHeaders) =>
-        this with {
+    public ProducerRequestBuilder Headers(Action<Dictionary<string, string?>> setHeaders) {
+        Ensure.NotNull(setHeaders, nameof(setHeaders));
+        
+        return this with {
             Options = Options with {
-                Headers = Options.Headers.With(Ensure.NotNull(setHeaders, nameof(setHeaders)))
+                Headers = Options.Headers.With(setHeaders)
             }
         };
+    }
 
-    public ProducerRequestBuilder RequestId(Guid requestId) =>
-        this with {
+    public ProducerRequestBuilder RequestId(Guid requestId) {
+        Ensure.NotEmptyGuid(requestId, nameof(requestId));
+        
+        return this with {
             Options = Options with {
-                RequestId = Ensure.NotEmptyGuid(requestId, nameof(requestId))
+                RequestId = requestId
             }
         };
-    
+    }
+
     public ProducerRequestBuilder Timestamp(Timestamp timestamp) =>
         this with {
             Options = Options with {
                 Timestamp = timestamp
             }
         };
-    
-    public ProducerRequestBuilder Timestamp(DateTimeOffset timestamp) =>
-        this with {
-            Options = Options with {
-                Timestamp = new Timestamp(timestamp)
-            }
-        };
+
+    public ProducerRequestBuilder Timestamp(DateTimeOffset timestamp) => Timestamp(new Timestamp(timestamp));
+    public ProducerRequestBuilder Timestamp(long milliseconds)        => Timestamp(FromUnixTimeMilliseconds(milliseconds));
 
     public ProducerRequest Create() {
         Ensure.NotNull(Options.Message, nameof(Options.Message));
-        return Options with { }; // always a copy. play it safe.
+        return Options with { }; // always a copy. play it safe. don't be like dave.
     }
 }

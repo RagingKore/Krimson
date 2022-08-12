@@ -1,10 +1,5 @@
 namespace Krimson.Connectors;
 
-public interface IKrimsonPeriodicSourceConnector<in TContext, TData> : ISourceConnector<TContext, TData> where TContext : ISourceConnectorContext {
-    TimeSpan BackoffTime { get; }
-}
-
-
 [AttributeUsage(AttributeTargets.Class)]
 public class BackOffTimeSecondsAttribute : Attribute {
     public BackOffTimeSecondsAttribute(int seconds) => Value = TimeSpan.FromSeconds(seconds);

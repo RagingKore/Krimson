@@ -13,7 +13,7 @@ public record ProducerRequest {
     public ProducerRequest(object message) {
         Message   = message;
         Type      = message.GetType();
-        Headers   = new Dictionary<string, string?>();
+        Headers   = new();
         RequestId = Guid.NewGuid();
     }
 
