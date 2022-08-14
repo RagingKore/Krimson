@@ -34,28 +34,48 @@ interface IPowerMetersClient {
 }
 
 [BackOffTimeSeconds(30)]
-class PowerMetersSource : PeriodicSource {
+class PowerMetersSource : PeriodicSourceConnector {
     public PowerMetersSource(IPowerMetersClient client) => Client = client;
 
     IPowerMetersClient Client { get; }
-
-    public override async IAsyncEnumerable<JsonNode> SourceData(PeriodicSourceContext context) {
+    //
+    // public override async IAsyncEnumerable<JsonNode> SourceData(PeriodicSourceContext context) {
+    //     var result = await Client.GetMeters().ConfigureAwait(false);
+    //
+    //     foreach (var item in result?.AsArray() ?? new JsonArray())
+    //         yield return item!;
+    // }
+    //
+    // public override SourceRecord ParseSourceRecord(JsonNode node) {
+    //     var key       = node["id"]!.GetValue<string>();
+    //     var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
+    //     var data      = Struct.Parser.ParseJson(node.ToJsonString());
+    //
+    //     return new() {
+    //         Key       = key,
+    //         Value     = data,
+    //         Timestamp = timestamp,
+    //         Headers   = new () { { "source", "power-meters" } }
+    //     };
+    // }
+    public override async IAsyncEnumerable<SourceRecord> ParseRecords(PeriodicSourceContext context) {
         var result = await Client.GetMeters().ConfigureAwait(false);
-
+        
         foreach (var item in result?.AsArray() ?? new JsonArray())
-            yield return item!;
-    }
-    
-    public override SourceRecord ParseSourceRecord(JsonNode node) {
-        var key       = node["id"]!.GetValue<string>();
-        var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
-        var data      = Struct.Parser.ParseJson(node.ToJsonString());
-
-        return new() {
-            Key       = key,
-            Value     = data,
-            Timestamp = timestamp,
-            Headers   = new () { { "source", "power-meters" } }
-        };
+            yield return ParseRecord(item!);
+        
+        static SourceRecord ParseRecord(JsonNode node) {
+            var key       = node["id"]!.GetValue<string>();
+            var eventTime = node["last_modified"]!.GetValue<DateTimeOffset>().ToUnixTimeMilliseconds();
+            var data      = Struct.Parser.ParseJson(node.ToJsonString());
+        
+            return new() {
+                Key              = key,
+                Value            = data,
+                EventTime        = eventTime,
+                DestinationTopic = null,
+                Headers          = new () { { "source", "power-meters" } }
+            };
+        }
     }
 }

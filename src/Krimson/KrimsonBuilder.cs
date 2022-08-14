@@ -76,6 +76,12 @@ public class KrimsonBuilder {
         return this;
     }
 
+    public KrimsonBuilder AddReader() {
+        Services.AddKrimsonReader();
+        return this;
+    }
+
+
     public KrimsonBuilder AddSerializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
         Services.AddSingleton(ctx => getSerializer(ctx.GetRequiredService<ISchemaRegistryClient>()));
         return this;
@@ -96,39 +102,38 @@ public class KrimsonBuilder {
         return this;
     }
 
-    public KrimsonBuilder AddPeriodicSourceConnector<T>() where T : PeriodicSource {
-        Services.AddKrimsonPeriodicSource<T>();
+    public KrimsonBuilder AddPeriodicSourceConnector<T>(TimeSpan? backoffTime = null) where T : PeriodicSourceConnector {
+        Services.AddKrimsonPeriodicSourceConnector<T>(backoffTime);
+        return this;
+    }
+    
+    public KrimsonBuilder AddWebhookSourceConnector<T>() where T : WebhookSourceConnector {
+        Services.AddKrimsonWebhookSourceConnector<T>();
+        return this;
+    }
+    
+    public KrimsonBuilder AddWebhookSourceConnectors() {
+        Services.AddKrimsonWebhookSourceConnectors();
         return this;
     }
 
-    public KrimsonBuilder AddDataSource<T>() where T : class, IDataSource {
-        Services.AddKrimsonDataSource<T>();
-        return this;
-    }
-    
-    public KrimsonBuilder AddDataSources() {
-        Services.AddKrimsonDataSources();
-        return this;
-    }
-    
-    public KrimsonBuilder AddDataSourcesFromNamespaces(params string[] namespaces) {
-        Services.AddKrimsonDataSourcesFromNamespaces(namespaces);
-        return this;
-    }
-    
-    public KrimsonBuilder AddDataSourcesInNamespaceOf<T>() {
-        Services.AddKrimsonDataSourcesInNamespaceOf<T>();
-        return this;
-    }
-}
-
-[PublicAPI]
-public static class KrimsonServiceCollectionExtensions {
-    public static KrimsonBuilder AddKrimson(this IServiceCollection services) => 
-        new KrimsonBuilder(services).AddSchemaRegistry();
-    
-    public static IServiceCollection AddKrimson(this IServiceCollection services, Action<KrimsonBuilder> configure) {
-        configure(new KrimsonBuilder(services).AddSchemaRegistry());
-        return services;
-    }
+    // public KrimsonBuilder AddDataSource<T>() where T : class, IDataSource {
+    //     Services.AddKrimsonDataSource<T>();
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder AddDataSources() {
+    //     Services.AddKrimsonDataSources();
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder AddDataSourcesFromNamespaces(params string[] namespaces) {
+    //     Services.AddKrimsonDataSourcesFromNamespaces(namespaces);
+    //     return this;
+    // }
+    //
+    // public KrimsonBuilder AddDataSourcesInNamespaceOf<T>() {
+    //     Services.AddKrimsonDataSourcesInNamespaceOf<T>();
+    //     return this;
+    // }
 }

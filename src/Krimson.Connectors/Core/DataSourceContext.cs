@@ -4,13 +4,12 @@ using Krimson.State;
 namespace Krimson.Connectors;
 
 [PublicAPI]
-public class PushSourceContext : IDataSourceContext {
-    internal PushSourceContext(IServiceProvider services, CancellationToken cancellationToken) {
+public class DataSourceContext : IDataSourceContext {
+    public DataSourceContext(IServiceProvider services, CancellationToken cancellationToken) {
         Services          = services;
         CancellationToken = cancellationToken;
         Checkpoint        = SourceCheckpoint.None;
-
-        State = services.GetRequiredService<IStateStore>();
+        State             = services.GetRequiredService<IStateStore>();
     }
 
     public IServiceProvider  Services          { get; }

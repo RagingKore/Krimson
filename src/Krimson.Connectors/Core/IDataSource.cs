@@ -1,8 +1,13 @@
 namespace Krimson.Connectors;
 
-public interface IDataSourceOptions { }
-
 public interface IDataSource : IAsyncDisposable {
-    public ValueTask<SourceRecord>        Push(SourceRecord record, CancellationToken cancellationToken);
-    public IAsyncEnumerable<SourceRecord> Records(CancellationToken cancellationToken);
+    ValueTask<SourceRecord> Push(SourceRecord record, CancellationToken cancellationToken);
+
+    IAsyncEnumerable<SourceRecord> Records(CancellationToken cancellationToken);
+
+    // void Initialize(IServiceProvider services);
+}
+
+public interface IExecutableDataSource<in TContext> : IDataSource where TContext : IDataSourceContext {
+    Task Execute(TContext context);
 }

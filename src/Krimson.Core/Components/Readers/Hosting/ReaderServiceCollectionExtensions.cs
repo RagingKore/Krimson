@@ -8,7 +8,7 @@ namespace Krimson;
 
 [PublicAPI]
 public static class ReaderServiceCollectionExtensions {
-    public static IServiceCollection AddKrimsonReader(this IServiceCollection services, Func<IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) =>
+    public static IServiceCollection AddKrimsonReader(this IServiceCollection services, Func<IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder>? build = null) =>
         services.AddSingleton(
             serviceProvider => {
                 var configuration = serviceProvider.GetRequiredService<IConfiguration>();
@@ -16,13 +16,14 @@ public static class ReaderServiceCollectionExtensions {
                 
                 var builder = KrimsonReader.Builder
                     .ReadSettings(configuration)
-                    .Deserializer(() => deserializer)
-                    .With(x => build(serviceProvider, x));
+                    .Deserializer(() => deserializer);
 
+                build?.Invoke(serviceProvider, builder);
+                
                 return builder.Create();
             }
         );
     
-    public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<KrimsonReaderBuilder, KrimsonReaderBuilder> build) =>
+    public static IServiceCollection AddKrimsonReader(this IServiceCollection services, Func<KrimsonReaderBuilder, KrimsonReaderBuilder> build) =>
         AddKrimsonReader(services, (_, builder) => build(builder));
 }

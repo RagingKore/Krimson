@@ -28,4 +28,5 @@
   <ItemGroup>
     <Content Remove="Dump\**" />
   </ItemGroup>
+  
 </Project>

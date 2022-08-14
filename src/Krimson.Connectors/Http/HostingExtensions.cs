@@ -3,29 +3,40 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace Krimson.Connectors.Http;
 
 public static class ServicesExtensions {
-    public static IServiceCollection AddKrimsonWebhookSources(this IServiceCollection services) {
+    public static IServiceCollection AddKrimsonWebhookSourceConnectors(this IServiceCollection services) {
         return services.Scan(
             scan => scan.FromApplicationDependencies()
                 .AddClasses(
                     classes => classes
-                        .AssignableTo<WebhookSource>()
-                        .NotInNamespaceOf<WebhookSource>()
+                        .AssignableTo<WebhookSourceConnector>()
+                        .NotInNamespaceOf<WebhookSourceConnector>()
                 )
-                .As<WebhookSource>()
+                .As<WebhookSourceConnector>()
                 .WithSingletonLifetime()
         );
+    }
+    
+    public static IServiceCollection AddKrimsonWebhookSourceConnector<T>(this IServiceCollection services) where T: WebhookSourceConnector {
+        services.TryAddSingleton<T>();
+        return services;
     }
 }
 
 public static class WebApplicationExtensions {
-    public static WebApplication UseKrimsonWebhookSources(this WebApplication app) {
-        foreach (var source in app.Services.GetServices<WebhookSource>())
-            app.MapPost(
-                source.WebhookPath, async http => await source.Execute(new(http)).ConfigureAwait(false)
-            );
-
+    public static WebApplication UseKrimsonWebhookSourceConnectors(this WebApplication app) {
+        foreach (var source in app.Services.GetServices<WebhookSourceConnector>()) {
+            var webhookPath = GetWebhookPath(source.GetType());
+            
+            app.MapPost(webhookPath, async http => await source.Execute(new(http)).ConfigureAwait(false));
+        }
+        
         return app;
+        
+        static string GetWebhookPath(Type type) => 
+            (WebhookPathAttribute?)Attribute.GetCustomAttribute(type, typeof(WebhookPathAttribute)) ?? "";
     }
+
+    public static WebApplication UseKrimsonWebhooks(this WebApplication app) => app.UseKrimsonWebhookSourceConnectors();
 }
 
 // public static class ServicesExtensions {

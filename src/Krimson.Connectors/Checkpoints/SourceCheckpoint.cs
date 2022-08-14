@@ -3,7 +3,7 @@ namespace Krimson.Connectors.Checkpoints;
 public record SourceCheckpoint(RecordId RecordId, long Timestamp) : IComparable<SourceCheckpoint>, IComparable {
     public static readonly SourceCheckpoint None = new(RecordId.None, DateTimeOffset.MinValue.ToUnixTimeMilliseconds());
 
-    public static SourceCheckpoint From(IDataSourceRecord processed) => new SourceCheckpoint(processed.RecordId, processed.EventTime);
+    public static SourceCheckpoint From(SourceRecord processed) => new SourceCheckpoint(processed.RecordId, processed.EventTime);
 
     public override string ToString() => $"{RecordId} {DateTimeOffset.FromUnixTimeMilliseconds(Timestamp):O}";
 

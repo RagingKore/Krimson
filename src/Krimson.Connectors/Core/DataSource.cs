@@ -3,14 +3,14 @@ using static System.Threading.Channels.Channel;
 
 namespace Krimson.Connectors;
 
-public record PushDataSourceOptions(int QueueLength = 1000) : IDataSourceOptions;
+public record DataSourceOptions(int QueueLength = 1000);
 
 [PublicAPI]
-public abstract class PushDataSource : IDataSource {
+public abstract class DataSource : IDataSource {
     public const int DefaultQueueLength = 1000;
 
-    protected PushDataSource(PushDataSourceOptions? options = null) {
-        Channel = CreateBounded<SourceRecord>((options ?? new PushDataSourceOptions()).QueueLength);
+    protected DataSource(DataSourceOptions? options = null) {
+        Channel = CreateBounded<SourceRecord>((options ?? new DataSourceOptions()).QueueLength);
     }
     
     Channel<SourceRecord> Channel { get; }
@@ -22,10 +22,11 @@ public abstract class PushDataSource : IDataSource {
         
         return record;
     }
-
-
+    
     public virtual IAsyncEnumerable<SourceRecord> Records(CancellationToken cancellationToken) => 
         Channel.Reader.ReadAllAsync(cancellationToken);
+
+    public virtual void Initialize(IServiceProvider services) { }
 
     public virtual ValueTask DisposeAsync() {
         Channel.Writer.TryComplete();
