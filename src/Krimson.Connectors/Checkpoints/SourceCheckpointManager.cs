@@ -2,15 +2,13 @@ using Krimson.Readers;
 
 namespace Krimson.Connectors.Checkpoints;
 
-public delegate SourceCheckpoint LoadCheckpoint(string topic, CancellationToken cancellationToken);
-
 class SourceCheckpointManager {
     public SourceCheckpointManager(KrimsonReader reader) {
         Reader      = reader;
         Checkpoints = new();
     }
 
-    KrimsonReader                            Reader      { get; }
+    KrimsonReader                        Reader      { get; }
     Dictionary<string, SourceCheckpoint> Checkpoints { get; }
 
     public async ValueTask<SourceCheckpoint> GetCheckpoint(string topic, CancellationToken cancellationToken) {

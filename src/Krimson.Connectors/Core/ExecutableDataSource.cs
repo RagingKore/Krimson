@@ -1,6 +1,3 @@
-using Krimson.Connectors.Checkpoints;
-using Krimson.Producers;
-using Krimson.Readers;
 using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;
@@ -13,16 +10,11 @@ public abstract class ExecutableDataSource<TContext> : DataSource, IExecutableDa
 
     protected ILogger Log { get; }
 
-    SourceCheckpointManager? Checkpoints { get; set; }
-
     public virtual async Task Execute(TContext context) {
-        Checkpoints ??= new(context.Services.GetRequiredService<KrimsonReader>());
-        
         try {
             var processedRecords = await ParseRecords(context)
-                .WhereAwaitWithCancellation(RecordIsUnseen)
                 .OrderBy(record => record.EventTime)
-                .SelectAwaitWithCancellation(Push)
+                .SelectAwaitWithCancellation(AddRecord)
                 .ToListAsync(context.CancellationToken)
                 .ConfigureAwait(false);
 
@@ -34,21 +26,13 @@ public abstract class ExecutableDataSource<TContext> : DataSource, IExecutableDa
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async ValueTask<bool> RecordIsUnseen(SourceRecord record, CancellationToken ct) {
-            var checkpoint = await Checkpoints
-                .GetCheckpoint(record.DestinationTopic!, ct)
-                .ConfigureAwait(false);
-
-            return record.EventTime > checkpoint.Timestamp;
-        }
-
         async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
             if (processedRecords.Any()) {
-                context.SetCheckpoint(SourceCheckpoint.From(processedRecords.Last()));
-
+                var lastEventTime = DateTimeOffset.FromUnixTimeMilliseconds(processedRecords.Last().EventTime);
+                
                 Log.Information(
-                    "{RecordCount} record(s) processed up to checkpoint {Checkpoint}",
-                    processedRecords.Count, context.Checkpoint
+                    "{RecordCount} record(s) processed up to {Checkpoint:O}",
+                    processedRecords.Count, lastEventTime
                 );
             }
 
@@ -76,30 +60,3 @@ public abstract class ExecutableDataSource<TContext> : DataSource, IExecutableDa
 
     public virtual ValueTask OnError(TContext context, Exception exception) => ValueTask.CompletedTask;
 }
-
-// [PublicAPI]
-// public abstract class AutonomousExecutableDataSource<TContext> : ExecutableDataSource<TContext> where TContext : IDataSourceContext {
-//     KrimsonProducer Producer            { get; set; }
-//     bool            SynchronousDelivery { get; set; } = true;
-//
-//     public new virtual void Initialize(IServiceProvider services) {
-//         Producer = services.GetRequiredService<KrimsonProducer>();
-//         base.Initialize(services);
-//     }
-//     
-//     public override async ValueTask<SourceRecord> Push(SourceRecord record, CancellationToken cancellationToken) {
-//         Producer = services.GetRequiredService<KrimsonProducer>(); 
-//         
-//         await Producer
-//              .PushSourceRecord(record, SynchronousDelivery)
-//              .ConfigureAwait(false);
-//
-//          // await record
-//          //     .EnsureProcessed()
-//          //     .ConfigureAwait(false);
-//
-//          return record;
-//      }
-//
-//      public override IAsyncEnumerable<SourceRecord> Records(CancellationToken cancellationToken) => AsyncEnumerable.Empty<SourceRecord>();
-// }

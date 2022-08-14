@@ -15,7 +15,7 @@ public abstract class DataSource : IDataSource {
     
     Channel<SourceRecord> Channel { get; }
 
-    public virtual async ValueTask<SourceRecord> Push(SourceRecord record, CancellationToken cancellationToken) {
+    public virtual async ValueTask<SourceRecord> AddRecord(SourceRecord record, CancellationToken cancellationToken) {
         await Channel.Writer
             .WriteAsync(record, cancellationToken)
             .ConfigureAwait(false);
@@ -25,9 +25,7 @@ public abstract class DataSource : IDataSource {
     
     public virtual IAsyncEnumerable<SourceRecord> Records(CancellationToken cancellationToken) => 
         Channel.Reader.ReadAllAsync(cancellationToken);
-
-    public virtual void Initialize(IServiceProvider services) { }
-
+    
     public virtual ValueTask DisposeAsync() {
         Channel.Writer.TryComplete();
         return ValueTask.CompletedTask;

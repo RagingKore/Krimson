@@ -1,6 +1,6 @@
 using Krimson.Producers;
 
-namespace Krimson.Connectors.Checkpoints;
+namespace Krimson.Connectors;
 
 public static class SourceRecordProducerExtensions {
     public static async ValueTask<SourceRecord> PushSourceRecord(this KrimsonProducer producer, SourceRecord record, bool synchronousDelivery = true) {
