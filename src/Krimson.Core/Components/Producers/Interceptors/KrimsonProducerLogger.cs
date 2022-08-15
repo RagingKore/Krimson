@@ -26,12 +26,12 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
                     );
                 }
                 else {
-                    // log.Verbose(
-                    //     "[{ProducerName}] delivered {MessageType} ({Key}) >> {Topic} [{Partition}] @ {Offset} : {RequestId}",
-                    //     evt.ProducerName, ack.Request.Message.GetType().Name, ack.Request.Key,
-                    //     ack.Position.Topic, ack.Position.Partition.Value, ack.Position.Offset.Value,
-                    //     ack.Request.RequestId
-                    // );
+                    Logger.Verbose(
+                        evt.Result.Exception,
+                        "{ProducerName} | {RequestId} >> {Topic} [{Partition}] @ {Offset}",
+                        evt.ProducerName, evt.Result.RequestId, 
+                        evt.Result.RecordId.Topic, evt.Result.RecordId.Partition, evt.Result.RecordId.Offset
+                    );
                 }
             }
         );

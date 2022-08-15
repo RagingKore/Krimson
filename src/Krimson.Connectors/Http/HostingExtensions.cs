@@ -18,6 +18,7 @@ public static class ServicesExtensions {
                 )
                 .UsingRegistrationStrategy(RegistrationStrategy.Skip)
                 .As<WebhookSourceConnector>()
+                .As<IDataSource>()
                 .WithSingletonLifetime()
         );
 
@@ -27,6 +28,7 @@ public static class ServicesExtensions {
     public static IServiceCollection AddKrimsonWebhookSourceConnector<T>(this IServiceCollection services) where T: WebhookSourceConnector {
         services.TryAddSingleton<DataSourceConsumer>();
         services.TryAddSingleton<T>();
+        services.TryAddSingleton<IDataSource, T>();
         return services;
     }
 }

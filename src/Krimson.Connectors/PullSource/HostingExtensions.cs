@@ -9,7 +9,7 @@ public static class ServicesExtensions {
         
         services.TryAddSingleton<DataSourceConsumer>();
         
-        services.AddSingleton<T>();
+        services.AddSingleton<IDataSource, T>();
 
         return backoffTime is null
             ? services.AddHostedService<PullSourceConnectorHost<T>>()
