@@ -9,7 +9,7 @@ public static class ServicesExtensions {
     public static IServiceCollection AddKrimsonPullSourceConnectors(this IServiceCollection services) {
         services.AddKrimsonReader();
         
-        services.TryAddSingleton<DataSourceConsumer>();
+        services.AddHostedService<DataSourceConsumer>();
         
         services.Scan(
             scan => scan.FromApplicationDependencies()
@@ -29,7 +29,7 @@ public static class ServicesExtensions {
     public static IServiceCollection AddKrimsonPullSourceConnector<T>(this IServiceCollection services, TimeSpan? backoffTime = null) where T : PullSourceConnector {
         services.AddKrimsonReader();
         
-        services.TryAddSingleton<DataSourceConsumer>();
+        services.AddHostedService<DataSourceConsumer>();
 
         services.Scan(scan => scan
             .FromAssemblyOf<T>()
