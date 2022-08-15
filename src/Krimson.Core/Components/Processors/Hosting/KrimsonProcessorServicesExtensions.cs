@@ -5,11 +5,12 @@ using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Scrutor;
 
 namespace Krimson;
 
 [PublicAPI]
-public static class KrimsonProcessorServiceCollectionExtensions {
+public static class KrimsonProcessorServicesExtensions {
     record KrimsonProcessorRegistration(int Order, KrimsonProcessorBuilder Builder);
 
     static IServiceCollection AddKrimsonProcessor(
@@ -21,6 +22,8 @@ public static class KrimsonProcessorServiceCollectionExtensions {
         Ensure.NotNull(build, nameof(build));
         Ensure.Positive(tasks, nameof(tasks));
 
+        services.AddKrimsonModules();
+        
         for (var i = 1; i <= tasks; i++) {
             var order = i;
             services.AddSingleton(ctx => AddWorker(ctx, order));
@@ -81,6 +84,7 @@ public static class KrimsonProcessorServiceCollectionExtensions {
                     .AssignableTo<KrimsonProcessorModule>()
                     .NotInNamespaceOf<KrimsonProcessorModule>()
                 )
+                .UsingRegistrationStrategy(RegistrationStrategy.Skip)
                 .As<KrimsonProcessorModule>()
                 .WithSingletonLifetime()
         );

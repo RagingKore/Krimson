@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <Nullable>enable</Nullable>
-    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+<!--    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>-->
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   

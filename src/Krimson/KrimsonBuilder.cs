@@ -2,6 +2,7 @@
 
 using Confluent.SchemaRegistry;
 using Krimson.Connectors;
+using Krimson.Connectors.Http;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;
@@ -75,6 +76,12 @@ public class KrimsonBuilder {
         return this;
     }
 
+    public KrimsonBuilder AddReader() {
+        Services.AddKrimsonReader();
+        return this;
+    }
+
+
     public KrimsonBuilder AddSerializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
         Services.AddSingleton(ctx => getSerializer(ctx.GetRequiredService<ISchemaRegistryClient>()));
         return this;
@@ -95,29 +102,18 @@ public class KrimsonBuilder {
         return this;
     }
 
-    public KrimsonBuilder AddPeriodicSourceConnector<T>() where T : KrimsonPeriodicSourceConnector {
-        Services.AddKrimsonPeriodicSourceConnector<T>();
-        return this;
-    }
-
-    public KrimsonBuilder AddWebhook<T>() where T : class, IKrimsonWebhook {
-        Services.AddKrimsonWebhook<T>();
+    public KrimsonBuilder AddPullSourceConnector<T>(TimeSpan? backoffTime = null) where T : PullSourceConnector {
+        Services.AddKrimsonPullSourceConnector<T>(backoffTime);
         return this;
     }
     
-    public KrimsonBuilder AddWebhooks()  {
-        Services.AddKrimsonWebhooks();
+    public KrimsonBuilder AddWebhookSourceConnector<T>() where T : WebhookSourceConnector {
+        Services.AddKrimsonWebhookSourceConnector<T>();
         return this;
     }
-}
-
-[PublicAPI]
-public static class KrimsonServiceCollectionExtensions {
-    public static KrimsonBuilder AddKrimson(this IServiceCollection services) => 
-        new KrimsonBuilder(services).AddSchemaRegistry();
     
-    public static IServiceCollection AddKrimson(this IServiceCollection services, Action<KrimsonBuilder> configure) {
-        configure(new KrimsonBuilder(services).AddSchemaRegistry());
-        return services;
+    public KrimsonBuilder AddWebhookSourceConnectors() {
+        Services.AddKrimsonWebhookSourceConnectors();
+        return this;
     }
 }

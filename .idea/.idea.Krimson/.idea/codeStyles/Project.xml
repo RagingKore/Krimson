@@ -1,8 +1,8 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
     <option name="AUTODETECT_INDENTS" value="false" />
-    <option name="RIGHT_MARGIN" value="160" />
-    <option name="SOFT_MARGINS" value="160" />
+    <option name="RIGHT_MARGIN" value="180" />
+    <option name="SOFT_MARGINS" value="180" />
     <XML>
       <option name="XML_SPACE_INSIDE_EMPTY_TAG" value="true" />
     </XML>

@@ -33,7 +33,6 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     /// </summary>
     /// <param name="cancellationToken">Indicates that the start process has been aborted.</param>
     public async Task StartAsync(CancellationToken cancellationToken) {
-
         // execute the real initialization routine
         try {
             Logger.Verbose("initializing...");

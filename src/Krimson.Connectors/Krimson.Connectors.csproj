@@ -14,5 +14,19 @@
   
   <ItemGroup>
     <None Remove="Krimson.Connectors.csproj.DotSettings" />
+    <None Remove="Dump\**" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Remove="Dump\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Remove="Dump\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content Remove="Dump\**" />
+  </ItemGroup>
+  
 </Project>
