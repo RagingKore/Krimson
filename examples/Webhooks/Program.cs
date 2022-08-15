@@ -7,9 +7,9 @@ using Krimson.Connectors.Http;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.UseKrimson()
-    .AddWebhookSourceConnector<PowerMetersWebhook>() // or simply call .AddWebhookSources() to automatically scan and register all webhooks
     .AddReader(rdr => rdr.ClientId("my_app_name"))
-    .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("power-company.meters"));
+    .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("power-company.meters"))
+    .AddWebhookSourceConnector<PowerMetersWebhook>(); // or simply call .AddWebhookSources() to automatically scan and register all webhooks
 
 var app = builder.Build()
     .UseKrimsonWebhooks();
