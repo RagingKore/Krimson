@@ -25,6 +25,8 @@ public static class ServicesExtensions {
     }
 
     public static IServiceCollection AddKrimsonWebhookSourceConnector<T>(this IServiceCollection services) where T: WebhookSourceConnector {
+        services.AddKrimsonReader();
+        
         services.TryAddSingleton<DataSourceConsumer>();
 
         services.Scan(scan => scan

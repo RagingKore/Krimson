@@ -36,13 +36,13 @@ public class SourceRecord {
     public bool Processed           => Processing.Task.IsCompleted;
     
     public string? EventType {
-        get => Headers.TryGetValue("krimson.source.event-type", out var value) ? value : null;
-        set => Headers["krimson.source.event-type"] = value;
+        get => Headers.TryGetValue("krimson.connectors.source.record.event-type", out var value) ? value : null;
+        set => Headers["krimson.connectors.source.record.event-type"] = value;
     }
     
     public string? Source {
-        get => Headers.TryGetValue("krimson.source.name", out var value) ? value : null;
-        internal set => Headers["krimson.source.name"] = value;
+        get => Headers.TryGetValue("krimson.connectors.source.name", out var value) ? value : null;
+        internal set => Headers["krimson.connectors.source.name"] = value;
     }
 
     public void Ack(RecordId recordId)                           => Processing.SetResult(recordId);

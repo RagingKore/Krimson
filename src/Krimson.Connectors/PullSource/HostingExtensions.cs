@@ -1,18 +1,44 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Scrutor;
 
 namespace Krimson.Connectors;
 
 [PublicAPI]
 public static class ServicesExtensions {
-    public static IServiceCollection AddKrimsonPullSourceConnector<T>(this IServiceCollection services, TimeSpan? backoffTime = null) where T : PullSourceConnector {
+    
+    public static IServiceCollection AddKrimsonPullSourceConnectors(this IServiceCollection services) {
         services.AddKrimsonReader();
         
         services.TryAddSingleton<DataSourceConsumer>();
         
-        services.AddSingleton<IDataSource, T>();
+        services.Scan(
+            scan => scan.FromApplicationDependencies()
+                .AddClasses(
+                    classes => classes
+                        .AssignableTo<PullSourceConnector>()
+                        .NotInNamespaceOf<PullSourceConnector>()
+                )
+                .UsingRegistrationStrategy(RegistrationStrategy.Skip)
+                .AsSelfWithInterfaces()
+                .WithSingletonLifetime()
+        );
 
-        return backoffTime is null
-            ? services.AddHostedService<PullSourceConnectorHost<T>>()
-            : services.AddHostedService(ctx => new PullSourceConnectorHost<T>(ctx.GetRequiredService<T>(), ctx, backoffTime));
+        return services;
+    }
+    
+    public static IServiceCollection AddKrimsonPullSourceConnector<T>(this IServiceCollection services, TimeSpan? backoffTime = null) where T : PullSourceConnector {
+        services.AddKrimsonReader();
+        
+        services.TryAddSingleton<DataSourceConsumer>();
+
+        services.Scan(scan => scan
+            .FromAssemblyOf<T>()
+            .AddClasses(classes => classes.AssignableTo<PullSourceConnector>())
+            .UsingRegistrationStrategy(RegistrationStrategy.Skip)
+            .AsSelfWithInterfaces()
+            .WithSingletonLifetime()
+        );
+
+        return services;
     }
 }
