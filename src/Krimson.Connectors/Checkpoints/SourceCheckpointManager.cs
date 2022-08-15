@@ -2,7 +2,7 @@ using Krimson.Readers;
 
 namespace Krimson.Connectors.Checkpoints;
 
-class SourceCheckpointManager {
+public class SourceCheckpointManager {
     public SourceCheckpointManager(KrimsonReader reader) {
         Reader      = reader;
         Checkpoints = new();
