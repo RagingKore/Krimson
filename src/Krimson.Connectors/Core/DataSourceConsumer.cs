@@ -1,6 +1,8 @@
 using Krimson.Connectors.Checkpoints;
 using Krimson.Producers;
 using Krimson.Readers;
+using Serilog;
+using ILogger = Serilog.ILogger;
 
 namespace Krimson.Connectors;
 
@@ -10,6 +12,8 @@ public class DataSourceConsumer<TSource> : DataSourceConsumer where TSource : ID
 }
 
 public class DataSourceConsumer : BackgroundService {
+    static readonly ILogger Logger = Log.ForContext<DataSourceConsumer>();
+    
     public DataSourceConsumer(IEnumerable<IDataSource> sources, KrimsonProducer producer, KrimsonReader reader) {
         Sources     = sources;
         Producer    = producer;
@@ -25,11 +29,12 @@ public class DataSourceConsumer : BackgroundService {
             .SelectMany(x => x.Records(stoppingToken))
             .WhereAwaitWithCancellation(RecordIsUnseen)
             .ConfigureAwait(false);
-        
-        await foreach(var record in records)
+
+        await foreach (var record in records) {
             await Producer
                 .SendSourceRecord(record)
                 .ConfigureAwait(false);
+        }
         
         async ValueTask<bool> RecordIsUnseen(SourceRecord record, CancellationToken ct) {
             var checkpoint = await Checkpoints

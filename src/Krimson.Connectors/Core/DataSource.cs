@@ -17,14 +17,18 @@ public abstract class DataSource<TContext> : IDataSource<TContext> where TContex
 
     protected DataSource(DataSourceOptions? options = null) {
         Channel = CreateBounded<SourceRecord>((options ?? new DataSourceOptions()).QueueLength);
-        Log     = ForContext(SourceContextPropertyName, GetType().Name);
+        Name    = GetType().Name;
+        Log     = ForContext(SourceContextPropertyName, Name);
     }
     
     Channel<SourceRecord> Channel { get; }
 
-    protected ILogger Log { get; } 
+    protected string  Name { get; }
+    protected ILogger Log  { get; }
 
     public virtual async ValueTask<SourceRecord> AddRecord(SourceRecord record, CancellationToken cancellationToken) {
+        record.Source = Name;
+        
         await Channel.Writer
             .WriteAsync(record, cancellationToken)
             .ConfigureAwait(false);

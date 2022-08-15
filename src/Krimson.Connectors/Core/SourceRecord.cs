@@ -30,14 +30,19 @@ public class SourceRecord {
     public string?                     DestinationTopic { get; set; }
     public Dictionary<string, string?> Headers          { get; set; }
     public RecordId                    RecordId         { get; private set; }
-    
+ 
     public bool HasKey              => Key != MessageKey.None;
     public bool HasDestinationTopic => DestinationTopic is not null;
     public bool Processed           => Processing.Task.IsCompleted;
     
     public string? EventType {
-        get => Headers.TryGetValue("eventType", out var value) ? value : "";
-        set => Headers["eventType"] = value;
+        get => Headers.TryGetValue("krimson.source.event-type", out var value) ? value : null;
+        set => Headers["krimson.source.event-type"] = value;
+    }
+    
+    public string? Source {
+        get => Headers.TryGetValue("krimson.source.name", out var value) ? value : null;
+        internal set => Headers["krimson.source.name"] = value;
     }
 
     public void Ack(RecordId recordId)                           => Processing.SetResult(recordId);

@@ -17,8 +17,7 @@ public static class ServicesExtensions {
                         .NotInNamespaceOf<WebhookSourceConnector>()
                 )
                 .UsingRegistrationStrategy(RegistrationStrategy.Skip)
-                .As<WebhookSourceConnector>()
-                .As<IDataSource>()
+                .AsSelfWithInterfaces()
                 .WithSingletonLifetime()
         );
 
@@ -27,8 +26,15 @@ public static class ServicesExtensions {
 
     public static IServiceCollection AddKrimsonWebhookSourceConnector<T>(this IServiceCollection services) where T: WebhookSourceConnector {
         services.TryAddSingleton<DataSourceConsumer>();
-        services.TryAddSingleton<T>();
-        services.TryAddSingleton<IDataSource, T>();
+
+        services.Scan(scan => scan
+            .FromAssemblyOf<T>()
+            .AddClasses(classes => classes.AssignableTo<WebhookSourceConnector>())
+            .UsingRegistrationStrategy(RegistrationStrategy.Skip)
+            .AsSelfWithInterfaces()
+            .WithSingletonLifetime()
+        );
+
         return services;
     }
 }
