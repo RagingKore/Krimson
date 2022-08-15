@@ -7,7 +7,7 @@ public class DataSourceContext : IDataSourceContext {
     public DataSourceContext(IServiceProvider services, CancellationToken cancellationToken) {
         Services          = services;
         CancellationToken = cancellationToken;
-        State             = services.GetRequiredService<IStateStore>();
+        State             = services.GetService<IStateStore>() ?? new InMemoryStateStore();
     }
 
     public IServiceProvider  Services          { get; }
