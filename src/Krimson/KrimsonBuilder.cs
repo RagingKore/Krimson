@@ -102,8 +102,8 @@ public class KrimsonBuilder {
         return this;
     }
 
-    public KrimsonBuilder AddPeriodicSourceConnector<T>(TimeSpan? backoffTime = null) where T : PeriodicSourceConnector {
-        Services.AddKrimsonPeriodicSourceConnector<T>(backoffTime);
+    public KrimsonBuilder AddPullSourceConnector<T>(TimeSpan? backoffTime = null) where T : PullSourceConnector {
+        Services.AddKrimsonPullSourceConnector<T>(backoffTime);
         return this;
     }
     
@@ -116,24 +116,4 @@ public class KrimsonBuilder {
         Services.AddKrimsonWebhookSourceConnectors();
         return this;
     }
-
-    // public KrimsonBuilder AddDataSource<T>() where T : class, IDataSource {
-    //     Services.AddKrimsonDataSource<T>();
-    //     return this;
-    // }
-    //
-    // public KrimsonBuilder AddDataSources() {
-    //     Services.AddKrimsonDataSources();
-    //     return this;
-    // }
-    //
-    // public KrimsonBuilder AddDataSourcesFromNamespaces(params string[] namespaces) {
-    //     Services.AddKrimsonDataSourcesFromNamespaces(namespaces);
-    //     return this;
-    // }
-    //
-    // public KrimsonBuilder AddDataSourcesInNamespaceOf<T>() {
-    //     Services.AddKrimsonDataSourcesInNamespaceOf<T>();
-    //     return this;
-    // }
 }

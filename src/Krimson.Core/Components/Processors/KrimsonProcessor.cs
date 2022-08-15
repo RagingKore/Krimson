@@ -72,12 +72,12 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         Status = KrimsonProcessorStatus.Terminated;
     }
 
-    ILogger                    Logger    { get; }
-    IConsumer<byte[], object?> Consumer  { get; }
-    KrimsonProducer            Producer  { get; }
-    Intercept                  Intercept { get; }
-    KrimsonMasterRouter        Router    { get; }
-    IStateStore        StateStore    { get; }
+    ILogger                    Logger     { get; }
+    IConsumer<byte[], object?> Consumer   { get; }
+    KrimsonProducer            Producer   { get; }
+    Intercept                  Intercept  { get; }
+    KrimsonMasterRouter        Router     { get; }
+    IStateStore                StateStore { get; }
 
     CancellationTokenSource Cancellator  { get; set; } = null!;
     OnProcessorTerminated   OnTerminated { get; set; } = null!;

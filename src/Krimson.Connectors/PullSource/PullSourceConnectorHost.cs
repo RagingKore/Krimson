@@ -1,7 +1,7 @@
 namespace Krimson.Connectors;
 
-public class PeriodicSourceConnectorHost<T> : BackgroundService  where T : ExecutableDataSource<PeriodicSourceContext> {
-    public PeriodicSourceConnectorHost(T source, IServiceProvider services, TimeSpan? backoffTime = null) {
+public class PullSourceConnectorHost<T> : BackgroundService  where T : DataSource<PullSourceContext> {
+    public PullSourceConnectorHost(T source, IServiceProvider services, TimeSpan? backoffTime = null) {
         Source      = source;
         Services    = services;
         BackoffTime = backoffTime ?? GetBackoffTime(GetType());
@@ -15,9 +15,9 @@ public class PeriodicSourceConnectorHost<T> : BackgroundService  where T : Execu
     TimeSpan         BackoffTime { get; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        var context = new PeriodicSourceContext(Services, stoppingToken);
+        var context = new PullSourceContext(Services, stoppingToken);
         while (!context.CancellationToken.IsCancellationRequested) {
-            await Source.Execute(context).ConfigureAwait(false);
+            await Source.Process(context).ConfigureAwait(false);
             await Task.Delay(BackoffTime, context.CancellationToken).ConfigureAwait(false);
         }
     }

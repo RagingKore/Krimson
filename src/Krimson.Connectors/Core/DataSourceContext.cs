@@ -1,4 +1,3 @@
-using Krimson.Connectors.Checkpoints;
 using Krimson.State;
 
 namespace Krimson.Connectors;

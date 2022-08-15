@@ -3,7 +3,7 @@ using Krimson.Producers;
 namespace Krimson.Connectors;
 
 public static class SourceRecordProducerExtensions {
-    public static async ValueTask<SourceRecord> PushSourceRecord(this KrimsonProducer producer, SourceRecord record, bool synchronousDelivery = true) {
+    public static async ValueTask<SourceRecord> SendSourceRecord(this KrimsonProducer producer, SourceRecord record, bool synchronousDelivery = true) {
         var request = ProducerRequest.Builder
             .Key(record.Key)
             .Message(record.Value)

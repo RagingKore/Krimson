@@ -11,7 +11,7 @@ var host = Host
     .ConfigureServices((ctx, services) => {
             services.AddKrimson()
                 .AddProtobuf()
-                .AddPeriodicSourceConnector<PowerMetersSource>()
+                .AddPullSourceConnector<PowerMetersSource>()
                 .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("foo.bar.baz"))
                 .AddReader(rdr => rdr.ClientId("my_app_name"));
 
@@ -34,31 +34,12 @@ interface IPowerMetersClient {
 }
 
 [BackOffTimeSeconds(30)]
-class PowerMetersSource : PeriodicSourceConnector {
+class PowerMetersSource : PullSourceConnector {
     public PowerMetersSource(IPowerMetersClient client) => Client = client;
 
     IPowerMetersClient Client { get; }
-    //
-    // public override async IAsyncEnumerable<JsonNode> SourceData(PeriodicSourceContext context) {
-    //     var result = await Client.GetMeters().ConfigureAwait(false);
-    //
-    //     foreach (var item in result?.AsArray() ?? new JsonArray())
-    //         yield return item!;
-    // }
-    //
-    // public override SourceRecord ParseSourceRecord(JsonNode node) {
-    //     var key       = node["id"]!.GetValue<string>();
-    //     var timestamp = new Timestamp(node["last_modified"]!.GetValue<DateTimeOffset>());
-    //     var data      = Struct.Parser.ParseJson(node.ToJsonString());
-    //
-    //     return new() {
-    //         Key       = key,
-    //         Value     = data,
-    //         Timestamp = timestamp,
-    //         Headers   = new () { { "source", "power-meters" } }
-    //     };
-    // }
-    public override async IAsyncEnumerable<SourceRecord> ParseRecords(PeriodicSourceContext context) {
+   
+    public override async IAsyncEnumerable<SourceRecord> ParseRecords(PullSourceContext context) {
         var result = await Client.GetMeters().ConfigureAwait(false);
         
         foreach (var item in result?.AsArray() ?? new JsonArray())

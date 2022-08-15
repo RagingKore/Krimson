@@ -5,3 +5,7 @@ public interface IDataSource : IAsyncDisposable {
 
     IAsyncEnumerable<SourceRecord> Records(CancellationToken cancellationToken);
 }
+
+public interface IDataSource<in TContext> : IDataSource where TContext : IDataSourceContext {
+    Task Process(TContext context);
+}

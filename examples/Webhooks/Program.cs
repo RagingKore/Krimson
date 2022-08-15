@@ -7,24 +7,18 @@ using Krimson.Connectors.Http;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.UseKrimson()
-    .AddProducer(
-        pdr => pdr
-            .ClientId("my_app_name")
-            .Topic("foo.bar.baz")
-    )
-    .AddWebhookSourceConnectors(); // or simply call .AddWebhooks() to automatically scan and register all webhooks
+    .AddWebhookSourceConnector<PowerMetersWebhook>() // or simply call .AddWebhookSources() to automatically scan and register all webhooks
+    .AddReader(rdr => rdr.ClientId("my_app_name"))
+    .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("power-company.meters"));
 
-var app = builder.Build();
-
-app.UseKrimson();
-
-app.MapGet("/", () => "Hello World!");
+var app = builder.Build()
+    .UseKrimsonWebhooks();
 
 app.Run();
 
 
 [WebhookPath("/meters")]
-class PowerMetersWebhookEndpoint : WebhookSourceConnector {
+class PowerMetersWebhook : WebhookSourceConnector {
     public override ValueTask<bool> OnValidate(WebhookSourceContext context) {
         var header = context.Request.Headers["X-Signature"].ToString();
         return ValueTask.FromResult(header == "this_is_fine");
