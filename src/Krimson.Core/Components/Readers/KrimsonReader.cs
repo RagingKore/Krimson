@@ -4,7 +4,6 @@ using Krimson.Consumers.Interceptors;
 using Krimson.Interceptors;
 using Krimson.Readers.Configuration;
 using Krimson.Readers.Interceptors;
-using Serilog;
 using static Serilog.Core.Constants;
 
 namespace Krimson.Readers;
@@ -21,7 +20,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
     public KrimsonReader(KrimsonReaderOptions options) {
         Options          = options;
         ClientId         = $"{options.ConsumerConfiguration.ClientId}-reader";
-        Logger           = Log.ForContext(SourceContextPropertyName, ClientId);
+        Log              = Serilog.Log.ForContext(SourceContextPropertyName, ClientId);
         BootstrapServers = options.ConsumerConfiguration.BootstrapServers;
         
         Intercept = options.Interceptors
@@ -30,9 +29,9 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             .Intercept;
     }
 
-    KrimsonReaderOptions  Options   { get; }
-    ILogger               Logger    { get; }
-    Intercept             Intercept { get; }
+    KrimsonReaderOptions Options   { get; }
+    ILogger              Log       { get; }
+    Intercept            Intercept { get; }
 
     public string ClientId         { get; }
     public string BootstrapServers { get; }
@@ -112,7 +111,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
 
         using var cancellator = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        Logger.Debug("{Topic} finding last positions", topic);
+        Log.Verbose("{Topic} finding last positions", topic);
 
         var lastPositions = await consumer
             .GetTopicLatestPositions(topic, cancellator.Token)
@@ -122,14 +121,14 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             .ConfigureAwait(false);
 
         if (lastPositions.Any()) {
-            Logger.Debug(
+            Log.Verbose(
                 "{Topic} found last positions: {LastPositions}", 
                 topic, lastPositions.Select(x=> $"{x.Partition.Value}@{x.Offset.Value}")
             );
         }
         
         foreach (var position in lastPositions) {
-            Logger.Debug(
+            Log.Verbose(
                 "{Topic} {Position} attempting to load record from position...", 
                 topic, $"{position.Partition.Value}@{position.Offset.Value}"
             );
@@ -142,7 +141,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
             
             using (cts) {
                 await foreach (var record in consumer.Records(pos => {
-                    Logger.Information(
+                    Log.Verbose(
                         "{Event} {Topic} |> [{Partition}] @ {Offset}",
                         "PartitionEndReached", pos.Topic,
                         pos.Partition.Value, pos.Offset.Value
@@ -150,7 +149,7 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
                     
                     cts.Cancel();
                 }, cts.Token).ConfigureAwait(false)) {
-                    Logger.Debug(
+                    Log.Verbose(
                         "{Topic} {Position} record loaded", 
                         topic, $"{position.Partition.Value}@{position.Offset.Value}"
                     );

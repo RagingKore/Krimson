@@ -43,6 +43,7 @@
 
   <ItemGroup>
     <Using Include="Krimson"/>
+    <Using Include="Serilog"/>
     <Using Include="System"/>
     <Using Include="System.Collections"/>
     <Using Include="System.Collections.Generic"/>

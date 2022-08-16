@@ -20,7 +20,7 @@ Log.Logger = new LoggerConfiguration()
 
 var host = Host
     .CreateDefaultBuilder(args)
-    .UseSerilog()
+    .UseSerilog(Log.Logger)
     .ConfigureServices((ctx, services) => {
             services
                 .AddKrimson()
@@ -50,7 +50,7 @@ class PowerMetersSourceConnector : PullSourceConnector {
             yield return new() {
                 Key       = counter,
                 Value     = Struct.Parser.ParseJson(@"{""success"": ""true""}"),
-                EventTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                EventTime = DateTimeOffset.UtcNow.AddMinutes(60).ToUnixTimeMilliseconds(),
                 EventType = "powerMeterChanged"
             };
         }

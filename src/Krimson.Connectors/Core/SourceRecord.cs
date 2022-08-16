@@ -38,7 +38,7 @@ public class SourceRecord {
     
     public bool ProcessingSuccessful => Processing.Task.IsCompletedSuccessfully && RecordId != RecordId.None;
     public bool ProcessingFaulted    => Processing.Task.IsFaulted;
-    public bool ProcessingSkipped    => ProcessingSuccessful && RecordId == RecordId.None;
+    public bool ProcessingSkipped    => Processing.Task.IsCompletedSuccessfully && RecordId == RecordId.None;
     
     public string? EventType {
         get => Headers.TryGetValue("krimson.connectors.source.record.event-type", out var value) ? value : null;

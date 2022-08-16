@@ -39,7 +39,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             return this;
         }
         catch (Exception ex) {
-            throw new Exception($"Failed to initialize connector: {Name}", ex);
+            throw new($"Failed to initialize source connector: {Name}", ex);
         }
     }
     
@@ -70,27 +70,28 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         }
 
         async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
+      
             if (processedRecords.Any()) {
                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
-            
-                if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
+        
+                if (skipped.Any()) Log.Debug("{RecordCount} record(s) skipped", skipped.Count);
 
                 foreach (var recordSet in processedByTopic) {
                     var lastRecord = recordSet.Last();
-                   
+               
                     Checkpoints.TrackCheckpoint(SourceCheckpoint.From(lastRecord));
 
                     var recordCount = recordSet.Count();
-                    
+                
                     Log.Information(
-                        "{RecordsCount} record(s) processed >> {EventTime} {Topic} [{Partition}] @ {Offset}",
-                        recordCount, FromUnixTimeMilliseconds(lastRecord.EventTime), 
-                        lastRecord.RecordId.Topic, lastRecord.RecordId.Partition, lastRecord.RecordId.Offset
+                        "{RecordsCount} record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
+                        recordCount, lastRecord.RecordId.Topic, lastRecord.RecordId.Partition,
+                        lastRecord.RecordId.Offset, FromUnixTimeMilliseconds(lastRecord.EventTime)
                     );
                 }
             }
-
+            
             try {
                 await OnSuccess(context, processedRecords).ConfigureAwait(false);
             }
@@ -159,7 +160,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             var unseenRecord = record.EventTime > checkpoint.Timestamp;
 
             if (!unseenRecord)
-                Logger.Verbose(
+                Log.Verbose(
                     "{SourceName} | record already processed at least once on {EventTime} | checkpoint: {CheckpointTimestamp}", 
                     record.Source, record.EventTime, checkpoint.Timestamp
                 );
