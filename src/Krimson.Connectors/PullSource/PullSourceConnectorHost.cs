@@ -15,15 +15,10 @@ public class PullSourceConnectorHost<T> : BackgroundService where T : DataSource
     TimeSpan         BackoffTime { get; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        try {
-            var context = new PullSourceContext(Services, stoppingToken);
-            while (!context.CancellationToken.IsCancellationRequested) {
-                await Source.Process(context).ConfigureAwait(false);
-                await Task.Delay(BackoffTime, context.CancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (Exception ex) {
-            throw;
+        var context = new PullSourceContext(Services, stoppingToken);
+        while (!context.CancellationToken.IsCancellationRequested) {
+            await Source.Process(context).ConfigureAwait(false);
+            await Task.Delay(BackoffTime, context.CancellationToken).ConfigureAwait(false);
         }
     }
 }
