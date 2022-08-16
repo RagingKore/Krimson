@@ -159,7 +159,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             var unseenRecord = record.EventTime > checkpoint.Timestamp;
 
             if (!unseenRecord)
-                Logger.Debug(
+                Logger.Verbose(
                     "{SourceName} | record already processed at least once on {EventTime} | checkpoint: {CheckpointTimestamp}", 
                     record.Source, record.EventTime, checkpoint.Timestamp
                 );
