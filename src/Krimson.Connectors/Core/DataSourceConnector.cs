@@ -1,7 +1,6 @@
 using Krimson.Connectors.Checkpoints;
 using Krimson.Producers;
 using Krimson.Readers;
-using Serilog;
 using static System.DateTimeOffset;
 using static Serilog.Core.Constants;
 using static Serilog.Log;
@@ -13,15 +12,15 @@ namespace Krimson.Connectors;
 public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TContext> where TContext : IDataSourceContext {
     protected DataSourceConnector() {
         Name        = GetType().Name;
-        Logger      = ForContext(SourceContextPropertyName, Name);
+        Log         = ForContext(SourceContextPropertyName, Name);
         Initialized = new();
         Producer    = null!;
         Checkpoints = null!;
     }
 
     protected InterlockedBoolean Initialized { get; }
-    protected ILogger            Logger      { get; }
-    
+    protected ILogger            Log         { get; }
+
     protected KrimsonProducer         Producer    { get; set; }
     protected SourceCheckpointManager Checkpoints { get; set; }
     protected bool                    Synchronous { get; set; }
@@ -50,7 +49,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         try {
             var records = await ParseRecords(context)
                 .OrderBy(record => record.EventTime)
-                .SelectAwaitWithCancellation(AddRecord)
+                .SelectAwaitWithCancellation(ProcessRecord)
                 .ToListAsync(context.CancellationToken)
                 .ConfigureAwait(false);
     
@@ -75,7 +74,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
             
-                if (skipped.Any()) Logger.Information("{RecordCount} record(s) skipped", skipped.Count);
+                if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
 
                 foreach (var recordSet in processedByTopic) {
                     var lastRecord = recordSet.Last();
@@ -84,7 +83,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
                     var recordCount = recordSet.Count();
                     
-                    Logger.Information(
+                    Log.Information(
                         "{RecordsCount} record(s) processed >> {EventTime} {Topic} [{Partition}] @ {Offset}",
                         recordCount, FromUnixTimeMilliseconds(lastRecord.EventTime), 
                         lastRecord.RecordId.Topic, lastRecord.RecordId.Partition, lastRecord.RecordId.Offset
@@ -96,7 +95,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 await OnSuccess(context, processedRecords).ConfigureAwait(false);
             }
             catch (Exception ex) {
-                Logger.Error("{Event} user exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
+                Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
             }
         }
 
@@ -105,12 +104,14 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 await OnError(context, exception).ConfigureAwait(false);
             }
             catch (Exception ex) {
-                Logger.Error("{Event} user exception: {ErrorMessage}", nameof(OnError), ex.Message);
+                Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnError), ex.Message);
             }
         }
     }
+  
+    public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
-    public virtual async ValueTask<SourceRecord> AddRecord(SourceRecord record, CancellationToken cancellationToken) {
+    public virtual async ValueTask<SourceRecord> ProcessRecord(SourceRecord record, CancellationToken cancellationToken) {
         // ensure source connector name is set
         record.Source ??= Name;
         
@@ -158,7 +159,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             var unseenRecord = record.EventTime > checkpoint.Timestamp;
 
             if (!unseenRecord)
-                Log.Logger.Debug(
+                Logger.Debug(
                     "{SourceName} | record already processed at least once on {EventTime} | checkpoint: {CheckpointTimestamp}", 
                     record.Source, record.EventTime, checkpoint.Timestamp
                 );
@@ -166,9 +167,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             return unseenRecord;
         }
     }
-    
-    public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
-
+  
     public virtual ValueTask OnSuccess(TContext context, List<SourceRecord> processedRecords) => ValueTask.CompletedTask;
 
     public virtual ValueTask OnError(TContext context, Exception exception) => ValueTask.CompletedTask;
