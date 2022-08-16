@@ -8,7 +8,7 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
     public KrimsonProducerLogger() {
         On<BeforeProduce>(
             evt => {
-                Logger.Debug(
+                Logger.Verbose(
                     "{ProducerName} | {RequestId} | sending {MessageType} ({Key}) >> {Topic}",
                     evt.ProducerName, evt.Request.RequestId,
                     evt.Request.Message.GetType().Name, evt.Request.Key, evt.Request.Topic
@@ -26,7 +26,7 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
                     );
                 }
                 else {
-                    Logger.Verbose(
+                    Logger.Debug(
                         evt.Result.Exception,
                         "{ProducerName} | {RequestId} >> {Topic} [{Partition}] @ {Offset}",
                         evt.ProducerName, evt.Result.RequestId, 

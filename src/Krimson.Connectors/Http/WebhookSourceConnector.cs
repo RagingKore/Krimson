@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Krimson.Connectors.Http;
 
 [PublicAPI]
-public abstract class WebhookSourceConnector : DataSource<WebhookSourceContext> {
+public abstract class WebhookSourceConnector : DataSourceConnector<WebhookSourceContext> {
     public override async Task Process(WebhookSourceContext context) {
         var isValid = await OnValidate(context).ConfigureAwait(false);
 

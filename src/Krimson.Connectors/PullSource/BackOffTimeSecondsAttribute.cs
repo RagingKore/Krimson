@@ -8,8 +8,3 @@ public class BackOffTimeSecondsAttribute : Attribute {
 
     public static implicit operator TimeSpan(BackOffTimeSecondsAttribute self) => self.Value;
 }
-
-[AttributeUsage(AttributeTargets.Class)]
-public class BackOffTimeAttribute : BackOffTimeSecondsAttribute {
-    public BackOffTimeAttribute(int seconds) : base(seconds) { }
-}

@@ -4,24 +4,30 @@ using Krimson;
 using Krimson.Connectors;
 using Krimson.Extensions.DependencyInjection;
 using Refit;
-using Timestamp = Confluent.Kafka.Timestamp;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .Enrich.FromLogContext()
+    .WriteTo.Logger(
+        logger => logger.WriteTo.Console(
+            theme: AnsiConsoleTheme.Literate, applyThemeToRedirectedOutput: true,
+            outputTemplate: "[{Timestamp:mm:ss.fff} {Level:u3}] {SourceContext}{NewLine}{Message}{NewLine}{Exception}"
+        )
+    )
+    .CreateLogger();
 
 var host = Host
     .CreateDefaultBuilder(args)
+    .UseSerilog()
     .ConfigureServices((ctx, services) => {
-            services.AddKrimson()
+            services
+                .AddKrimson()
                 .AddProtobuf()
-                .AddPullSourceConnector<PowerMetersSource>()
-                .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("foo.bar.baz"))
-                .AddReader(rdr => rdr.ClientId("my_app_name"));
-
-            services.AddRefitClient<IPowerMetersClient>()
-                .ConfigureHttpClient(
-                    client => {
-                        client.BaseAddress                         = new(ctx.Configuration["PowerMetersClient:Url"]);
-                        client.DefaultRequestHeaders.Authorization = new("Token", ctx.Configuration["PowerMetersClient:ApiKey"]);
-                    }
-                );
+                .AddProducer(pdr => pdr.ClientId("power-meters-cnx").Topic("foo.bar.baz"))
+                .AddReader(rdr => rdr.ClientId("power-meters-cnx"))
+                .AddPullSourceConnector<PowerMetersSourceConnector>();
         }
     )
     .Build();
@@ -33,29 +39,19 @@ interface IPowerMetersClient {
     public Task<JsonObject?> GetMeters();
 }
 
-[BackOffTimeSeconds(30)]
-class PowerMetersSource : PullSourceConnector {
-    public PowerMetersSource(IPowerMetersClient client) => Client = client;
-
-    IPowerMetersClient Client { get; }
-   
+[BackOffTimeSeconds(1)]
+class PowerMetersSourceConnector : PullSourceConnector {
+    int counter;
+    
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(PullSourceContext context) {
-        var result = await Client.GetMeters().ConfigureAwait(false);
-        
-        foreach (var item in result?.AsArray() ?? new JsonArray())
-            yield return ParseRecord(item!);
-        
-        static SourceRecord ParseRecord(JsonNode node) {
-            var key       = node["id"]!.GetValue<string>();
-            var eventTime = node["last_modified"]!.GetValue<DateTimeOffset>().ToUnixTimeMilliseconds();
-            var data      = Struct.Parser.ParseJson(node.ToJsonString());
-        
-            return new() {
-                Key              = key,
-                Value            = data,
-                EventTime        = eventTime,
-                DestinationTopic = null,
-                Headers          = new () { { "source", "power-meters" } }
+        for (var i = 1; i <= 500; i++) {
+            counter += i;
+
+            yield return new() {
+                Key       = counter,
+                Value     = Struct.Parser.ParseJson(@"{""success"": ""true""}"),
+                EventTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                EventType = "powerMeterChanged"
             };
         }
     }

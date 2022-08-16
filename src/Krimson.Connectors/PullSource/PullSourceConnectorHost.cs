@@ -1,13 +1,13 @@
 namespace Krimson.Connectors;
 
-public class PullSourceConnectorHost<T> : BackgroundService  where T : DataSource<PullSourceContext> {
+public class PullSourceConnectorHost<T> : BackgroundService where T : DataSourceConnector<PullSourceContext> {
     public PullSourceConnectorHost(T source, IServiceProvider services, TimeSpan? backoffTime = null) {
         Source      = source;
         Services    = services;
-        BackoffTime = backoffTime ?? GetBackoffTime(GetType());
+        BackoffTime = backoffTime ?? GetBackoffTime(typeof(T));
 
         static TimeSpan GetBackoffTime(Type type) => 
-            (BackOffTimeAttribute?)Attribute.GetCustomAttribute(type, typeof(BackOffTimeAttribute)) ?? TimeSpan.FromSeconds(30);
+            (BackOffTimeSecondsAttribute?)Attribute.GetCustomAttribute(type, typeof(BackOffTimeSecondsAttribute)) ?? TimeSpan.FromSeconds(30);
     }
 
     T                Source      { get; }
@@ -15,10 +15,15 @@ public class PullSourceConnectorHost<T> : BackgroundService  where T : DataSourc
     TimeSpan         BackoffTime { get; }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        var context = new PullSourceContext(Services, stoppingToken);
-        while (!context.CancellationToken.IsCancellationRequested) {
-            await Source.Process(context).ConfigureAwait(false);
-            await Task.Delay(BackoffTime, context.CancellationToken).ConfigureAwait(false);
+        try {
+            var context = new PullSourceContext(Services, stoppingToken);
+            while (!context.CancellationToken.IsCancellationRequested) {
+                await Source.Process(context).ConfigureAwait(false);
+                await Task.Delay(BackoffTime, context.CancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex) {
+            throw;
         }
     }
 }

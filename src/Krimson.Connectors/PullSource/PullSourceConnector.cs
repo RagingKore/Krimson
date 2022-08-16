@@ -1,3 +1,3 @@
 namespace Krimson.Connectors;
 
-public abstract class PullSourceConnector : DataSource<PullSourceContext> { }
+public abstract class PullSourceConnector : DataSourceConnector<PullSourceContext> { }

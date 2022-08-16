@@ -6,9 +6,7 @@ namespace Krimson.Connectors.Http;
 public static class ServicesExtensions {
     public static IServiceCollection AddKrimsonWebhookSourceConnectors(this IServiceCollection services) {
         services.AddKrimsonReader();
-        
-        services.AddHostedService<DataSourceConsumer>();
-        
+ 
         services.Scan(
             scan => scan.FromApplicationDependencies()
                 .AddClasses(
@@ -26,8 +24,6 @@ public static class ServicesExtensions {
 
     public static IServiceCollection AddKrimsonWebhookSourceConnector<T>(this IServiceCollection services) where T: WebhookSourceConnector {
         services.AddKrimsonReader();
-        
-        services.AddHostedService<DataSourceConsumer>();
 
         services.Scan(scan => scan
             .FromAssemblyOf<T>()
