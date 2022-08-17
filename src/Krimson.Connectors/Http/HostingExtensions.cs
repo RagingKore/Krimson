@@ -29,7 +29,7 @@ public static class ServicesExtensions {
             .FromAssemblyOf<T>()
             .AddClasses(classes => classes.AssignableTo<WebhookSourceConnector>())
             .UsingRegistrationStrategy(RegistrationStrategy.Skip)
-            .AsSelfWithInterfaces()
+            .As<WebhookSourceConnector>()
             .WithSingletonLifetime()
         );
 
