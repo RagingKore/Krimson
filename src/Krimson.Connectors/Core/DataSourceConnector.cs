@@ -70,7 +70,6 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         }
 
         async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
-      
             if (processedRecords.Any()) {
                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();

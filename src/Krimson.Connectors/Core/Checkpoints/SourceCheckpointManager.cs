@@ -1,4 +1,5 @@
 using Krimson.Readers;
+using static System.DateTimeOffset;
 using static Serilog.Log;
 
 namespace Krimson.Connectors.Checkpoints;
@@ -25,7 +26,7 @@ public class SourceCheckpointManager {
         Log.Information(
             "checkpoint loaded {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
             loadedCheckpoint.RecordId.Topic, loadedCheckpoint.RecordId.Partition,
-            loadedCheckpoint.RecordId.Offset, loadedCheckpoint.Timestamp
+            loadedCheckpoint.RecordId.Offset, FromUnixTimeMilliseconds(loadedCheckpoint.Timestamp)
         );
 
         return Checkpoints[topic] = loadedCheckpoint;
