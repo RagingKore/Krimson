@@ -8,14 +8,22 @@ using ILogger = Serilog.ILogger;
 
 namespace Krimson.Connectors;
 
+public delegate ValueTask OnSuccess<in TContext>(TContext context, List<SourceRecord> processedRecords);
+
+public delegate ValueTask OnError<in TContext>(TContext context, Exception exception);
+
 [PublicAPI]
 public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TContext> where TContext : IDataSourceContext {
     protected DataSourceConnector() {
-        Name        = GetType().Name;
-        Log         = ForContext(SourceContextPropertyName, Name);
+        Name = GetType().Name;
+        Log  = ForContext(SourceContextPropertyName, Name);
+        
         Initialized = new();
         Producer    = null!;
         Checkpoints = null!;
+
+        OnSuccessHandler = (ctx, records) => ValueTask.CompletedTask;
+        OnErrorHandler   = (ctx, ex) => ValueTask.CompletedTask;
     }
 
     protected InterlockedBoolean Initialized { get; }
@@ -24,6 +32,9 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     protected KrimsonProducer         Producer    { get; set; }
     protected SourceCheckpointManager Checkpoints { get; set; }
     protected bool                    Synchronous { get; set; }
+    
+    OnSuccess<TContext> OnSuccessHandler { get; set; }
+    OnError<TContext>   OnErrorHandler   { get; set; }
 
     public string Name { get; }
 
@@ -90,9 +101,11 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                     );
                 }
             }
-            
+            else
+                Log.Information("No source data available to process");
+
             try {
-                await OnSuccess(context, processedRecords).ConfigureAwait(false);
+                await OnSuccessHandler(context, processedRecords).ConfigureAwait(false);
             }
             catch (Exception ex) {
                 Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
@@ -100,8 +113,10 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         }
 
         async ValueTask OnErrorInternal(Exception exception) {
+            Log.Error(exception, "Failed to process source data!");
+            
             try {
-                await OnError(context, exception).ConfigureAwait(false);
+                await OnErrorHandler(context, exception).ConfigureAwait(false);
             }
             catch (Exception ex) {
                 Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnError), ex.Message);
@@ -167,10 +182,12 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             return unseenRecord;
         }
     }
-  
-    public virtual ValueTask OnSuccess(TContext context, List<SourceRecord> processedRecords) => ValueTask.CompletedTask;
-
-    public virtual ValueTask OnError(TContext context, Exception exception) => ValueTask.CompletedTask;
     
     public virtual ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    
+    protected void OnSuccess(OnSuccess<TContext> handler) => 
+        OnSuccessHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+    
+    protected void OnError(OnError<TContext> handler) =>
+        OnErrorHandler = handler ?? throw new ArgumentNullException(nameof(handler));
 }

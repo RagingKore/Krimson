@@ -19,9 +19,13 @@ app.Run();
 
 [WebhookPath("/meters")]
 class PowerMetersWebhook : WebhookSourceConnector {
-    public override ValueTask<bool> OnValidate(WebhookSourceContext context) {
-        var header = context.Request.Headers["X-Signature"].ToString();
-        return ValueTask.FromResult(header == "this_is_fine");
+    public PowerMetersWebhook() {
+        OnValidate(
+            ctx => {
+                var header = ctx.Request.Headers["X-Signature"].ToString();
+                return ValueTask.FromResult(header == "this_is_fine");
+            }
+        );
     }
     
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(WebhookSourceContext context) {

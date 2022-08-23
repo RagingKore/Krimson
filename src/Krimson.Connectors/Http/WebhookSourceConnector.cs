@@ -2,39 +2,57 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Krimson.Connectors.Http;
 
+public delegate ValueTask<bool> OnValidate(WebhookSourceContext context);
+
 [PublicAPI]
 public abstract class WebhookSourceConnector : DataSourceConnector<WebhookSourceContext> {
+    protected WebhookSourceConnector() {
+        OnValidateHandler = _ => ValueTask.FromResult(true);
+        
+        OnSuccess((ctx, _) => ctx.SetResult(Results.Accepted()));
+        
+        OnError((ctx, ex) => {
+            var problem = new ProblemDetails {
+                Status   = StatusCodes.Status500InternalServerError,
+                Instance = ctx.Request.Path,
+                Title    = ex.Message,
+                Detail   = ex.StackTrace
+            };
+
+            return ctx.SetResult(Results.Problem(problem));
+        });
+    }
+    
+    OnValidate OnValidateHandler { get; set; }
+
     public override async Task Process(WebhookSourceContext context) {
-        var isValid = await OnValidate(context).ConfigureAwait(false);
+        try {
+            var isValid = await OnValidateHandler(context).ConfigureAwait(false);
 
-        if (!isValid ) {
-            // return bad request by default
-            if (!context.Response.HasStarted) 
-                await context
-                    .SetResult(Results.BadRequest())
-                    .ConfigureAwait(false);
+            if (!isValid ) {
+                Log.Error("Invalid request on {RequestPath}!", context.Request.Path);
+            
+                // return bad request by default
+                if (!context.Response.HasStarted) 
+                    await context
+                        .SetResult(Results.BadRequest())
+                        .ConfigureAwait(false);
 
-            // get out
-            return;
+                // get out
+                return;
+            }
+        }
+        catch (Exception ex) {
+            Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnValidate), ex.Message);
+            throw;
         }
 
         await base.Process(context).ConfigureAwait(false);
     }
-
-    public virtual ValueTask<bool> OnValidate(WebhookSourceContext context) =>
-        ValueTask.FromResult(true);
-
-    public new virtual ValueTask OnSuccess(WebhookSourceContext context, List<SourceRecord> processedRecords) => 
-        context.SetResult(Results.Accepted());
-
-    public new virtual ValueTask OnError(WebhookSourceContext context, Exception exception) {
-        var problem = new ProblemDetails {
-            Status   = StatusCodes.Status500InternalServerError,
-            Instance = context.Request.Path,
-            Title    = exception.Message,
-            Detail   = exception.StackTrace
-        };
-
-        return context.SetResult(Results.Problem(problem));
-    }
+    
+    /// <summary>
+    /// Executed when receiving a request before processing any data.
+    /// </summary>
+    protected void OnValidate(OnValidate handler) => 
+        OnValidateHandler = handler ?? throw new ArgumentNullException(nameof(handler));
 } 
