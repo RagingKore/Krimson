@@ -1,12 +1,13 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+<!--    <TargetFramework>net6.0</TargetFramework>-->
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <LangVersion>11</LangVersion>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
-    <!--    <LangVersion>preview</LangVersion>-->
-    <!--    <EnablePreviewFeatures>True</EnablePreviewFeatures>-->
   </PropertyGroup>
   
   <PropertyGroup>
@@ -35,7 +36,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="4.1.0" PrivateAssets="All"/>
+    <PackageReference Include="MinVer" Version="4.2.0" PrivateAssets="All"/>
     <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" PrivateAssets="All"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
     <!--    <None Include="$(RepoRoot)\e-logo.png" Pack="true" PackagePath="\"/>-->

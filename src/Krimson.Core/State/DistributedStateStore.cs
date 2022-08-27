@@ -16,41 +16,58 @@ public class DistributedStateStore : IStateStore {
     DistributedCacheEntryOptions EntryOptions { get; }
 
     public async ValueTask Set<T>(object key, T value, CancellationToken cancellationToken = default) {
+        if (key is null) throw new ArgumentNullException(nameof(key));
+
         await Cache
-            .SetAsync(key.ToString(), JsonSerializer.SerializeToUtf8Bytes(value), EntryOptions, cancellationToken)
+            .SetAsync(key.ToString()!, JsonSerializer.SerializeToUtf8Bytes(value), EntryOptions, cancellationToken)
             .ConfigureAwait(false);
     }
 
     public async ValueTask<T?> Get<T>(object key, CancellationToken cancellationToken = default) {
+        if (key is null) throw new ArgumentNullException(nameof(key));
+
         var bytes = await Cache
-            .GetAsync(key.ToString(), cancellationToken)
+            .GetAsync(key.ToString()!, cancellationToken)
             .ConfigureAwait(false);
 
         return JsonSerializer.Deserialize<T>(bytes);
     }
 
     public async ValueTask Delete<T>(object key, CancellationToken cancellationToken = default) {
+        if (key is null) throw new ArgumentNullException(nameof(key));
+
         await Cache
-            .RemoveAsync(key.ToString(), cancellationToken)
+            .RemoveAsync(key.ToString()!, cancellationToken)
             .ConfigureAwait(false);
     }
 
     public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T>> factory, CancellationToken cancellationToken = default) {
-        var cacheKey = key.ToString();
+        if (key is null) throw new ArgumentNullException(nameof(key));
+
+        var cacheKey = key.ToString()!;
         
         try {
             var data = await Cache
                 .GetAsync(cacheKey, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (data.Length > 0)
+            if (data?.Length > 0)
                 return JsonSerializer.Deserialize<T>(data);
         }
         catch (Exception ex) {
             Log.Warning(ex, "Failed to get value: {Key}", key);
+            throw;
         }
 
-        var value = await factory().ConfigureAwait(false);
+        T value;
+        
+        try {
+            value = await factory().ConfigureAwait(false);
+        }
+        catch (Exception ex) {
+            Log.Warning(ex, "Failed to create value: {Key}", key);
+            throw;
+        }
 
         try {
             await Cache
@@ -59,6 +76,7 @@ public class DistributedStateStore : IStateStore {
         }
         catch (Exception ex) {
             Log.Warning(ex, "Failed to set value: {Key}", key);
+            throw;
         }
 
         return value;

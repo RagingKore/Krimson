@@ -67,6 +67,13 @@ public static class KrimsonProcessorServicesExtensions {
     
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
+        int tasks,
+        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    ) => AddKrimsonProcessor(services, (_, builder) => build(builder), tasks, initialize);
+    
+    public static IServiceCollection AddKrimsonProcessor(
+        this IServiceCollection services,
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) => AddKrimsonProcessor(services, build, 1, initialize);
@@ -77,15 +84,16 @@ public static class KrimsonProcessorServicesExtensions {
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) => AddKrimsonProcessor(services, (_, builder) => build(builder), 1, initialize);
 
-    public static IServiceCollection AddKrimsonModules(this IServiceCollection services) =>
+    static IServiceCollection AddKrimsonModules(this IServiceCollection services) =>
         services.Scan(
             scan => scan.FromApplicationDependencies()
                 .AddClasses(classes => classes
                     .AssignableTo<KrimsonProcessorModule>()
                     .NotInNamespaceOf<KrimsonProcessorModule>()
                 )
-                .UsingRegistrationStrategy(RegistrationStrategy.Skip)
                 .As<KrimsonProcessorModule>()
+                .AsImplementedInterfaces()
+                .AsSelf()
                 .WithSingletonLifetime()
         );
 }

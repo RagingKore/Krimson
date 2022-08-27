@@ -26,14 +26,18 @@ public class KrimsonBuilder {
         return this;
     }
 
-    public KrimsonBuilder AddModules() {
-        Services.AddKrimsonModules();
-        return this;
-    }
-
     public KrimsonBuilder AddProcessor(
         int tasks,
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
+        Func<IServiceProvider, CancellationToken, Task>? initialize = null
+    ) {
+        Services.AddKrimsonProcessor(tasks, build, initialize);
+        return this;
+    }
+    
+    public KrimsonBuilder AddProcessor(
+        int tasks,
+        Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) {
         Services.AddKrimsonProcessor(tasks, build, initialize);
@@ -80,7 +84,6 @@ public class KrimsonBuilder {
         Services.AddKrimsonReader();
         return this;
     }
-
 
     public KrimsonBuilder AddSerializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
         Services.AddSingleton(ctx => getSerializer(ctx.GetRequiredService<ISchemaRegistryClient>()));
