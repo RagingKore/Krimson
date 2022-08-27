@@ -1,4 +1,4 @@
-﻿ARG BUILDER_IMG=mcr.microsoft.com/dotnet/sdk:6.0
+﻿ARG BUILDER_IMG=mcr.microsoft.com/dotnet/sdk:7.0
 
 FROM $BUILDER_IMG AS build
 
