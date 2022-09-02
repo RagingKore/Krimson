@@ -50,6 +50,8 @@ public class KrimsonProcessorRouter {
 
 [PublicAPI]
 public class KrimsonMasterRouter {
+    static readonly ILogger Log = Serilog.Log.ForContext<KrimsonMasterRouter>();
+    
     List<KrimsonProcessorModule> Modules { get; } = new();
    
     public bool HasRoutes => Modules.Any(x => x.Router.HasRoutes);
@@ -68,6 +70,11 @@ public class KrimsonMasterRouter {
         if (!module.Router.HasRoutes)
             throw new InvalidOperationException($"Module {module.GetType().Name} has no routes");
 
+        Log.Information(
+            "Module {Module} routes added: {Messages}", 
+            module.GetType().Name, module.Router.Routes.Select(x => x.RoutingKey)
+        );
+        
         Modules.Add(module);
         
         return this;
