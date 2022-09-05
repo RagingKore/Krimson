@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
   <ItemGroup>
-<!--    <PackageReference Include="Grpc.AspNetCore" Version="2.46.0" />-->
     <PackageReference Include="Google.Protobuf" Version="3.21.5" />
     <PackageReference Include="Grpc.Tools" Version="2.48.1">
       <PrivateAssets>all</PrivateAssets>
@@ -9,13 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="telemetry.proto">
-<!--      <GrpcServices>None</GrpcServices>-->
-<!--      <Access>Public</Access>-->
-<!--      <ProtoCompile>True</ProtoCompile>-->
-<!--      <CompileOutputs>True</CompileOutputs>-->
-<!--      <OutputDir>obj\Release/net6.0/</OutputDir>-->
-<!--      <Generator>MSBuild:Compile</Generator>-->
-    </Protobuf>
+    <Protobuf Include="telemetry.proto" />
   </ItemGroup>
 </Project>

@@ -2,13 +2,6 @@
   <PropertyGroup>
     <RootNamespace>Krimson</RootNamespace>
   </PropertyGroup>
-
-<!--  <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'Arm64' And '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'True'">-->
-<!--    <Content Include="/opt/homebrew/Cellar/librdkafka/1.9.2/lib/librdkafka.dylib">-->
-<!--      <Link>librdkafka.dylib</Link>-->
-<!--      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
-<!--    </Content>-->
-<!--  </ItemGroup>-->
   
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="1.9.2" />
