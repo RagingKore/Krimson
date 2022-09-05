@@ -95,9 +95,9 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                     var recordCount = recordSet.Count();
                 
                     Log.Information(
-                        "{RecordsCount} record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
+                        "{RecordsCount} record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} with event time {EventTime}ms ({EventTimeDate:O})",
                         recordCount, lastRecord.RecordId.Topic, lastRecord.RecordId.Partition,
-                        lastRecord.RecordId.Offset, FromUnixTimeMilliseconds(lastRecord.EventTime)
+                        lastRecord.RecordId.Offset, lastRecord.EventTime, FromUnixTimeMilliseconds(lastRecord.EventTime)
                     );
                 }
             }
