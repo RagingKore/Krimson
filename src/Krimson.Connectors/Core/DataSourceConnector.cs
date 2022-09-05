@@ -85,7 +85,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
         
-                if (skipped.Any()) Log.Debug("{RecordCount} record(s) skipped", skipped.Count);
+                if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
 
                 foreach (var recordSet in processedByTopic) {
                     var lastRecord = recordSet.Last();
@@ -95,7 +95,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                     var recordCount = recordSet.Count();
                 
                     Log.Information(
-                        "{RecordsCount} Record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
+                        "{RecordsCount} record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
                         recordCount, lastRecord.RecordId.Topic, lastRecord.RecordId.Partition,
                         lastRecord.RecordId.Offset, FromUnixTimeMilliseconds(lastRecord.EventTime)
                     );
@@ -126,7 +126,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
   
     public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
-    public virtual async ValueTask<SourceRecord> ProcessRecord(SourceRecord record, CancellationToken cancellationToken) {
+    public virtual async ValueTask<SourceRecord> ProcessRecord(SourceRecord record, int index, CancellationToken cancellationToken) {
         // ensure source connector name is set
         record.Source ??= Name;
         
@@ -134,7 +134,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         record.DestinationTopic ??= Producer.Topic;
 
         if (!record.HasDestinationTopic)
-            throw new($"{Name} Found record with missing destination topic!");
+            throw new($"{Name} Found record in position {index} with missing destination topic!");
 
         var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
 
@@ -174,9 +174,9 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             var unseenRecord = record.EventTime > checkpoint.Timestamp;
 
             if (!unseenRecord)
-                Log.Verbose(
-                    "{SourceName} Record already processed at least once on {EventTime} | Checkpoint: {CheckpointTimestamp}", 
-                    record.Source, record.EventTime, checkpoint.Timestamp
+                Log.Warning(
+                    "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Checkpoint: {CheckpointTimestamp}", 
+                    record.Source, index, record.EventTime, checkpoint.Timestamp
                 );
 
             return unseenRecord;

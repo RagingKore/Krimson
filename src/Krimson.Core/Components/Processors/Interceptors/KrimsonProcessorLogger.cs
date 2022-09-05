@@ -18,8 +18,8 @@ class KrimsonProcessorLogger : InterceptorModule {
                 
                 foreach (var (moduleName, key) in evt.Processor.RoutingKeys) {
                     Logger.Information(
-                        "{ProcessorName} Consumes {RoutingKey} using {Module}", 
-                        evt.Processor.ClientId, key, moduleName
+                        "{ProcessorName} Module {Module} consumes {RoutingKey}", 
+                        evt.Processor.ClientId, moduleName, key
                     );
                 }
             }
@@ -51,9 +51,9 @@ class KrimsonProcessorLogger : InterceptorModule {
                         evt.Processor.ClientId, nameof(ProcessorTerminated)
                     );
                 else
-                    Logger.Debug(
-                        evt.Exception, "{ProcessorName} {Event} ## {ErrorMessage}",
-                        evt.Processor.ClientId, "ViolentlyTerminated", evt.Exception.Message
+                    Logger.Warning(
+                        evt.Exception, "{ProcessorName} {Event} {ErrorMessage}",
+                        evt.Processor.ClientId, "ProcessorViolentlyTerminated", evt.Exception.Message
                     );
             }
         );
@@ -62,7 +62,7 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 Logger.Warning(
                     evt.Exception, "{ProcessorName} {Event} user handling error: {ErrorMessage}", 
-                    evt.Processor.ClientId, "UserHandlingError", evt.Exception!.Message
+                    evt.Processor.ClientId, "ProcessorTerminatedUserHandlingError", evt.Exception!.Message
                 );
             }
         );
@@ -161,7 +161,7 @@ class KrimsonProcessorLogger : InterceptorModule {
                 
                 if (evt.Error.IsError) {
                     var kex = evt.Error.AsKafkaException()!;
-                    Logger.Error(kex, "{ProcessorName} {Event} ## {ErrorMessage}", evt.Processor.ClientId, "PositionsCommitError", kex.Message);
+                    Logger.Error(kex, "{ProcessorName} {Event} {ErrorMessage}", evt.Processor.ClientId, "PositionsCommitError", kex.Message);
                 }
             }
         );
@@ -208,7 +208,7 @@ class KrimsonProcessorLogger : InterceptorModule {
         On<InputError>(
             evt => {
                 Logger.Verbose(
-                    "{ProcessorName} {Event} {RecordId} {MessageType} ## {ErrorMessage}",
+                    "{ProcessorName} {Event} {RecordId} {MessageType} {ErrorMessage}",
                     evt.Processor.ClientId, nameof(InputError), evt.Record, evt.Record.MessageType.Name,
                     evt.Exception.Message
                 );
@@ -227,7 +227,7 @@ class KrimsonProcessorLogger : InterceptorModule {
                 else {
                     Logger.Error(
                         evt.Result.Exception, 
-                        "{ProcessorName} {Event} {RecordId} {RequestId} ## {ErrorMessage}",
+                        "{ProcessorName} {Event} {RecordId} {RequestId} {ErrorMessage}",
                         evt.Processor.ClientId, nameof(OutputProcessed), evt.Input, evt.Request.RequestId, evt.Result.Exception!.Message
                     );
                 }

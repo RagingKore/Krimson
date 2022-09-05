@@ -208,12 +208,15 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
     }
 
     async Task Terminate(Exception? exception) {
-        if (!Cancellator.IsCancellationRequested)
-            Cancellator.Cancel(); // this will start asking everyone to just stop...
-        
         if (exception is OperationCanceledException)
             exception = null;
 
+        if (exception is null && Status == KrimsonProcessorStatus.Terminated)
+            return;
+
+        if (!Cancellator.IsCancellationRequested)
+            Cancellator.Cancel(); // this will start asking everyone to just stop...
+        
         if (Status != KrimsonProcessorStatus.Activated) {
             Intercept(
                 new ProcessorTerminated(
@@ -225,9 +228,9 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
 
             return;
         }
-
+        
         Status = KrimsonProcessorStatus.Terminating;
-
+        
         Intercept(new ProcessorTerminating(this));
         
         IReadOnlyCollection<SubscriptionTopicGap> gaps = Array.Empty<SubscriptionTopicGap>();
