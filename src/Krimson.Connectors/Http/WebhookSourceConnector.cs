@@ -43,7 +43,7 @@ public abstract class WebhookSourceConnector : DataSourceConnector<WebhookSource
             }
         }
         catch (Exception ex) {
-            Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnValidate), ex.Message);
+            Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnValidate), ex.Message);
             throw;
         }
 

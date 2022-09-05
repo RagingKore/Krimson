@@ -4,7 +4,7 @@ using Serilog.Events;
 namespace Krimson.Logging;
 
 static class SysLogLevelConverter {
-    public static LogEventLevel Convert(SyslogLevel level) =>
+    static LogEventLevel Convert(SyslogLevel level) =>
         level switch {
             SyslogLevel.Emergency => LogEventLevel.Fatal,
             SyslogLevel.Alert     => LogEventLevel.Fatal,
@@ -17,8 +17,7 @@ static class SysLogLevelConverter {
             _                     => throw new ArgumentOutOfRangeException(nameof(level), level, null)
         };
 
-    public static LogEventLevel GetLogLevel(this LogMessage log) => Convert(log.Level);
-
+    public static LogEventLevel GetLogLevel(this LogMessage log)      => Convert(log.Level);
     public static int           ToLogLevelValue(SyslogLevel logLevel) => LogLevelLookup[(int)logLevel];
     public static LogEventLevel ToLogLevel(SyslogLevel logLevel)      => (LogEventLevel)LogLevelLookup[(int)logLevel];
 

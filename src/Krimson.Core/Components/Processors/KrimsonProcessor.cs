@@ -9,7 +9,6 @@ using Krimson.Processors.Configuration;
 using Krimson.Processors.Interceptors;
 using Krimson.Producers;
 using Krimson.State;
-using Serilog;
 using static Serilog.Core.Constants;
 
 namespace Krimson.Processors;
@@ -148,7 +147,10 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
 
         Intercept(new InputReady(this, record));
 
-        var context = new KrimsonProcessorContext(record, Logger.WithRecordInfo(record), StateStore, cancellationToken);
+        var context = new KrimsonProcessorContext(
+            record, Logger.ForContext("krimson.processor.name", ClientId).WithRecordInfo(record), 
+            StateStore, cancellationToken
+        );
 
         try {
             await Router

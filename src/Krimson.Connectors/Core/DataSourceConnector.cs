@@ -95,7 +95,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                     var recordCount = recordSet.Count();
                 
                     Log.Information(
-                        "{RecordsCount} record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
+                        "{RecordsCount} Record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
                         recordCount, lastRecord.RecordId.Topic, lastRecord.RecordId.Partition,
                         lastRecord.RecordId.Offset, FromUnixTimeMilliseconds(lastRecord.EventTime)
                     );
@@ -108,7 +108,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 await OnSuccessHandler(context, processedRecords).ConfigureAwait(false);
             }
             catch (Exception ex) {
-                Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
+                Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
             }
         }
 
@@ -119,7 +119,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 await OnErrorHandler(context, exception).ConfigureAwait(false);
             }
             catch (Exception ex) {
-                Log.Error("{Event} user exception: {ErrorMessage}", nameof(OnError), ex.Message);
+                Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnError), ex.Message);
             }
         }
     }
@@ -134,7 +134,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         record.DestinationTopic ??= Producer.Topic;
 
         if (!record.HasDestinationTopic)
-            throw new($"{Name} found record with missing destination topic!");
+            throw new($"{Name} Found record with missing destination topic!");
 
         var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
 
@@ -175,7 +175,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
             if (!unseenRecord)
                 Log.Verbose(
-                    "{SourceName} | record already processed at least once on {EventTime} | checkpoint: {CheckpointTimestamp}", 
+                    "{SourceName} Record already processed at least once on {EventTime} | Checkpoint: {CheckpointTimestamp}", 
                     record.Source, record.EventTime, checkpoint.Timestamp
                 );
 
