@@ -28,7 +28,8 @@ public static class ConfluentErrorExtensions {
          or ErrorCode.Local_QueueFull
          or ErrorCode.OutOfOrderSequenceNumber
          or ErrorCode.TransactionCoordinatorFenced
-         or ErrorCode.UnknownProducerId;
+         or ErrorCode.UnknownProducerId
+         or ErrorCode.Local_AllBrokersDown;
 
     public static KafkaException? AsKafkaException(this Error error) =>
         error.IsUseless() ? null : new KafkaException(error);

@@ -21,21 +21,20 @@ public sealed class ConfluentConsumerLogger : InterceptorModule {
 
         On<ConfluentConsumerError>(
             evt => {
-                // sanity check
-                var logLevel = evt.Error.IsUseless()
-                    ? LogEventLevel.Debug
-                    : evt.Error.IsTerminal()
-                        ? LogEventLevel.Fatal
-                        : LogEventLevel.Error;
+                var logLevel = evt.Error.IsTerminal()
+                    ? LogEventLevel.Fatal
+                    : evt.Error.IsTransient()
+                        ? LogEventLevel.Information
+                        : LogEventLevel.Debug;
 
                 var source = evt.Error.IsLocalError
                     ? ConfluentKafkaErrorSource.Client
                     : ConfluentKafkaErrorSource.Broker;
 
                 Logger.Write(
-                    logLevel, new KafkaException(evt.Error), "{ClientInstanceId} | {Source} ({Error}) {ErrorCode} {ErrorReason}",
-                    evt.ClientInstanceId, source, (int)evt.Error.Code,
-                    evt.Error.Code, evt.Error.Reason
+                    level: logLevel, exception: new KafkaException(evt.Error), 
+                    messageTemplate: "{ClientInstanceId} | {Source} ({Error}) {ErrorCode} {ErrorReason}",
+                    evt.ClientInstanceId, source, (int) evt.Error.Code, evt.Error.Code, evt.Error.Reason
                 );
             }
         );

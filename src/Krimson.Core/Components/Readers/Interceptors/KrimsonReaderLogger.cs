@@ -7,12 +7,10 @@ class KrimsonReaderLogger : InterceptorModule {
     public KrimsonReaderLogger() {
         On<RecordReceived>(
             evt => {
-             
-                 Logger
-                     .Verbose(
-                        "{Event} {RecordId} {MessageType}",
-                        nameof(RecordReceived), evt.Record, evt.Record.MessageType.Name
-                    );
+                Logger.Verbose(
+                    "{ClientId} {Event} {RecordId} {MessageType}",
+                    evt.Reader.ClientId, nameof(RecordReceived), evt.Record.ToString(), evt.Record.MessageType.Name
+                );
             }
         );
     }

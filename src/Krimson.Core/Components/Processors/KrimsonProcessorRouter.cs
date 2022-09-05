@@ -50,48 +50,45 @@ public class KrimsonProcessorRouter {
 
 [PublicAPI]
 public class KrimsonMasterRouter {
-    static readonly ILogger Log = Serilog.Log.ForContext<KrimsonMasterRouter>();
+    List<KrimsonProcessorModule> ProcessorModules { get; } = new();
+
+    public bool HasRoutes => ProcessorModules.Any(x => x.Router.HasRoutes);
     
-    List<KrimsonProcessorModule> Modules { get; } = new();
-   
-    public bool HasRoutes => Modules.Any(x => x.Router.HasRoutes);
-    
+    internal KrimsonProcessorModule[] Modules => ProcessorModules.ToArray();
+
     //TODO SS: might need to consider strategies in the future
     public Task Process(KrimsonProcessorContext context) =>
-        Modules
+        ProcessorModules
             .Where(x => x.SubscribesTo(context.Record))
             .Select(x => x.Process(context))
             .WhenAll();
     
     public bool CanRoute(KrimsonRecord record) =>
-        Modules.Any(x => x.SubscribesTo(record));
+        ProcessorModules.Any(x => x.SubscribesTo(record));
 
     public KrimsonMasterRouter WithModule(KrimsonProcessorModule module) {
         if (!module.Router.HasRoutes)
             throw new InvalidOperationException($"Module {module.GetType().Name} has no routes");
 
-        Log.Information(
-            "Module {Module} routes added: {Messages}", 
-            module.GetType().Name, module.Router.Routes.Select(x => x.RoutingKey)
-        );
-        
-        Modules.Add(module);
+        ProcessorModules.Add(module);
         
         return this;
     }
     
     public KrimsonMasterRouter WithModules(IEnumerable<KrimsonProcessorModule> modules) {
-        foreach (var module in modules) WithModule(module);
+        foreach (var module in modules) 
+            WithModule(module);
+        
         return this;
     }
     
     public KrimsonMasterRouter WithHandler<T>(ProcessMessageAsync<T> handler) {
-        Modules.Add(KrimsonFluentProcessorModule<T>.ForHandler(handler));
+        ProcessorModules.Add(KrimsonFluentProcessorModule<T>.ForHandler(handler));
         return this;
     }
     
     public KrimsonMasterRouter WithHandler<T>(ProcessMessage<T> handler) {
-        Modules.Add(KrimsonFluentProcessorModule<T>.ForHandler(handler));
+        ProcessorModules.Add(KrimsonFluentProcessorModule<T>.ForHandler(handler));
         return this;
     }
 }

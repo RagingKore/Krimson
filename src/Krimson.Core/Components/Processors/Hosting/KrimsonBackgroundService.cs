@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Hosting;
-using Serilog;
 
-namespace Krimson.Hosting; 
+namespace Krimson.Processors.Hosting; 
 
 /// <summary>
 /// Generic service host with clear separation between
@@ -11,9 +10,11 @@ namespace Krimson.Hosting;
 /// has fully started and initialization is complete.
 /// </summary>
 abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
-    protected KrimsonBackgroundService(IHostApplicationLifetime applicationLifetime, ILogger logger) {
+    static readonly ILogger Logger = Log.ForContext("SourceContext", "KrimsonProcessorService");
+    
+    protected KrimsonBackgroundService(IHostApplicationLifetime applicationLifetime, string clientId) {
         ApplicationLifetime = applicationLifetime;
-        Logger              = logger;
+        ClientId              = clientId;
         Cancellator         = new();
         Gatekeeper          = new(false);
 
@@ -22,7 +23,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
 
     protected IHostApplicationLifetime ApplicationLifetime { get; }
 
-    ILogger                 Logger      { get; }
+    string                  ClientId    { get; }
     CancellationTokenSource Cancellator { get; }
     ManualResetEventSlim    Gatekeeper  { get; }
 
@@ -35,27 +36,27 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     public async Task StartAsync(CancellationToken cancellationToken) {
         // execute the real initialization routine
         try {
-            Logger.Verbose("initializing...");
+            Logger.Verbose("{ProcessorName} Initializing...", ClientId);
             await Initialize(cancellationToken);
-            Logger.Debug("initialization complete");
+            Logger.Debug("{ProcessorName} Initialization complete", ClientId);
         }
         catch (OperationCanceledException) {
-            Logger.Warning("initialization cancelled");
+            Logger.Warning("{ProcessorName} Initialization cancelled", ClientId);
             throw;
         }
         catch (Exception ex) {
-            Logger.Fatal(ex, "initialization failed!");
+            Logger.Fatal(ex, "{ProcessorName} Initialization failed!", ClientId);
             throw;
         }
         
-        Logger.Debug("delaying execution until application host is ready...");
+        Logger.Debug("{ProcessorName} Delaying execution until application host is ready...", ClientId);
 
         _ = Task.Run(
             async () => {
                 Gatekeeper.Wait(cancellationToken); 
                 Gatekeeper.Dispose();
 
-                Logger.Debug("application host ready, executing...");
+                Logger.Debug("{ProcessorName} Application host ready, executing...", ClientId);
 
                 // Store the task we're executing
                 ExecutingTask = Start(Cancellator.Token);
@@ -64,7 +65,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
                     await ExecutingTask;
                 }
                 catch (Exception ex) {
-                    Logger.Fatal(ex, "failed to execute!");
+                    Logger.Fatal(ex, "{ProcessorName} Failed to execute!", ClientId);
                     throw;
                 }
             }, cancellationToken
@@ -72,7 +73,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     }
     
     public async ValueTask DisposeAsync() {
-        Logger.Verbose("disposing...");
+        Logger.Verbose("{ProcessorName} Disposing...", ClientId);
 
         try {
             await Dispose()
@@ -81,10 +82,10 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
             Cancellator.Dispose();
             //Gatekeeper.Dispose();
             
-            Logger.Debug("disposed");
+            Logger.Debug("{ProcessorName} Disposed", ClientId);
         }
         catch (Exception vex) {
-            Logger.Warning(vex, "disposed violently!");
+            Logger.Warning(vex, "{ProcessorName} Disposed violently!", ClientId);
         }
     }
 
@@ -94,12 +95,12 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     /// </summary>
     /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
     public async Task StopAsync(CancellationToken cancellationToken) {
-        Logger.Verbose("stopping...");
+        Logger.Verbose("{ProcessorName} Stopping...", ClientId);
 
         try {
             // Stop called without start
             if (ExecutingTask is null) {
-                Logger.Debug("stopped awkwardly since it didn't even start");
+                Logger.Debug("{ProcessorName} Stopped awkwardly since it didn't even start", ClientId);
                 return;
             }
 
@@ -111,7 +112,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
                 Cancellator.Cancel();
             }
             catch (Exception ex) {
-                Logger.Debug(ex, "failed to request task cancellation!");
+                Logger.Debug(ex, "{ProcessorName} Failed to request task cancellation!", ClientId);
             }
 
             // Wait until the task completes or the stop token triggers
@@ -119,14 +120,14 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
 
             await Stop(cancellationToken);
 
-            Logger.Information("stopped");
+            Logger.Information("{ProcessorName} Stopped", ClientId);
         }
         catch (OperationCanceledException) {
-            Logger.Information("stopped suddenly on cancellation request");
+            Logger.Information("{ProcessorName} Stopped suddenly on cancellation request", ClientId);
             throw;
         }
         catch (Exception vex) {
-            Logger.Warning(vex, "stopped violently!");
+            Logger.Warning(vex, "{ProcessorName} Stopped violently!", ClientId);
             throw;
         }
     }

@@ -1,12 +1,12 @@
 <Project>
-  
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <!--    <TargetFramework>net6.0</TargetFramework>-->
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <LangVersion>11</LangVersion>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
     <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <Nullable>enable</Nullable>
-<!--    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>-->
-    <IsPackable>false</IsPackable>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
   </PropertyGroup>
-  
 </Project>

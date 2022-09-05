@@ -9,11 +9,27 @@ namespace Krimson.Processors.Interceptors;
 [PublicAPI]
 class KrimsonProcessorLogger : InterceptorModule {
     public KrimsonProcessorLogger() {
+        On<ProcessorConfigured>(
+            evt => {
+                Logger.Information(
+                    "{ProcessorName} Subscribing to {Topics} as member of {GroupId}", 
+                    evt.Processor.ClientId, evt.Processor.Topics, evt.Processor.GroupId
+                );
+                
+                foreach (var (moduleName, key) in evt.Processor.RoutingKeys) {
+                    Logger.Information(
+                        "{ProcessorName} Consumes {RoutingKey} using {Module}", 
+                        evt.Processor.ClientId, key, moduleName
+                    );
+                }
+            }
+        );
+        
         On<ProcessorActivated>(
             evt => {
                 Logger.Information(
-                    "{Event} {GroupId} :: {Topics}", 
-                    nameof(ProcessorActivated), evt.Processor.GroupId, evt.Processor.Topics
+                    "{ProcessorName} {Event}", 
+                    evt.Processor.ClientId, nameof(ProcessorActivated)
                 );
             }
         );
@@ -21,8 +37,8 @@ class KrimsonProcessorLogger : InterceptorModule {
         On<ProcessorTerminating>(
             evt => {
                 Logger.Verbose(
-                    "{Event} {GroupId} :: {Topics}", 
-                    nameof(ProcessorTerminating), evt.Processor.GroupId, evt.Processor.Topics
+                    "{ProcessorName} {Event}", 
+                    evt.Processor.ClientId, nameof(ProcessorTerminating)
                 );
             }
         );
@@ -31,20 +47,23 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 if (evt.Exception is null)
                     Logger.Debug(
-                        "{Event} {GroupId} :: {Topics}",
-                        nameof(ProcessorTerminated), evt.Processor.GroupId, evt.Processor.Topics
+                        "{ProcessorName} {Event}",
+                        evt.Processor.ClientId, nameof(ProcessorTerminated)
                     );
                 else
                     Logger.Debug(
-                        evt.Exception, "{Event} {GroupId} :: {Topics} ## {ErrorMessage}",
-                        "ProcessorViolentlyTerminated", evt.Processor.GroupId, evt.Processor.Topics, evt.Exception.Message
+                        evt.Exception, "{ProcessorName} {Event} ## {ErrorMessage}",
+                        evt.Processor.ClientId, "ViolentlyTerminated", evt.Exception.Message
                     );
             }
         );
 
         On<ProcessorTerminatedUserHandlingError>(
             evt => {
-                Logger.Warning(evt.Exception, "user handling error: {ErrorMessage}", evt.Exception!.Message);
+                Logger.Warning(
+                    evt.Exception, "{ProcessorName} {Event} user handling error: {ErrorMessage}", 
+                    evt.Processor.ClientId, "UserHandlingError", evt.Exception!.Message
+                );
             }
         );
 
@@ -52,8 +71,8 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 foreach (var group in evt.Partitions.OrderBy(x => x.Topic).ThenBy(x => x.Partition.Value).GroupBy(x => x.Topic))
                     Logger.Information(
-                        "{Event} {Topic} << ({PartitionCount}) {Partitions}",
-                        nameof(PartitionsAssigned), group.Key, group.Count(), group.Select(x => x.Partition.Value)
+                        "{ProcessorName} {Event} {Topic} << ({PartitionCount}) {Partitions}",
+                        evt.Processor.ClientId, nameof(PartitionsAssigned), group.Key, group.Count(), group.Select(x => x.Partition.Value)
                     );
             }
         );
@@ -71,16 +90,16 @@ class KrimsonProcessorLogger : InterceptorModule {
 
                     if (unset.Any()) {
                         Logger.Warning(
-                            "{Event} {Topic} !! ({PartitionCount}) {AckedPositions} {UnsetPositions}",
-                            nameof(PartitionsRevoked), positions.Key, unset.Count,
+                            "{ProcessorName} {Event} {Topic} !! ({PartitionCount}) {AckedPositions} {UnsetPositions}",
+                            evt.Processor.ClientId, nameof(PartitionsRevoked), positions.Key, unset.Count,
                             acked.Select(x => $"{x.Partition.Value}@{x.Offset.Value}"),
                             unset.Select(x => $"{x.Partition.Value}@{x.Offset.Value}")
                         );
                     }
                     else {
                         Logger.Warning(
-                            "{Event} {Topic} !! ({PartitionCount}) {AckedPositions}",
-                            nameof(PartitionsRevoked), positions.Key, unset.Count,
+                            "{ProcessorName} {Event} {Topic} !! ({PartitionCount}) {AckedPositions}",
+                            evt.Processor.ClientId, nameof(PartitionsRevoked), positions.Key, unset.Count,
                             acked.Select(x => $"{x.Partition.Value}@{x.Offset.Value}")
                         );
                     }
@@ -92,8 +111,8 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 foreach (var group in evt.Positions.OrderBy(x => x.Topic).ThenBy(x => x.Partition.Value).GroupBy(x => x.Topic))
                     Logger.Warning(
-                        "{Event} {Topic} ?? ({PartitionCount}) {Partitions}",
-                        nameof(PartitionsLost), group.Key, group.Count(),
+                        "{ProcessorName} {Event} {Topic} ?? ({PartitionCount}) {Partitions}",
+                        evt.Processor.ClientId, nameof(PartitionsLost), group.Key, group.Count(),
                         group.Select(x => x.Partition.Value)
                     );
             }
@@ -102,8 +121,8 @@ class KrimsonProcessorLogger : InterceptorModule {
         On<PartitionEndReached>(
             evt => {
                 Logger.Information(
-                    "{Event} {Topic} |> [{Partition}] @ {Offset}",
-                    nameof(PartitionEndReached), evt.Position.Topic,
+                    "{ProcessorName} {Event} {Topic} |> [{Partition}] @ {Offset}",
+                    evt.Processor.ClientId, nameof(PartitionEndReached), evt.Position.Topic,
                     evt.Position.Partition.Value, evt.Position.Offset.Value
                 );
             }
@@ -124,16 +143,16 @@ class KrimsonProcessorLogger : InterceptorModule {
 
                         if (unset.Any()) {
                             Logger.Information(
-                                "{Event} {Topic} >> ({PositionsCount}) {AckedPositions} {UnsetPositions}",
-                                nameof(PositionsCommitted), positions.Key, unset.Count,
+                                "{ProcessorName} {Event} {Topic} >> ({PositionsCount}) {AckedPositions} {UnsetPositions}",
+                                evt.Processor.ClientId, nameof(PositionsCommitted), positions.Key, unset.Count,
                                 acked.Select(x => $"{x.Partition.Value}@{x.Offset.Value}"),
                                 unset.Select(x => $"{x.Partition.Value}@{x.Offset.Value}")
                             );
                         }
                         else {
                             Logger.Information(
-                                "{Event} {Topic} >> ({PositionsCount}) {AckedPositions}",
-                                nameof(PositionsCommitted), positions.Key, unset.Count,
+                                "{ProcessorName} {Event} {Topic} >> ({PositionsCount}) {AckedPositions}",
+                                evt.Processor.ClientId, nameof(PositionsCommitted), positions.Key, unset.Count,
                                 acked.Select(x => $"{x.Partition.Value}@{x.Offset.Value}")
                             );
                         }
@@ -142,18 +161,17 @@ class KrimsonProcessorLogger : InterceptorModule {
                 
                 if (evt.Error.IsError) {
                     var kex = evt.Error.AsKafkaException()!;
-                    Logger.Error(kex, "{Event} ## {ErrorMessage}", "PositionsCommitError", kex.Message);
+                    Logger.Error(kex, "{ProcessorName} {Event} ## {ErrorMessage}", evt.Processor.ClientId, "PositionsCommitError", kex.Message);
                 }
             }
         );
 
         On<InputSkipped>(
             evt => {
-                Logger
-                    .Verbose(
-                        "{RecordId} message {MessageType} skipped",
-                        evt.Record, evt.Record.MessageType.Name
-                    );
+                Logger.Verbose(
+                    "{ProcessorName} {RecordId} message {MessageType} skipped",
+                    evt.Processor.ClientId, evt.Record, evt.Record.MessageType.Name
+                );
             }
         );
 
@@ -163,11 +181,10 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 inProcessRecords.TryAdd(evt.Record.Id, Stopwatch.StartNew());
 
-                 Logger
-                     .Verbose(
-                        "{Event} {RecordId} {MessageType}",
-                        nameof(InputReady), evt.Record, evt.Record.MessageType.Name
-                    );
+                Logger.Verbose(
+                    "{ProcessorName} {Event} {RecordId} {MessageType}",
+                    evt.Processor.ClientId, nameof(InputReady), evt.Record, evt.Record.MessageType.Name
+                );
             }
         );
 
@@ -180,43 +197,39 @@ class KrimsonProcessorLogger : InterceptorModule {
                 foreach (var outputMessage in evt.Output)
                     inFlightOutput.TryAdd(outputMessage.RequestId, evt.Record.Id);
 
-                Logger
-                    .Verbose(
-                        "{Event} {RecordId} {MessageType} ({OutputCount} output) {Elapsed}",
-                        nameof(InputConsumed), evt.Record, evt.Record.MessageType.Name,
-                        evt.Output.Count, stopwatch!.Elapsed
-                    );
+                Logger.Verbose(
+                    "{ProcessorName} {Event} {RecordId} {MessageType} ({OutputCount} output) {Elapsed}",
+                    evt.Processor.ClientId, nameof(InputConsumed), evt.Record, evt.Record.MessageType.Name,
+                    evt.Output.Count, stopwatch!.Elapsed
+                );
             }
         );
         
         On<InputError>(
             evt => {
-                Logger
-                    .Verbose(
-                        "{Event} {RecordId} {MessageType} ## {ErrorMessage}",
-                        nameof(InputError), evt.Record, evt.Record.MessageType.Name,
-                        evt.Exception.Message
-                    );
+                Logger.Verbose(
+                    "{ProcessorName} {Event} {RecordId} {MessageType} ## {ErrorMessage}",
+                    evt.Processor.ClientId, nameof(InputError), evt.Record, evt.Record.MessageType.Name,
+                    evt.Exception.Message
+                );
             }
         );
 
         On<OutputProcessed>(
             evt => {
                 if (evt.Result.Success) {
-                    Logger
-                        .Verbose(
-                            "{Event} {RecordId} | {RequestId} {MessageType} >> {OutputRecordId}",
-                            nameof(OutputProcessed), evt.Input, evt.Request.RequestId, evt.Request.Message.GetType().Name,
-                            $"{evt.Result.RecordId.Topic}:{evt.Result.RecordId.Partition}@{evt.Result.RecordId.Offset}"
-                        );
+                    Logger.Verbose(
+                        "{ProcessorName} {Event} {RecordId} {RequestId} {MessageType} >> {OutputRecordId}",
+                        evt.Processor.ClientId, nameof(OutputProcessed), evt.Input, evt.Request.RequestId, evt.Request.Message.GetType().Name,
+                        $"{evt.Result.RecordId.Topic}:{evt.Result.RecordId.Partition}@{evt.Result.RecordId.Offset}"
+                    );
                 }
                 else {
-                    Logger
-                        .Error(
-                            evt.Result.Exception, 
-                            "{Event} {RecordId} | {RequestId} ## {ErrorMessage}",
-                            nameof(OutputProcessed), evt.Input, evt.Request.RequestId, evt.Result.Exception!.Message
-                        );
+                    Logger.Error(
+                        evt.Result.Exception, 
+                        "{ProcessorName} {Event} {RecordId} {RequestId} ## {ErrorMessage}",
+                        evt.Processor.ClientId, nameof(OutputProcessed), evt.Input, evt.Request.RequestId, evt.Result.Exception!.Message
+                    );
                 }
             }
         );
@@ -225,12 +238,11 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 inProcessRecords.TryRemove(evt.Record.Id, out var stopwatch);
 
-                Logger
-                    .Debug(
-                        "{Event} {RecordId} {MessageType} ({OutputCount} output) {Elapsed}",
-                        nameof(InputProcessed), evt.Record, evt.Record.MessageType.Name,
-                        evt.Output.Count, stopwatch!.Elapsed
-                    );
+                Logger.Debug(
+                    "{ProcessorName} {Event} {RecordId} {MessageType} ({OutputCount} output) {Elapsed}",
+                    evt.Processor.ClientId, nameof(InputProcessed), evt.Record, evt.Record.MessageType.Name,
+                    evt.Output.Count, stopwatch!.Elapsed
+                );
             }
         );
         
@@ -238,7 +250,7 @@ class KrimsonProcessorLogger : InterceptorModule {
             evt => {
                 Logger.Error(
                     evt.Exception,
-                    "{ProducerName} | {RequestId} | failed handling callback: {ErrorMessage}",
+                    "{ProducerName} {RequestId} Failed handling callback: {ErrorMessage}",
                     evt.ProducerName, evt.RequestId, evt.Exception.Message
                 );
             }

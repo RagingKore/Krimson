@@ -24,8 +24,8 @@ public sealed class KrimsonReader : IKrimsonReaderInfo {
         BootstrapServers = options.ConsumerConfiguration.BootstrapServers;
         
         Intercept = options.Interceptors
-            .Prepend(new KrimsonReaderLogger().WithName("Krimson.Reader"))
-            .Prepend(new ConfluentConsumerLogger().WithName("Confluent.Consumer"))
+            .Prepend(new KrimsonReaderLogger().WithName("KrimsonReader"))
+            .Prepend(new ConfluentConsumerLogger().WithName("ConfluentConsumer"))
             .Intercept;
     }
 

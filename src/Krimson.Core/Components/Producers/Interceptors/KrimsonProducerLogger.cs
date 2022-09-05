@@ -9,7 +9,7 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
         On<BeforeProduce>(
             evt => {
                 Logger.Verbose(
-                    "{ProducerName} | {RequestId} | sending {MessageType} ({Key}) >> {Topic}",
+                    "{ProducerName} {RequestId} sending {MessageType} ({Key}) >> {Topic}",
                     evt.ProducerName, evt.Request.RequestId,
                     evt.Request.Message.GetType().Name, evt.Request.Key, evt.Request.Topic
                 );
@@ -21,14 +21,14 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
                 if (!evt.Result.Success) {
                     Logger.Error(
                         evt.Result.Exception,
-                        "{ProducerName} | {RequestId} | failed to send message: {ErrorMessage}",
+                        "{ProducerName} {RequestId} failed to send message: {ErrorMessage}",
                         evt.ProducerName, evt.Result.RequestId, evt.Result.Exception!.Message
                     );
                 }
                 else {
                     Logger.Debug(
                         evt.Result.Exception,
-                        "{ProducerName} | {RequestId} >> {Topic} [{Partition}] @ {Offset}",
+                        "{ProducerName} {RequestId} >> {Topic} [{Partition}] @ {Offset}",
                         evt.ProducerName, evt.Result.RequestId, 
                         evt.Result.RecordId.Topic, evt.Result.RecordId.Partition, evt.Result.RecordId.Offset
                     );
@@ -40,7 +40,7 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
             evt => {
                 Logger.Error(
                     evt.UserException,
-                    "{ProducerName} | {RequestId} | failed handling callback: {ErrorMessage}",
+                    "{ProducerName} {RequestId} failed handling callback: {ErrorMessage}",
                     evt.ProducerName, evt.Result.RequestId, evt.UserException.Message
                 );
             }
@@ -50,7 +50,7 @@ public sealed class KrimsonProducerLogger : InterceptorModule {
             evt => {
                 Logger.Error(
                     evt.Exception,
-                    "{ProducerName} | {RequestId} | failed handling callback: {ErrorMessage}",
+                    "{ProducerName} {RequestId} failed handling callback: {ErrorMessage}",
                     evt.ProducerName, evt.RequestId, evt.Exception.Message
                 );
             }

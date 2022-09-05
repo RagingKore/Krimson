@@ -21,12 +21,11 @@ public sealed class ConfluentProducerLogger : InterceptorModule {
 
         On<ConfluentProducerError>(
             evt => {
-                // TODO SS: sanity check might not be needed... investigate
-                var logLevel = evt.Error.IsUseless()
-                    ? LogEventLevel.Debug
-                    : evt.Error.IsTerminal()
-                        ? LogEventLevel.Fatal
-                        : LogEventLevel.Error;
+                var logLevel = evt.Error.IsTerminal()
+                    ? LogEventLevel.Fatal
+                    : evt.Error.IsTransient()
+                        ? LogEventLevel.Information
+                        : LogEventLevel.Debug;
 
                 var source = evt.Error.IsLocalError 
                     ? ConfluentKafkaErrorSource.Client 

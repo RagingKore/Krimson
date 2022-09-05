@@ -6,6 +6,8 @@ namespace Krimson.Processors.Interceptors;
 
 public abstract record ProcessorEvent(IKrimsonProcessorInfo Processor) : InterceptorEvent;
 
+public record ProcessorConfigured(IKrimsonProcessorInfo Processor) : ProcessorEvent(Processor);
+
 public record ProcessorActivated(IKrimsonProcessorInfo Processor) : ProcessorEvent(Processor);
 
 public record ProcessorTerminating(IKrimsonProcessorInfo Processor) : ProcessorEvent(Processor);

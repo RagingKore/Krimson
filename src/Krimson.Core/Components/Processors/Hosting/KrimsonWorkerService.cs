@@ -1,10 +1,7 @@
-using Krimson.Processors;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Serilog;
-using static Serilog.Core.Constants;
 
-namespace Krimson.Hosting; 
+namespace Krimson.Processors.Hosting; 
 
 sealed class KrimsonWorkerService : KrimsonBackgroundService {
     public KrimsonWorkerService(
@@ -13,7 +10,7 @@ sealed class KrimsonWorkerService : KrimsonBackgroundService {
         Func<CancellationToken, Task>? initializeService = null
     ) : base(
         serviceProvider.GetRequiredService<IHostApplicationLifetime>(), 
-        Log.ForContext(SourceContextPropertyName, processor.ClientId)
+        processor.ClientId
     ) {
         InitializeService = initializeService ?? (_ => Task.CompletedTask);
         StartService      = processor.Activate;

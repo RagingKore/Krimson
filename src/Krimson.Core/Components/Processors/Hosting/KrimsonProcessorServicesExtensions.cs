@@ -1,6 +1,6 @@
-using Krimson.Hosting;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
+using Krimson.Processors.Hosting;
 using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,7 +44,7 @@ public static class KrimsonProcessorServicesExtensions {
                 .Modules(modules)
                 .With(x => build(ctx, x));
 
-            if (order > 1) {
+            if (tasks > 1) {
                 builder = builder
                     .GroupId(builder.Options.ConsumerConfiguration.GroupId)
                     .ClientId($"{builder.Options.ConsumerConfiguration.ClientId}-{order:000}");
@@ -93,7 +93,6 @@ public static class KrimsonProcessorServicesExtensions {
                 )
                 .As<KrimsonProcessorModule>()
                 .AsImplementedInterfaces()
-                .AsSelf()
                 .WithSingletonLifetime()
         );
 }

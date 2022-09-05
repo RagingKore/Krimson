@@ -32,10 +32,17 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         Router           = options.Router;
         StateStore       = options.StateStoreFactory();
         Logger           = Log.ForContext(SourceContextPropertyName, ClientId);
-
+        
+        RoutingKeys = Router.Modules.SelectMany(
+            x => {
+                var name = x.GetType().Name;
+                return x.Router.Routes.Select(r => (name, r.RoutingKey));
+            }
+        ).ToArray();
+        
         Intercept = options.Interceptors
-            .Prepend(new KrimsonProcessorLogger().WithName("Krimson.Processor"))
-            .Prepend(new ConfluentConsumerLogger().WithName("Confluent.Consumer"))
+            .Prepend(new KrimsonProcessorLogger().WithName("KrimsonProcessor"))
+            .Prepend(new ConfluentConsumerLogger().WithName("ConfluentConsumer"))
             .Intercept;
 
         Producer = KrimsonProducer.Builder
@@ -82,15 +89,18 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
     CancellationTokenSource Cancellator  { get; set; } = null!;
     OnProcessorTerminated   OnTerminated { get; set; } = null!;
 
-    public string                 ClientId         { get; }
-    public string                 GroupId          { get; }
-    public string[]               Topics           { get; }
-    public string                 BootstrapServers { get; }
-    public KrimsonProcessorStatus Status           { get; private set; }
+    public string                            ClientId         { get; }
+    public string                            GroupId          { get; }
+    public string[]                          Topics           { get; }
+    public string                            BootstrapServers { get; }
+    public (string ModuleName, string Key)[] RoutingKeys      { get; }
+    public KrimsonProcessorStatus            Status           { get; private set; }
 
     public async Task Activate(CancellationToken terminationToken, OnProcessorTerminated? onTerminated = null) {
         if (Status == KrimsonProcessorStatus.Activated)
             return;
+        
+        Intercept(new ProcessorConfigured(this));
 
         Consumer.Subscribe(Topics);
 

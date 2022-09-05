@@ -34,8 +34,8 @@ public class KrimsonProducer : IAsyncDisposable {
         Topic    = options.DefaultTopic;
       
         var interceptors = options.Interceptors
-            .Prepend(new KrimsonProducerLogger().WithName("Krimson.Producer"))
-            .Prepend(new ConfluentProducerLogger().WithName("Confluent.Producer"));
+            .Prepend(new KrimsonProducerLogger().WithName("KrimsonProducer"))
+            .Prepend(new ConfluentProducerLogger().WithName("ConfluentProducer"));
         
         Intercept = interceptors.Intercept;
 
