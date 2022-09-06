@@ -1,7 +1,6 @@
 using Krimson.Connectors.Checkpoints;
 using Krimson.Producers;
 using Krimson.Readers;
-using static System.DateTimeOffset;
 using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;
@@ -88,17 +87,8 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
 
                 foreach (var recordSet in processedByTopic) {
-                    var lastRecord = recordSet.Last();
-               
-                    Checkpoints.TrackCheckpoint(SourceCheckpoint.From(lastRecord));
-
-                    var recordCount = recordSet.Count();
-                
-                    Log.Information(
-                        "{RecordsCount} record(s) processed up to checkpoint {Topic} [{Partition}] @ {Offset} with event time {EventTime}ms ({EventTimeDate:O})",
-                        recordCount, lastRecord.RecordId.Topic, lastRecord.RecordId.Partition,
-                        lastRecord.RecordId.Offset, lastRecord.EventTime, FromUnixTimeMilliseconds(lastRecord.EventTime)
-                    );
+                    Checkpoints.TrackCheckpoint(SourceCheckpoint.From(recordSet.Last()));
+                    Log.Information("{RecordsCount} record(s) processed | {Topic}", recordSet.Count(), recordSet.Key);
                 }
             }
             else
@@ -134,7 +124,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         record.DestinationTopic ??= Producer.Topic;
 
         if (!record.HasDestinationTopic)
-            throw new($"{Name} Found record in position {index} with missing destination topic!");
+            throw new($"{record.Source} Found record in position {index} with missing destination topic!");
 
         var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
 
@@ -175,7 +165,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
             if (!unseenRecord)
                 Log.Warning(
-                    "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Checkpoint: {CheckpointTimestamp}", 
+                    "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
                     record.Source, index, record.EventTime, checkpoint.Timestamp
                 );
 

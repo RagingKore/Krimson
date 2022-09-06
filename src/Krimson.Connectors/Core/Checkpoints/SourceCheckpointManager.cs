@@ -24,14 +24,24 @@ public class SourceCheckpointManager {
             .ConfigureAwait(false);
     
         Log.Information(
-            "checkpoint loaded {Topic} [{Partition}] @ {Offset} :: {EventTime:O}",
-            loadedCheckpoint.RecordId.Topic, loadedCheckpoint.RecordId.Partition,
-            loadedCheckpoint.RecordId.Offset, FromUnixTimeMilliseconds(loadedCheckpoint.Timestamp)
+            "Checkpoint loaded: {EventTime} {Topic} [{Partition}] @ {Offset}",
+            loadedCheckpoint.Timestamp, loadedCheckpoint.RecordId.Topic, 
+            loadedCheckpoint.RecordId.Partition, loadedCheckpoint.RecordId.Offset 
         );
 
         return Checkpoints[topic] = loadedCheckpoint;
     }
     
-    public SourceCheckpoint TrackCheckpoint(SourceCheckpoint checkpoint) => 
+    public SourceCheckpoint TrackCheckpoint(SourceCheckpoint checkpoint) {
+        
         Checkpoints[checkpoint.RecordId.Topic] = checkpoint;
+        
+        Log.Information(
+            "Checkpoint tracked: {EventTime} {Topic} [{Partition}] @ {Offset}",
+            checkpoint.Timestamp, checkpoint.RecordId.Topic, 
+            checkpoint.RecordId.Partition, checkpoint.RecordId.Offset 
+        );
+
+        return checkpoint;
+    }
 }
