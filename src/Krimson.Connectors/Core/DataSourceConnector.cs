@@ -7,7 +7,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Krimson.Connectors;
 
-public delegate ValueTask OnSuccess<in TContext>(TContext context, SourceRecord[] processedRecords);
+public delegate ValueTask OnSuccess<in TContext>(TContext context, List<SourceRecord> processedRecords);
 
 public delegate ValueTask OnError<in TContext>(TContext context, Exception exception);
 
@@ -61,10 +61,15 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
             var tasks = parsedRecords
                 .OrderBy(record => record.EventTime)
-                .Select((x, idx) => ProcessRecord(x, idx, context.CancellationToken));
+                .ToList();
 
-            var records = await Task.WhenAll(tasks);
+            var records = new List<SourceRecord>();
 
+            for (var i = 0; i < tasks.Count; i++) {
+                var res = await ProcessRecord(tasks[i], i, context.CancellationToken);
+                records.Add(res);
+            }
+            
             await Flush(records).ConfigureAwait(false);
 
             await OnSuccessInternal(records).ConfigureAwait(false);
@@ -73,7 +78,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async Task Flush(SourceRecord[] sourceRecords) {
+        async Task Flush(List<SourceRecord> sourceRecords) {
             if (!Synchronous) Producer.Flush();
 
             await Task
@@ -81,7 +86,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 .ConfigureAwait(false);
         }
 
-        async ValueTask OnSuccessInternal(SourceRecord[] processedRecords) {
+        async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
             if (processedRecords.Any()) {
                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
