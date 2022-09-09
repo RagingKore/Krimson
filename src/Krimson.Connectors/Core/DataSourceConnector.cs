@@ -7,7 +7,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Krimson.Connectors;
 
-public delegate ValueTask OnSuccess<in TContext>(TContext context, List<SourceRecord> processedRecords);
+public delegate ValueTask OnSuccess<in TContext>(TContext context, SourceRecord[] processedRecords);
 
 public delegate ValueTask OnError<in TContext>(TContext context, Exception exception);
 
@@ -16,7 +16,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     protected DataSourceConnector() {
         Name = GetType().Name;
         Log  = ForContext(SourceContextPropertyName, Name);
-        
+
         Initialized = new();
         Producer    = null!;
         Checkpoints = null!;
@@ -31,7 +31,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     protected KrimsonProducer         Producer    { get; set; }
     protected SourceCheckpointManager Checkpoints { get; set; }
     protected bool                    Synchronous { get; set; }
-    
+
     OnSuccess<TContext> OnSuccessHandler { get; set; }
     OnError<TContext>   OnErrorHandler   { get; set; }
 
@@ -52,26 +52,28 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             throw new($"Failed to initialize source connector: {Name}", ex);
         }
     }
-    
+
     public virtual async Task Process(TContext context) {
         Initialize(context.Services);
-        
+
         try {
-            var records = await ParseRecords(context)
+            var parsedRecords = await ParseRecords(context);
+
+            var tasks = parsedRecords
                 .OrderBy(record => record.EventTime)
-                .SelectAwaitWithCancellation(ProcessRecord)
-                .ToListAsync(context.CancellationToken)
-                .ConfigureAwait(false);
-    
+                .Select((x, idx) => ProcessRecord(x, idx, context.CancellationToken));
+
+            var records = await Task.WhenAll(tasks);
+
             await Flush(records).ConfigureAwait(false);
-                
+
             await OnSuccessInternal(records).ConfigureAwait(false);
         }
         catch (Exception ex) {
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async Task Flush(List<SourceRecord> sourceRecords) {
+        async Task Flush(SourceRecord[] sourceRecords) {
             if (!Synchronous) Producer.Flush();
 
             await Task
@@ -79,11 +81,11 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 .ConfigureAwait(false);
         }
 
-        async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
+        async ValueTask OnSuccessInternal(SourceRecord[] processedRecords) {
             if (processedRecords.Any()) {
                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
-        
+
                 if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
 
                 foreach (var recordSet in processedByTopic) {
@@ -104,7 +106,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
         async ValueTask OnErrorInternal(Exception exception) {
             Log.Error(exception, "Failed to process source data!");
-            
+
             try {
                 await OnErrorHandler(context, exception).ConfigureAwait(false);
             }
@@ -113,13 +115,13 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             }
         }
     }
-  
-    public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
-    public virtual async ValueTask<SourceRecord> ProcessRecord(SourceRecord record, int index, CancellationToken cancellationToken) {
+    public abstract Task<IEnumerable<SourceRecord>> ParseRecords(TContext context);
+
+    public virtual async Task<SourceRecord> ProcessRecord(SourceRecord record, int index, CancellationToken cancellationToken) {
         // ensure source connector name is set
         record.Source ??= Name;
-        
+
         // ensure destination topic is set
         record.DestinationTopic ??= Producer.Topic;
 
@@ -132,7 +134,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             record.Skip();
             return record;
         }
-        
+
         var request = ProducerRequest.Builder
             .Key(record.Key)
             .Message(record.Value)
@@ -141,14 +143,14 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             .Topic(record.DestinationTopic)
             .RequestId(record.RequestId)
             .Create();
-        
+
         if (Synchronous)
             HandleResult(record, await Producer.Produce(request, throwOnError: false).ConfigureAwait(false));
         else
             Producer.Produce(request, result => HandleResult(record, result));
 
         return record;
-        
+
         static void HandleResult(SourceRecord record, ProducerResult result) {
             if (result.Success)
                 record.Ack(result.RecordId);
@@ -165,19 +167,18 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
             if (!unseenRecord)
                 Log.Warning(
-                    "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
-                    record.Source, index, record.EventTime, checkpoint.Timestamp
+                    "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}",
+                    record.Source, index, record.EventTime,
+                    checkpoint.Timestamp
                 );
 
             return unseenRecord;
         }
     }
-    
+
     public virtual ValueTask DisposeAsync() => ValueTask.CompletedTask;
-    
-    protected void OnSuccess(OnSuccess<TContext> handler) => 
-        OnSuccessHandler = handler ?? throw new ArgumentNullException(nameof(handler));
-    
-    protected void OnError(OnError<TContext> handler) =>
-        OnErrorHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+
+    protected void OnSuccess(OnSuccess<TContext> handler) => OnSuccessHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+
+    protected void OnError(OnError<TContext> handler) => OnErrorHandler = handler ?? throw new ArgumentNullException(nameof(handler));
 }
