@@ -8,7 +8,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Krimson.Connectors;
 
-public delegate ValueTask OnSuccess<in TContext>(TContext context, List<SourceRecord> processedRecords);
+public delegate ValueTask OnSuccess<in TContext>(TContext context);
 
 public delegate ValueTask OnError<in TContext>(TContext context, Exception exception);
 
@@ -22,7 +22,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         Producer    = null!;
         Checkpoints = null!;
 
-        OnSuccessHandler = (_, _) => ValueTask.CompletedTask;
+        OnSuccessHandler = _ => ValueTask.CompletedTask;
         OnErrorHandler   = (_, _) => ValueTask.CompletedTask;
     }
 
@@ -56,16 +56,11 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
     public virtual async Task Process(TContext context) {
         Initialize(context.Services);
-
-        var cancellator = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
-
-        // ugly...
-        context = (TContext)(IDataSourceContext)new DataSourceContext(context.Services, cancellator.Token);
         
         try {
             var records = new List<SourceRecord>();
             
-            await foreach (var record in ParseRecords(context).WithCancellation(cancellator.Token).ConfigureAwait(false)) {
+            await foreach (var record in ParseRecords(context).WithCancellation(context.CancellationToken).ConfigureAwait(false)) {
                 await ProcessRecord(
                         record,
                         ack: recordId => {
@@ -77,7 +72,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                         },
                         nack: exception => {
                             record.Nak(exception);
-                            OnErrorInternal(exception); 
+                            OnErrorInternal(exception).GetAwaiter().GetResult(); 
                         },
                         skip: () => {
                             records.Add(record);
@@ -90,13 +85,13 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             
             if (!Synchronous) Producer.Flush();
             
-            await OnSuccessInternal(records).ConfigureAwait(false);
+            await OnSuccessInternal().ConfigureAwait(false);
         }
         catch (Exception ex) {
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async ValueTask OnSuccessInternal(List<SourceRecord> records) {
+        async ValueTask OnSuccessInternal() {
             if (context.Counter.Skipped > 0) 
                 Log.Information("{RecordsCount} record(s) skipped", context.Counter.Skipped);
 
@@ -104,7 +99,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                 Log.Information("{RecordsCount} record(s) processed >> {Topic}", count, topic);
             
             try {
-                await OnSuccessHandler(context, records).ConfigureAwait(false);
+                await OnSuccessHandler(context).ConfigureAwait(false);
             }
             catch (Exception ex) {
                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
@@ -112,7 +107,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         }
 
         async ValueTask OnErrorInternal(Exception exception) {
-            cancellator.Cancel();
+            context.Cancellator.Cancel();
             
             Log.Error(exception, "Failed to process source data!");
             

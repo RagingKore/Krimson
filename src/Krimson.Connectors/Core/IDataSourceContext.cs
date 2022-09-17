@@ -3,10 +3,11 @@ using Krimson.State;
 namespace Krimson.Connectors;
 
 public interface IDataSourceContext {
-    IServiceProvider  Services          { get; }
-    IStateStore       State             { get; }
-    CancellationToken CancellationToken { get; }
-    Counter           Counter           { get; }
+    IServiceProvider        Services          { get; }
+    IStateStore             State             { get; }
+    Counter                 Counter           { get; }
+    CancellationTokenSource Cancellator       { get; }
+    CancellationToken       CancellationToken { get; }
 }
 
 public class Counter : IEnumerable<(string Topic, int Count)> {
@@ -14,7 +15,7 @@ public class Counter : IEnumerable<(string Topic, int Count)> {
 
     public int Total   => CountPerTopic.Values.Sum();
     public int Skipped => CountPerTopic[""];
-    
+
     public void IncrementSkipped()               => CountPerTopic[""]++;
     public void IncrementProcessed(string topic) => CountPerTopic[topic]++;
 
