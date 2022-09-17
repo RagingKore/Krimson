@@ -58,15 +58,12 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         Initialize(context.Services);
         
         try {
-            var records = new List<SourceRecord>();
-            
             await foreach (var record in ParseRecords(context).WithCancellation(context.CancellationToken).ConfigureAwait(false)) {
                 await ProcessRecord(
                         record,
                         ack: recordId => {
-                            records.Add(record);
-                            Checkpoints.TrackCheckpoint(SourceCheckpoint.From(record));
                             record.Ack(recordId);
+                            Checkpoints.TrackCheckpoint(SourceCheckpoint.From(record));
                             context.Counter.IncrementProcessed(record.DestinationTopic!);
                             Log.Verbose("{RequestId} record acknowledged", record.RequestId);
                         },
@@ -75,7 +72,6 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                             OnErrorInternal(exception).GetAwaiter().GetResult(); 
                         },
                         skip: () => {
-                            records.Add(record);
                             context.Counter.IncrementSkipped();
                             Log.Verbose("{RequestId} record skipped", record.RequestId);
                         }
