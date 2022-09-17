@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Confluent.Kafka;
 using Krimson.Interceptors;
 using Krimson.Serializers;
@@ -32,24 +33,24 @@ public record KrimsonProcessorBuilder {
     }
 
     public KrimsonProcessorBuilder Connection(
-        string bootstrapServers, string? username = null, string? password = null,
+        string? bootstrapServers = null, string? username = null, string? password = null,
         SecurityProtocol protocol = SecurityProtocol.Plaintext,
         SaslMechanism mechanism = SaslMechanism.Plain
     ) {
         return OverrideConsumerConfiguration(
                 cfg => {
-                    cfg.BootstrapServers = bootstrapServers;
-                    cfg.SaslUsername     = username ?? "";
-                    cfg.SaslPassword     = password ?? "";
+                    cfg.BootstrapServers = bootstrapServers ?? Options.ConsumerConfiguration.BootstrapServers;
+                    cfg.SaslUsername     = username         ?? Options.ConsumerConfiguration.SaslUsername;
+                    cfg.SaslPassword     = password         ?? Options.ConsumerConfiguration.SaslPassword;
                     cfg.SecurityProtocol = protocol;
                     cfg.SaslMechanism    = mechanism;
                 }
             )
             .OverrideProducerConfiguration(
                 cfg => {
-                    cfg.BootstrapServers = bootstrapServers;
-                    cfg.SaslUsername     = username ?? "";
-                    cfg.SaslPassword     = password ?? "";
+                    cfg.BootstrapServers = bootstrapServers ?? Options.ConsumerConfiguration.BootstrapServers;
+                    cfg.SaslUsername     = username         ?? Options.ConsumerConfiguration.SaslUsername;
+                    cfg.SaslPassword     = password         ?? Options.ConsumerConfiguration.SaslPassword;
                     cfg.SecurityProtocol = protocol;
                     cfg.SaslMechanism    = mechanism;
                 }
@@ -64,7 +65,9 @@ public record KrimsonProcessorBuilder {
     }
 
     public KrimsonProcessorBuilder ClientId(string clientId) {
-        return OverrideConsumerConfiguration(
+        return IsNullOrWhiteSpace(clientId) 
+            ? this 
+            : OverrideConsumerConfiguration(
                 cfg => {
                     cfg.ClientId = clientId;
                     cfg.GroupId  = IsNullOrWhiteSpace(Options.ConsumerConfiguration.GroupId) ? clientId : cfg.GroupId;
@@ -74,10 +77,12 @@ public record KrimsonProcessorBuilder {
     }
 
     public KrimsonProcessorBuilder GroupId(string groupId) {
-        return OverrideConsumerConfiguration(cfg => {
-            cfg.GroupId  = groupId;
-            cfg.ClientId = Options.ConsumerConfiguration.ClientId == "rdkafka" ? groupId : cfg.ClientId;
-        });
+        return IsNullOrWhiteSpace(groupId) 
+            ? this 
+            : OverrideConsumerConfiguration(cfg => {
+                cfg.GroupId  = groupId;
+                cfg.ClientId = Options.ConsumerConfiguration.ClientId == "rdkafka" ? groupId : cfg.ClientId;
+            });
     }
 
     public KrimsonProcessorBuilder InputTopic(params string[] topics) {
@@ -89,7 +94,7 @@ public record KrimsonProcessorBuilder {
     }
 
     public KrimsonProcessorBuilder OutputTopic(string topic, int partitions = 1, short replicationFactor = 3, Dictionary<string, string>? configuration = null) {
-        return this with {
+        return IsNullOrWhiteSpace(topic) ? this : this with {
             Options = Options with {
                 OutputTopic = new() {
                     Name              = topic,
@@ -233,23 +238,27 @@ public record KrimsonProcessorBuilder {
         // }
 
         return Connection(
-                configuration.GetValue("Krimson:Connection:BootstrapServers", Options.ConsumerConfiguration.BootstrapServers),
-                configuration.GetValue("Krimson:Connection:Username", Options.ConsumerConfiguration.SaslUsername),
-                configuration.GetValue("Krimson:Connection:Password", Options.ConsumerConfiguration.SaslPassword),
-                configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.ConsumerConfiguration.SecurityProtocol!.Value),
-                configuration.GetValue("Krimson:Connection:SaslMechanism", Options.ConsumerConfiguration.SaslMechanism!.Value)
+                configuration.Value("Krimson:Connection:BootstrapServers", Options.ConsumerConfiguration.BootstrapServers),
+                configuration.Value("Krimson:Connection:Username", Options.ConsumerConfiguration.SaslUsername),
+                configuration.Value("Krimson:Connection:Password", Options.ConsumerConfiguration.SaslPassword),
+                configuration.Value("Krimson:Connection:SecurityProtocol", Options.ConsumerConfiguration.SecurityProtocol!.Value),
+                configuration.Value("Krimson:Connection:SaslMechanism", Options.ConsumerConfiguration.SaslMechanism!.Value)
             )
             .ClientId(
-                configuration.GetValue(
+                configuration.Value(
                     "Krimson:Input:ClientId",
-                    configuration.GetValue(
+                    configuration.Value(
                         "Krimson:ClientId", 
-                        configuration.GetValue("ASPNETCORE_APPLICATIONNAME", Options.ConsumerConfiguration.ClientId))
-                )
+                        configuration.Value(
+                            "ASPNETCORE_APPLICATIONNAME", 
+                            Options.ConsumerConfiguration.ClientId
+                        )
+                    )
+                )!
             )
-            .GroupId(configuration.GetValue("Krimson:GroupId", Options.ConsumerConfiguration.GroupId))
-            .InputTopic(configuration.GetValues("Krimson:Input:Topic"))
-            .OutputTopic(configuration.GetValue("Krimson:Output:Topic", ""));
+            .GroupId(configuration.Value("Krimson:GroupId", Options.ConsumerConfiguration.GroupId))
+            .InputTopic(configuration.Values("Krimson:Input:Topic"))
+            .OutputTopic(configuration.Value("Krimson:Output:Topic", ""));
     }
 
     public KrimsonProcessor Create() {
@@ -263,19 +272,6 @@ public record KrimsonProcessorBuilder {
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
         Ensure.Valid(Options.Router, nameof(Options.Router), router => router.HasRoutes);
 
-        return new KrimsonProcessor(Options with { });
+        return new(Options with { });
     }
-
-    // not yet
-    //
-    // public IEnumerable<KrimsonProcessor> Create() {
-    //     for (var i = 1; i <= Options.Tasks; i++) {
-    //         var builder = this with { };
-    //
-    //         yield return builder
-    //             .SubscriptionName(builder.Options.ConsumerConfiguration.GroupId)
-    //             .ProcessorName($"{builder.Options.ConsumerConfiguration.ClientId}-{i:000}")
-    //             .Create();
-    //     }
-    // }
 }

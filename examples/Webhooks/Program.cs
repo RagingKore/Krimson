@@ -6,7 +6,7 @@ using Krimson.Connectors.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.UseKrimson()
+builder.Services.AddKrimson()
     .AddReader(rdr => rdr.ClientId("my_app_name"))
     .AddProducer(pdr => pdr.ClientId("my_app_name").Topic("power-company.meters"))
     .AddWebhookSourceConnector<PowerMetersWebhook>(); // or simply call .AddWebhookSources() to automatically scan and register all webhooks
@@ -15,7 +15,6 @@ var app = builder.Build()
     .UseKrimsonWebhooks();
 
 app.Run();
-
 
 [WebhookPath("/meters")]
 class PowerMetersWebhook : WebhookSourceConnector {
@@ -27,24 +26,22 @@ class PowerMetersWebhook : WebhookSourceConnector {
             }
         );
     }
-    
+
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(WebhookSourceContext context) {
         var result = await context.Request.ReadFromJsonAsync<JsonNode>().ConfigureAwait(false);
-        
+
         foreach (var item in result?.AsArray() ?? new JsonArray())
             yield return ParseRecord(item!);
-        
+
         static SourceRecord ParseRecord(JsonNode node) {
             var key       = node["id"]!.GetValue<string>();
+            var value     = Struct.Parser.ParseJson(node.ToJsonString());
             var eventTime = node["last_modified"]!.GetValue<DateTimeOffset>().ToUnixTimeMilliseconds();
-            var data      = Struct.Parser.ParseJson(node.ToJsonString());
-        
+
             return new() {
-                Key              = key,
-                Value            = data,
-                EventTime        = eventTime,
-                DestinationTopic = null,
-                Headers          = new () { { "source", "power-meters" } }
+                Key       = key,
+                Value     = value,
+                EventTime = eventTime
             };
         }
     }

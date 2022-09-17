@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Krimson.Interceptors;
 using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
+using static System.String;
 
 namespace Krimson.Producers;
 
@@ -26,18 +27,17 @@ public record KrimsonProducerBuilder {
             }
         };
     }
-
     
     public KrimsonProducerBuilder Connection(
-        string bootstrapServers, string? username = null, string? password = null,
+        string? bootstrapServers = null, string? username = null, string? password = null,
         SecurityProtocol protocol = SecurityProtocol.Plaintext,
         SaslMechanism mechanism = SaslMechanism.Plain
     ) {
         return OverrideConfiguration(
             cfg => {
-                cfg.BootstrapServers = bootstrapServers;
-                cfg.SaslUsername     = username ?? "";
-                cfg.SaslPassword     = password ?? "";
+                cfg.BootstrapServers = bootstrapServers ?? Options.Configuration.BootstrapServers;
+                cfg.SaslUsername     = username         ?? Options.Configuration.SaslUsername;
+                cfg.SaslPassword     = password         ?? Options.Configuration.SaslPassword;
                 cfg.SecurityProtocol = protocol;
                 cfg.SaslMechanism    = mechanism;
             }
@@ -52,7 +52,9 @@ public record KrimsonProducerBuilder {
     }
 
     public KrimsonProducerBuilder ClientId(string clientId) {
-        return OverrideConfiguration(cfg => cfg.ClientId = clientId);
+        return IsNullOrWhiteSpace(clientId) 
+            ? this 
+            : OverrideConfiguration(cfg => cfg.ClientId = clientId);
     }
 
     public KrimsonProducerBuilder Serializer(Func<IDynamicSerializer> getSerializer) {
@@ -91,18 +93,22 @@ public record KrimsonProducerBuilder {
         Ensure.NotNull(configuration, nameof(configuration));
 
         return Connection(
-                configuration.GetValue("Krimson:Connection:BootstrapServers", Options.Configuration.BootstrapServers),
-                configuration.GetValue("Krimson:Connection:Username", Options.Configuration.SaslUsername),
-                configuration.GetValue("Krimson:Connection:Password", Options.Configuration.SaslPassword),
-                configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.Configuration.SecurityProtocol!.Value),
-                configuration.GetValue("Krimson:Connection:SaslMechanism", Options.Configuration.SaslMechanism!.Value)
+                configuration.Value("Krimson:Connection:BootstrapServers", Options.Configuration.BootstrapServers),
+                configuration.Value("Krimson:Connection:Username", Options.Configuration.SaslUsername),
+                configuration.Value("Krimson:Connection:Password", Options.Configuration.SaslPassword),
+                configuration.Value("Krimson:Connection:SecurityProtocol", Options.Configuration.SecurityProtocol!.Value),
+                configuration.Value("Krimson:Connection:SaslMechanism", Options.Configuration.SaslMechanism!.Value)
             )
             .ClientId(
-                configuration.GetValue(
+                configuration.Value(
                     "Krimson:Output:ClientId",
-                    configuration.GetValue(
+                    configuration.Value(
                         "Krimson:ClientId", 
-                        configuration.GetValue("ASPNETCORE_APPLICATIONNAME", Options.Configuration.ClientId))
+                        configuration.Value(
+                            "ASPNETCORE_APPLICATIONNAME", 
+                            Options.Configuration.ClientId
+                        )
+                    )
                 )
             )
             .Topic(configuration.GetValue("Krimson:Output:Topic", ""));
@@ -113,7 +119,7 @@ public record KrimsonProducerBuilder {
         Ensure.NotNullOrWhiteSpace(Options.Configuration.ClientId, nameof(ClientId));
         Ensure.NotNullOrWhiteSpace(Options.Configuration.BootstrapServers, nameof(Options.Configuration.BootstrapServers));
         Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
-        
-        return new KrimsonProducer(Options);
+
+        return new(Options with { });
     }
 }

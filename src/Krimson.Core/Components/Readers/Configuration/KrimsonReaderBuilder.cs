@@ -11,15 +11,15 @@ public record KrimsonReaderBuilder {
     protected internal KrimsonReaderOptions Options { get; init; } = new();
 
     public KrimsonReaderBuilder Connection(
-        string bootstrapServers, string? username = null, string? password = null,
+        string? bootstrapServers = null, string? username = null, string? password = null,
         SecurityProtocol protocol = SecurityProtocol.Plaintext,
         SaslMechanism mechanism = SaslMechanism.Plain
     ) {
         return OverrideConsumerConfiguration(
             cfg => {
-                cfg.BootstrapServers = bootstrapServers;
-                cfg.SaslUsername     = username ?? "";
-                cfg.SaslPassword     = password ?? "";
+                cfg.BootstrapServers = bootstrapServers ?? Options.ConsumerConfiguration.BootstrapServers;
+                cfg.SaslUsername     = username         ?? Options.ConsumerConfiguration.SaslUsername;
+                cfg.SaslPassword     = password         ?? Options.ConsumerConfiguration.SaslPassword;
                 cfg.SecurityProtocol = protocol;
                 cfg.SaslMechanism    = mechanism;
             }
@@ -34,7 +34,9 @@ public record KrimsonReaderBuilder {
     }
 
     public KrimsonReaderBuilder ClientId(string clientId) {
-        return OverrideConsumerConfiguration(
+        return IsNullOrWhiteSpace(clientId) 
+            ? this 
+            : OverrideConsumerConfiguration(
                 cfg => {
                     cfg.ClientId = clientId;
                     cfg.GroupId  = IsNullOrWhiteSpace(Options.ConsumerConfiguration.GroupId) ? clientId : cfg.GroupId;
@@ -43,10 +45,12 @@ public record KrimsonReaderBuilder {
     }
 
     public KrimsonReaderBuilder GroupId(string groupId) {
-        return OverrideConsumerConfiguration(cfg => {
-            cfg.GroupId  = groupId;
-            cfg.ClientId = Options.ConsumerConfiguration.ClientId == "rdkafka" ? groupId : cfg.ClientId;
-        });
+        return IsNullOrWhiteSpace(groupId) 
+            ? this 
+            : OverrideConsumerConfiguration(cfg => {
+                cfg.GroupId  = groupId;
+                cfg.ClientId = Options.ConsumerConfiguration.ClientId == "rdkafka" ? groupId : cfg.ClientId;
+            });
     }
 
     public KrimsonReaderBuilder OverrideConsumerConfiguration(Action<ConsumerConfig> configureConsumer) {
@@ -87,19 +91,23 @@ public record KrimsonReaderBuilder {
         Ensure.NotNull(configuration, nameof(configuration));
         
         return Connection(
-                configuration.GetValue("Krimson:Connection:BootstrapServers", Options.ConsumerConfiguration.BootstrapServers),
-                configuration.GetValue("Krimson:Connection:Username", Options.ConsumerConfiguration.SaslUsername),
-                configuration.GetValue("Krimson:Connection:Password", Options.ConsumerConfiguration.SaslPassword),
-                configuration.GetValue("Krimson:Connection:SecurityProtocol", Options.ConsumerConfiguration.SecurityProtocol!.Value),
-                configuration.GetValue("Krimson:Connection:SaslMechanism", Options.ConsumerConfiguration.SaslMechanism!.Value)
+                configuration.Value("Krimson:Connection:BootstrapServers", Options.ConsumerConfiguration.BootstrapServers),
+                configuration.Value("Krimson:Connection:Username", Options.ConsumerConfiguration.SaslUsername),
+                configuration.Value("Krimson:Connection:Password", Options.ConsumerConfiguration.SaslPassword),
+                configuration.Value("Krimson:Connection:SecurityProtocol", Options.ConsumerConfiguration.SecurityProtocol!.Value),
+                configuration.Value("Krimson:Connection:SaslMechanism", Options.ConsumerConfiguration.SaslMechanism!.Value)
             )
             .ClientId(
-                configuration.GetValue(
-                    "Krimson:Output:ClientId",
-                    configuration.GetValue(
+                configuration.Value(
+                    "Krimson:Input:ClientId",
+                    configuration.Value(
                         "Krimson:ClientId", 
-                        configuration.GetValue("ASPNETCORE_APPLICATIONNAME", Options.ConsumerConfiguration.ClientId))
-                )
+                        configuration.Value(
+                            "ASPNETCORE_APPLICATIONNAME", 
+                            Options.ConsumerConfiguration.ClientId
+                        )
+                    )
+                )!
             );
     }
 
@@ -110,6 +118,6 @@ public record KrimsonReaderBuilder {
         Ensure.NotNullOrWhiteSpace(Options.ConsumerConfiguration.BootstrapServers, nameof(Options.ConsumerConfiguration.BootstrapServers));
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
 
-        return new KrimsonReader(Options with { });
+        return new(Options with { });
     }
 }

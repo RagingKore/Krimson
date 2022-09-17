@@ -1,3 +1,4 @@
+using Confluent.Kafka;
 using Krimson.Connectors.Checkpoints;
 using Krimson.Producers;
 using Krimson.Readers;
@@ -21,16 +22,16 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         Producer    = null!;
         Checkpoints = null!;
 
-        OnSuccessHandler = (ctx, records) => ValueTask.CompletedTask;
-        OnErrorHandler   = (ctx, ex) => ValueTask.CompletedTask;
+        OnSuccessHandler = (_, _) => ValueTask.CompletedTask;
+        OnErrorHandler   = (_, _) => ValueTask.CompletedTask;
     }
 
     protected InterlockedBoolean Initialized { get; }
     protected ILogger            Log         { get; }
 
-    protected KrimsonProducer         Producer    { get; set; }
-    protected SourceCheckpointManager Checkpoints { get; set; }
-    protected bool                    Synchronous { get; set; }
+    protected KrimsonProducer         Producer    { get; private set; }
+    protected SourceCheckpointManager Checkpoints { get; private set; }
+    protected bool                    Synchronous { get; private set; }
     
     OnSuccess<TContext> OnSuccessHandler { get; set; }
     OnError<TContext>   OnErrorHandler   { get; set; }
@@ -52,50 +53,58 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             throw new($"Failed to initialize source connector: {Name}", ex);
         }
     }
-    
+
     public virtual async Task Process(TContext context) {
         Initialize(context.Services);
+
+        var cancellator = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+
+        // ugly...
+        context = (TContext)(IDataSourceContext)new DataSourceContext(context.Services, cancellator.Token);
         
         try {
-            var records = await ParseRecords(context)
-                .OrderBy(record => record.EventTime)
-                .SelectAwaitWithCancellation(ProcessRecord)
-                .ToListAsync(context.CancellationToken)
-                .ConfigureAwait(false);
-    
-            await Flush(records).ConfigureAwait(false);
-                
+            var records = new List<SourceRecord>();
+            
+            await foreach (var record in ParseRecords(context).WithCancellation(cancellator.Token).ConfigureAwait(false)) {
+                await ProcessRecord(
+                        record,
+                        ack: recordId => {
+                            records.Add(record);
+                            Checkpoints.TrackCheckpoint(SourceCheckpoint.From(record));
+                            record.Ack(recordId);
+                            context.Counter.IncrementProcessed(record.DestinationTopic!);
+                            Log.Verbose("{RequestId} record acknowledged", record.RequestId);
+                        },
+                        nack: exception => {
+                            record.Nak(exception);
+                            OnErrorInternal(exception); 
+                        },
+                        skip: () => {
+                            records.Add(record);
+                            context.Counter.IncrementSkipped();
+                            Log.Verbose("{RequestId} record skipped", record.RequestId);
+                        }
+                    )
+                    .ConfigureAwait(false);
+            }
+            
+            if (!Synchronous) Producer.Flush();
+            
             await OnSuccessInternal(records).ConfigureAwait(false);
         }
         catch (Exception ex) {
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async Task Flush(List<SourceRecord> sourceRecords) {
-            if (!Synchronous) Producer.Flush();
+        async ValueTask OnSuccessInternal(List<SourceRecord> records) {
+            if (context.Counter.Skipped > 0) 
+                Log.Information("{RecordsCount} record(s) skipped", context.Counter.Skipped);
 
-            await Task
-                .WhenAll(sourceRecords.Select(x => x.EnsureProcessed()))
-                .ConfigureAwait(false);
-        }
-
-        async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
-            if (processedRecords.Any()) {
-                var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
-                var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
-        
-                if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
-
-                foreach (var recordSet in processedByTopic) {
-                    Checkpoints.TrackCheckpoint(SourceCheckpoint.From(recordSet.Last()));
-                    Log.Information("{RecordsCount} record(s) processed | {Topic}", recordSet.Count(), recordSet.Key);
-                }
-            }
-            else
-                Log.Information("No source data available to process");
-
+            foreach (var (topic, count) in context.Counter) 
+                Log.Information("{RecordsCount} record(s) processed >> {Topic}", count, topic);
+            
             try {
-                await OnSuccessHandler(context, processedRecords).ConfigureAwait(false);
+                await OnSuccessHandler(context, records).ConfigureAwait(false);
             }
             catch (Exception ex) {
                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
@@ -103,6 +112,8 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         }
 
         async ValueTask OnErrorInternal(Exception exception) {
+            cancellator.Cancel();
+            
             Log.Error(exception, "Failed to process source data!");
             
             try {
@@ -116,7 +127,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
   
     public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
-    public virtual async ValueTask<SourceRecord> ProcessRecord(SourceRecord record, int index, CancellationToken cancellationToken) {
+    public async ValueTask ProcessRecord(SourceRecord record, Action<RecordId> ack, Action<ProduceException<byte[], object?>> nack, Action skip) {
         // ensure source connector name is set
         record.Source ??= Name;
         
@@ -124,13 +135,13 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         record.DestinationTopic ??= Producer.Topic;
 
         if (!record.HasDestinationTopic)
-            throw new($"{record.Source} Found record in position {index} with missing destination topic!");
+            throw new($"{record.Source} Found record with missing destination topic!");
 
         var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
 
         if (!isUnseen) {
-            record.Skip();
-            return record;
+            skip();
+            return;
         }
         
         var request = ProducerRequest.Builder
@@ -142,31 +153,24 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             .RequestId(record.RequestId)
             .Create();
         
-        if (Synchronous)
-            HandleResult(record, await Producer.Produce(request, throwOnError: false).ConfigureAwait(false));
-        else
-            Producer.Produce(request, result => HandleResult(record, result));
-
-        return record;
-        
-        static void HandleResult(SourceRecord record, ProducerResult result) {
+        Producer.Produce(request, result => {
             if (result.Success)
-                record.Ack(result.RecordId);
+                ack(result.RecordId);
             else
-                record.Nak(result.Exception!); //TODO SS: should I trigger the exception right here!?
-        }
+                nack(result.Exception!);
+        });
 
         async ValueTask<bool> IsRecordUnseen() {
             var checkpoint = await Checkpoints
-                .GetCheckpoint(record.DestinationTopic!, cancellationToken)
+                .GetCheckpoint(record.DestinationTopic!, CancellationToken.None)
                 .ConfigureAwait(false);
 
             var unseenRecord = record.EventTime > checkpoint.Timestamp;
 
             if (!unseenRecord)
                 Log.Warning(
-                    "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
-                    record.Source, index, record.EventTime, checkpoint.Timestamp
+                    "{SourceName} Record already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
+                    record.Source, record.EventTime, checkpoint.Timestamp
                 );
 
             return unseenRecord;
@@ -181,3 +185,237 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     protected void OnError(OnError<TContext> handler) =>
         OnErrorHandler = handler ?? throw new ArgumentNullException(nameof(handler));
 }
+
+//
+// [PublicAPI]
+// public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TContext> where TContext : IDataSourceContext {
+//     protected DataSourceConnector() {
+//         Name = GetType().Name;
+//         Log  = ForContext(SourceContextPropertyName, Name);
+//         
+//         Initialized = new();
+//         Producer    = null!;
+//         Checkpoints = null!;
+//
+//         OnSuccessHandler = (ctx, records) => ValueTask.CompletedTask;
+//         OnErrorHandler   = (ctx, ex) => ValueTask.CompletedTask;
+//     }
+//
+//     protected InterlockedBoolean Initialized { get; }
+//     protected ILogger            Log         { get; }
+//
+//     protected KrimsonProducer         Producer    { get; set; }
+//     protected SourceCheckpointManager Checkpoints { get; set; }
+//     protected bool                    Synchronous { get; set; }
+//     
+//     OnSuccess<TContext> OnSuccessHandler { get; set; }
+//     OnError<TContext>   OnErrorHandler   { get; set; }
+//
+//     public string Name { get; }
+//
+//     public bool IsInitialized => Initialized.CurrentValue;
+//
+//     public virtual IDataSourceConnector<TContext> Initialize(IServiceProvider services) {
+//         try {
+//             if (Initialized.EnsureCalledOnce()) return this;
+//
+//             Producer    = services.GetRequiredService<KrimsonProducer>();
+//             Checkpoints = new(services.GetRequiredService<KrimsonReader>());
+//
+//             return this;
+//         }
+//         catch (Exception ex) {
+//             throw new($"Failed to initialize source connector: {Name}", ex);
+//         }
+//     }
+//     
+//     public virtual async Task Process(TContext context) {
+//         Initialize(context.Services);
+//         
+//         try {
+//             var records = await ParseRecords(context)
+//                 .OrderBy(record => record.EventTime)
+//                 .SelectAwaitWithCancellation(ProcessRecord)
+//                 .ToListAsync(context.CancellationToken)
+//                 .ConfigureAwait(false);
+//     
+//             await Flush(records).ConfigureAwait(false);
+//                 
+//             await OnSuccessInternal(records).ConfigureAwait(false);
+//         }
+//         catch (Exception ex) {
+//             await OnErrorInternal(ex).ConfigureAwait(false);
+//         }
+//
+//         async Task Flush(List<SourceRecord> sourceRecords) {
+//             if (!Synchronous) Producer.Flush();
+//
+//             await Task
+//                 .WhenAll(sourceRecords.Select(x => x.EnsureProcessed()))
+//                 .ConfigureAwait(false);
+//         }
+//
+//         async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
+//             if (processedRecords.Any()) {
+//                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
+//                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
+//         
+//                 if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
+//
+//                 foreach (var recordSet in processedByTopic) {
+//                     Checkpoints.TrackCheckpoint(SourceCheckpoint.From(recordSet.Last()));
+//                     Log.Information("{RecordsCount} record(s) processed | {Topic}", recordSet.Count(), recordSet.Key);
+//                 }
+//             }
+//             else
+//                 Log.Information("No source data available to process");
+//
+//             try {
+//                 await OnSuccessHandler(context, processedRecords).ConfigureAwait(false);
+//             }
+//             catch (Exception ex) {
+//                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
+//             }
+//         }
+//
+//         async ValueTask OnErrorInternal(Exception exception) {
+//             Log.Error(exception, "Failed to process source data!");
+//             
+//             try {
+//                 await OnErrorHandler(context, exception).ConfigureAwait(false);
+//             }
+//             catch (Exception ex) {
+//                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnError), ex.Message);
+//             }
+//         }
+//     }
+//     
+//     public virtual async Task ProcessProper(TContext context) {
+//         Initialize(context.Services);
+//         
+//         try {
+//             await foreach(var record in ParseRecords(context).SelectAwaitWithCancellation(ProcessRecord).ConfigureAwait(false))
+//             {
+//                 
+//             }
+//             var records = 
+//                 .ConfigureAwait(false);
+//     
+//             await Flush(records).ConfigureAwait(false);
+//                 
+//             await OnSuccessInternal(records).ConfigureAwait(false);
+//         }
+//         catch (Exception ex) {
+//             await OnErrorInternal(ex).ConfigureAwait(false);
+//         }
+//
+//         async Task Flush(List<SourceRecord> sourceRecords) {
+//             if (!Synchronous) Producer.Flush();
+//
+//             await Task
+//                 .WhenAll(sourceRecords.Select(x => x.EnsureProcessed()))
+//                 .ConfigureAwait(false);
+//         }
+//
+//         async ValueTask OnSuccessInternal(List<SourceRecord> processedRecords) {
+//             if (processedRecords.Any()) {
+//                 var skipped          = processedRecords.Where(x => x.ProcessingSkipped).ToList();
+//                 var processedByTopic = processedRecords.Where(x => x.ProcessingSuccessful).GroupBy(x => x.DestinationTopic).ToList();
+//         
+//                 if (skipped.Any()) Log.Information("{RecordCount} record(s) skipped", skipped.Count);
+//
+//                 foreach (var recordSet in processedByTopic) {
+//                     Checkpoints.TrackCheckpoint(SourceCheckpoint.From(recordSet.Last()));
+//                     Log.Information("{RecordsCount} record(s) processed | {Topic}", recordSet.Count(), recordSet.Key);
+//                 }
+//             }
+//             else
+//                 Log.Information("No source data available to process");
+//
+//             try {
+//                 await OnSuccessHandler(context, processedRecords).ConfigureAwait(false);
+//             }
+//             catch (Exception ex) {
+//                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
+//             }
+//         }
+//
+//         async ValueTask OnErrorInternal(Exception exception) {
+//             Log.Error(exception, "Failed to process source data!");
+//             
+//             try {
+//                 await OnErrorHandler(context, exception).ConfigureAwait(false);
+//             }
+//             catch (Exception ex) {
+//                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnError), ex.Message);
+//             }
+//         }
+//     }
+//   
+//     public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
+//
+//     public virtual async ValueTask<SourceRecord> ProcessRecord(SourceRecord record, int index, CancellationToken cancellationToken) {
+//         // ensure source connector name is set
+//         record.Source ??= Name;
+//         
+//         // ensure destination topic is set
+//         record.DestinationTopic ??= Producer.Topic;
+//
+//         if (!record.HasDestinationTopic)
+//             throw new($"{record.Source} Found record in position {index} with missing destination topic!");
+//
+//         var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
+//
+//         if (!isUnseen) {
+//             record.Skip();
+//             return record;
+//         }
+//         
+//         var request = ProducerRequest.Builder
+//             .Key(record.Key)
+//             .Message(record.Value)
+//             .Timestamp(record.EventTime)
+//             .Headers(record.Headers)
+//             .Topic(record.DestinationTopic)
+//             .RequestId(record.RequestId)
+//             .Create();
+//         
+//         if (Synchronous)
+//             HandleResult(record, await Producer.Produce(request, throwOnError: false).ConfigureAwait(false));
+//         else
+//             Producer.Produce(request, result => HandleResult(record, result));
+//
+//         return record;
+//         
+//         static void HandleResult(SourceRecord record, ProducerResult result) {
+//             if (result.Success)
+//                 record.Ack(result.RecordId);
+//             else
+//                 record.Nak(result.Exception!); //TODO SS: should I trigger the exception right here!?
+//         }
+//
+//         async ValueTask<bool> IsRecordUnseen() {
+//             var checkpoint = await Checkpoints
+//                 .GetCheckpoint(record.DestinationTopic!, cancellationToken)
+//                 .ConfigureAwait(false);
+//
+//             var unseenRecord = record.EventTime > checkpoint.Timestamp;
+//
+//             if (!unseenRecord)
+//                 Log.Warning(
+//                     "{SourceName} Record {RecordIndex} already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
+//                     record.Source, index, record.EventTime, checkpoint.Timestamp
+//                 );
+//
+//             return unseenRecord;
+//         }
+//     }
+//     
+//     public virtual ValueTask DisposeAsync() => ValueTask.CompletedTask;
+//     
+//     protected void OnSuccess(OnSuccess<TContext> handler) => 
+//         OnSuccessHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+//     
+//     protected void OnError(OnError<TContext> handler) =>
+//         OnErrorHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+// }

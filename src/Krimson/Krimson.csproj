@@ -1,8 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-  </PropertyGroup>
-  
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Krimson.Connectors\Krimson.Connectors.csproj" />
     <ProjectReference Include="..\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj" />

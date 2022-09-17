@@ -2,7 +2,6 @@ using System.Text.Json.Nodes;
 using Google.Protobuf.WellKnownTypes;
 using Krimson;
 using Krimson.Connectors;
-using Krimson.Extensions.DependencyInjection;
 using Refit;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -21,7 +20,8 @@ Log.Logger = new LoggerConfiguration()
 var host = Host
     .CreateDefaultBuilder(args)
     .UseSerilog(Log.Logger)
-    .ConfigureServices((ctx, services) => {
+    .ConfigureServices(
+        (ctx, services) => {
             services
                 .AddKrimson()
                 .AddProtobuf()
@@ -42,7 +42,7 @@ interface IPowerMetersClient {
 [BackOffTimeSeconds(1)]
 class PowerMetersSourceConnector : PullSourceConnector {
     int counter;
-    
+
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(PullSourceContext context) {
         for (var i = 1; i <= 500; i++) {
             counter += i;

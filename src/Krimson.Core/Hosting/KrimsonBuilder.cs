@@ -1,20 +1,23 @@
 // ReSharper disable CheckNamespace
 
 using Confluent.SchemaRegistry;
-using Krimson.Connectors;
-using Krimson.Connectors.Http;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;
 using Krimson.Serializers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Krimson;
 
 [PublicAPI]
 public class KrimsonBuilder {
-    public KrimsonBuilder(IServiceCollection services) => Services = services;
+    public KrimsonBuilder(IServiceCollection services, string?  clientId) {
+        Services = services;
+        ClientId = clientId;
+    }
 
     internal IServiceCollection Services { get; }
+    internal string?            ClientId { get; }
 
     public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
         Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret));
@@ -31,16 +34,21 @@ public class KrimsonBuilder {
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) {
-        Services.AddKrimsonProcessor(tasks, build, initialize);
+        Services.AddKrimsonProcessor(
+            tasks, 
+            (ctx, builder) => build(ctx, ClientId is null ? builder : builder.ClientId(ClientId)),
+            initialize
+        );
+        
         return this;
     }
-    
+
     public KrimsonBuilder AddProcessor(
         int tasks,
         Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) {
-        Services.AddKrimsonProcessor(tasks, build, initialize);
+        Services.AddKrimsonProcessor(tasks, builder => build(ClientId is null ? builder : builder.ClientId(ClientId)), initialize);
         return this;
     }
 
@@ -48,7 +56,7 @@ public class KrimsonBuilder {
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) {
-        Services.AddKrimsonProcessor(build, initialize);
+        Services.AddKrimsonProcessor((ctx, builder) => build(ctx, ClientId is null ? builder : builder.ClientId(ClientId)), initialize);
         return this;
     }
 
@@ -56,7 +64,7 @@ public class KrimsonBuilder {
         Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) {
-        Services.AddKrimsonProcessor(build, initialize);
+        Services.AddKrimsonProcessor(builder => build(ClientId is null ? builder : builder.ClientId(ClientId)), initialize);
         return this;
     }
 
@@ -102,21 +110,6 @@ public class KrimsonBuilder {
 
     public KrimsonBuilder AddDeserializerFactory(Func<ISchemaRegistryClient, IDynamicDeserializer> getDeserializer) {
         Services.AddSingleton(getDeserializer);
-        return this;
-    }
-
-    public KrimsonBuilder AddPullSourceConnector<T>(TimeSpan? backoffTime = null) where T : PullSourceConnector {
-        Services.AddKrimsonPullSourceConnector<T>(backoffTime);
-        return this;
-    }
-    
-    public KrimsonBuilder AddWebhookSourceConnector<T>() where T : WebhookSourceConnector {
-        Services.AddKrimsonWebhookSourceConnector<T>();
-        return this;
-    }
-    
-    public KrimsonBuilder AddWebhookSourceConnectors() {
-        Services.AddKrimsonWebhookSourceConnectors();
         return this;
     }
 }

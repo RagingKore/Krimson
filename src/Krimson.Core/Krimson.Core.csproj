@@ -4,15 +4,15 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="1.9.2" />
-    <PackageReference Include="Confluent.SchemaRegistry" Version="1.9.2" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0-preview.7.22375.6" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0-preview.7.22375.6" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0-preview.7.22375.6" />
-    <PackageReference Include="OneOf" Version="3.0.223" Pack="false" />
-    <PackageReference Include="Serilog" Version="2.11.0" Pack="false" />
+    <PackageReference Include="Confluent.Kafka" Version="1.9.3" />
+    <PackageReference Include="Confluent.SchemaRegistry" Version="1.9.3" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="OneOf" Version="3.0.223" />
+    <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Scrutor" Version="4.2.0" />
-    <PackageReference Include="System.Interactive.Async" Version="6.0.1" Pack="false" />
+    <PackageReference Include="System.Interactive.Async" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>

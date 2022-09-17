@@ -3,11 +3,10 @@
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.Serializers.ConfluentProtobuf;
 
-namespace Krimson.Extensions.DependencyInjection;
+namespace Krimson;
 
 [PublicAPI]
-public static class KrimsonBuilderSerializersExtensions {
-   
+public static class KrimsonBuilderExtensions {
     static KrimsonBuilder AddProtobufSerializer(this KrimsonBuilder builder, Action<ProtobufSerializerConfig>? configureSerializer = null) =>
         builder.AddSerializer(registry => new ProtobufDynamicSerializer(registry, ProtobufDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
 

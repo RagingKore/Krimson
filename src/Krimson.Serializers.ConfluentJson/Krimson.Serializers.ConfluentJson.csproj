@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Confluent.SchemaRegistry.Serdes.Json" Version="1.9.2" />
+    <PackageReference Include="Confluent.SchemaRegistry.Serdes.Json" Version="1.9.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Krimson.Core\Krimson.Core.csproj" />
   </ItemGroup>
-
 </Project>

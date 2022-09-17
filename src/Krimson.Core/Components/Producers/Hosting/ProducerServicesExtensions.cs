@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Krimson;
 
 [PublicAPI]
-public static class ProducerServiceCollectionExtensions {
+public static class ProducerServicesExtensions {
     public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) =>
         services.AddSingleton(
             serviceProvider => {

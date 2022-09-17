@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Krimson;
 
 [PublicAPI]
-public static class SchemaRegistryServiceCollectionExtensions {
+public static class SchemaRegistryServicesExtensions {
     /// <summary>
     /// Registers the Schema Registry Client and automatically reads settings from configuration.
     /// </summary>
