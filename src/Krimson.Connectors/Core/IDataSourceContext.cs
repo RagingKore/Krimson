@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Krimson.State;
 
 namespace Krimson.Connectors;
@@ -11,13 +12,13 @@ public interface IDataSourceContext {
 }
 
 public class Counter : IEnumerable<(string Topic, int Count)> {
-    Dictionary<string, int> CountPerTopic { get; } = new Dictionary<string, int>();
+    ConcurrentDictionary<string, int> CountPerTopic { get; } = new();
 
     public int Total   => CountPerTopic.Values.Sum();
-    public int Skipped => CountPerTopic[""];
+    public int Skipped => CountPerTopic.GetOrAdd("", 0);
 
-    public void IncrementSkipped()               => CountPerTopic[""]++;
-    public void IncrementProcessed(string topic) => CountPerTopic[topic]++;
+    public void IncrementSkipped()               => CountPerTopic.AddOrUpdate("", 1, (_, count) => ++count);
+    public void IncrementProcessed(string topic) => CountPerTopic.AddOrUpdate(topic, 1, (_, count) => ++count);
 
     public IEnumerator<(string Topic, int Count)> GetEnumerator() =>
         CountPerTopic
