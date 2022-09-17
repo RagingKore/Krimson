@@ -14,7 +14,7 @@ public interface IDataSourceContext {
 public class Counter : IEnumerable<(string Topic, int Count)> {
     ConcurrentDictionary<string, int> CountPerTopic { get; } = new();
 
-    public int Total   => CountPerTopic.Values.Sum();
+    public int Total   => CountPerTopic.Where(x => x.Key != "").Sum(x => x.Value);
     public int Skipped => CountPerTopic.GetOrAdd("", 0);
 
     public void IncrementSkipped()               => CountPerTopic.AddOrUpdate("", 1, (_, count) => ++count);
@@ -23,7 +23,7 @@ public class Counter : IEnumerable<(string Topic, int Count)> {
     public IEnumerator<(string Topic, int Count)> GetEnumerator() =>
         CountPerTopic
             .Where(x => x.Key != "")
-            .Select(x => (x.Key!, x.Value))
+            .Select(x => (x.Key, x.Value))
             .GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

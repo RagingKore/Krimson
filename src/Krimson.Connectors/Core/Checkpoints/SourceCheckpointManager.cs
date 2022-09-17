@@ -22,12 +22,18 @@ public class SourceCheckpointManager {
         var loadedCheckpoint = await Reader
             .LoadCheckpoint(topic, cancellationToken)
             .ConfigureAwait(false);
-    
-        Log.Information(
-            "Checkpoint loaded: {EventTime} {Topic} [{Partition}] @ {Offset}",
-            loadedCheckpoint.Timestamp, loadedCheckpoint.RecordId.Topic, 
-            loadedCheckpoint.RecordId.Partition, loadedCheckpoint.RecordId.Offset 
-        );
+
+        if (loadedCheckpoint == SourceCheckpoint.None) {
+            Log.Information("Checkpoint not found");
+        }
+        else {
+            Log.Information(
+                "Checkpoint loaded: {EventTime} {Topic} [{Partition}] @ {Offset}",
+                loadedCheckpoint.Timestamp, loadedCheckpoint.RecordId.Topic, 
+                loadedCheckpoint.RecordId.Partition, loadedCheckpoint.RecordId.Offset 
+            );
+        }
+       
 
         return Checkpoints[topic] = loadedCheckpoint;
     }
