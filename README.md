@@ -1,12 +1,8 @@
-# Krimson
-
-Just you wait... 
+# Krimson 
 
 A helper library for .NET that not only greatly simplifies the usage of Kafka but also covers common streaming scenarios including re-balancing.
 
 ## Usage
-
-For a step-by-step guide and code samples, you will need to wait a bit.
 
 Take a look in the [examples](examples) directory and at the [integration tests](tests/Krimson.Tests) for further examples.
 
