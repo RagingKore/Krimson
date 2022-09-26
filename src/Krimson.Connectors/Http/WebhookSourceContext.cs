@@ -2,9 +2,7 @@ namespace Krimson.Connectors.Http;
 
 [PublicAPI]
 public class WebhookSourceContext : DataSourceContext {
-    public WebhookSourceContext(HttpContext http) : base(http.RequestServices, http.RequestAborted) {
-        Http = http;
-    }
+    public WebhookSourceContext(HttpContext http) : base(http.RequestServices, http.RequestAborted) => Http = http;
 
     public HttpContext Http { get; }
 

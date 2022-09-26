@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Confluent.Kafka;
 using Krimson.Interceptors;
 using Krimson.Serializers;

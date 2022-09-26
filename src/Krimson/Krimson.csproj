@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\Krimson.Connectors\Krimson.Connectors.csproj" />
+    <ProjectReference Include="..\Krimson.Serializers.ConfluentJson\Krimson.Serializers.ConfluentJson.csproj" />
     <ProjectReference Include="..\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj" />
   </ItemGroup>
 </Project>

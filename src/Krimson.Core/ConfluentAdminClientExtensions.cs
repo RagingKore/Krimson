@@ -39,7 +39,7 @@ public static class ConfluentAdminClientExtensions {
                 ).ConfigureAwait(false);
         }
         catch (CreateTopicsException ex) {
-            if (ex.Error.Code == ErrorCode.Local_Partial && ex.Message.Contains("Topic replication factor must be")) {
+            if (ex.Error.Code is ErrorCode.Local_Partial && ex.Message.Contains("Topic replication factor must be")) {
                 var reportedReplicationFactor = short.Parse(
                     ex.Results.FirstOrDefault()?.Error.Reason.Replace("Topic replication factor must be", Empty).Trim() ?? "1"
                 );
@@ -71,7 +71,7 @@ public static class ConfluentAdminClientExtensions {
     public static Task<bool> CreateCompactedTopic(this IAdminClient client, string topicName, int partitions, short replicationFactor) =>
         CreateTopic(
             client, topicName, partitions, replicationFactor, 
-            new Dictionary<string, string> { { "cleanup.policy", "compact" } }
+            new() { { "cleanup.policy", "compact" } }
         );
 
     public static Task<bool[]> CreateTopics(
@@ -154,7 +154,7 @@ public static class ConfluentAdminClientExtensions {
     }
 
     public static Task DeleteTopic(this IAdminClient client, string topic) =>
-        DeleteTopics(client, new List<string> { topic });
+        DeleteTopics(client, new() { topic });
 
     public static async Task DeleteTestTopics(this IAdminClient client, Predicate<string> predicate) {
         var topicsToDelete = client

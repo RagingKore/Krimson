@@ -1,27 +1,36 @@
 using Krimson.Readers;
-using static System.DateTimeOffset;
 using static Serilog.Log;
 
 namespace Krimson.Connectors.Checkpoints;
 
+public delegate ValueTask<SourceCheckpoint> LoadCheckPoint(string topic, CancellationToken cancellationToken);
+
+[PublicAPI]
 public class SourceCheckpointManager {
     static readonly Serilog.ILogger Log = ForContext<SourceCheckpointManager>();
     
-    public SourceCheckpointManager(KrimsonReader reader) {
-        Reader      = reader;
+    public SourceCheckpointManager(LoadCheckPoint loadCheckPoint) {
+        LoadCheckPoint = loadCheckPoint;
+        Checkpoints    = new();
+    }
+
+    public SourceCheckpointManager(KrimsonReader reader)  {
+        LoadCheckPoint = (topic, ct) => reader.LastRecords(topic, ct).AsAsyncEnumerable()
+            .Select(x => new SourceCheckpoint(x.Id, x.Timestamp.UnixTimestampMs))
+            .DefaultIfEmpty(SourceCheckpoint.None)
+            .MaxAsync(ct);
+        
         Checkpoints = new();
     }
 
-    KrimsonReader                        Reader      { get; }
-    Dictionary<string, SourceCheckpoint> Checkpoints { get; }
+    LoadCheckPoint                       LoadCheckPoint { get; }
+    Dictionary<string, SourceCheckpoint> Checkpoints    { get; }
 
     public async ValueTask<SourceCheckpoint> GetCheckpoint(string topic, CancellationToken cancellationToken) {
         if (Checkpoints.TryGetValue(topic, out var checkpoint))
             return checkpoint;
         
-        var loadedCheckpoint = await Reader
-            .LoadCheckpoint(topic, cancellationToken)
-            .ConfigureAwait(false);
+        var loadedCheckpoint = await LoadCheckPoint(topic, cancellationToken).ConfigureAwait(false);
 
         if (loadedCheckpoint == SourceCheckpoint.None) {
             Log.Information("Checkpoint not found");
@@ -33,13 +42,11 @@ public class SourceCheckpointManager {
                 loadedCheckpoint.RecordId.Partition, loadedCheckpoint.RecordId.Offset 
             );
         }
-       
-
+        
         return Checkpoints[topic] = loadedCheckpoint;
     }
     
     public SourceCheckpoint TrackCheckpoint(SourceCheckpoint checkpoint) {
-        
         Checkpoints[checkpoint.RecordId.Topic] = checkpoint;
         
         Log.Information(

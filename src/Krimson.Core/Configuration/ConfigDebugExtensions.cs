@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using static System.String;
 
 namespace Krimson; 
 
@@ -17,5 +18,5 @@ public static class ConfigDebugExtensions {
         return config;
     }
 
-    public static bool IsDebugEnabled(this ClientConfig config) => !string.IsNullOrEmpty(config.Debug);
+    public static bool IsDebugEnabled(this ClientConfig config) => !IsNullOrEmpty(config.Debug);
 }

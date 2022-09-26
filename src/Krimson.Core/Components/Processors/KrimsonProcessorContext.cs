@@ -1,6 +1,5 @@
 using Krimson.Producers;
 using Krimson.State;
-using Serilog;
 
 namespace Krimson.Processors;
 

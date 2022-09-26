@@ -45,6 +45,7 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
                 .SerializeAsync((dynamic)data, context)
                 .ConfigureAwait(false);
 
+            context.Headers.AddSchemaId(bytes);
             context.Headers.AddSchemaType(SchemaType.Protobuf);
             
             return bytes;

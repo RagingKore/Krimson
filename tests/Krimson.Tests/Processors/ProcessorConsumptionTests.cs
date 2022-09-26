@@ -1,13 +1,24 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FluentAssertions;
 using Krimson.Fixie;
+using Krimson.Serializers.ConfluentJson;
+using Krimson.Tests.Messages;
+using Namotion.Reflection;
+using NJsonSchema;
+using NJsonSchema.Annotations;
+using NJsonSchema.Generation;
 
 namespace Krimson.Tests; 
+
+
+
 
 public class ProcessorConsumptionTests : TestFixture<KrimsonTestContext> {
     public ProcessorConsumptionTests(KrimsonTestContext context) : base(context) { }
     
     [TestCase(1, 1)]
-    [TestCase(10, 1)]
+    // [TestCase(10, 1)]
     public Task ConsumesFromTopic(int numberOfMessages, int partitions) => ConsumeMessages(numberOfMessages, partitions, true);
     
     [TestCase(3, 3)]

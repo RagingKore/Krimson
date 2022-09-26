@@ -45,7 +45,7 @@ public static class DefaultConfigs {
             CompressionLevel     = 6,    // can go from 1 to 12
             EnableIdempotence    = true, // there are no reasons to not want it enabled
             LingerMs             = 5,    // the default is now 5, funny
-            DeliveryReportFields = "all" // default
+            DeliveryReportFields = "all", // default
         };
 
     public static SchemaRegistryConfig DefaultSchemaRegistryConfig =>

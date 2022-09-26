@@ -1,4 +1,3 @@
-using Serilog;
 using Serilog.Core.Enrichers;
 
 namespace Krimson.Logging;

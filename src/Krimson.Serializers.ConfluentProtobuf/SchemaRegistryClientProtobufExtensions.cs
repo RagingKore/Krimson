@@ -34,7 +34,7 @@ public static class SchemaRegistryClientProtobufExtensions {
             var subjectName = $"{descriptor.Package}.{messageType}";
             var clrTypeName = $"{descriptor.Options.CsharpNamespace}.{messageType}";
 
-            return new MessageSchema(schemaId, subjectName, clrTypeName);
+            return new(schemaId, subjectName, clrTypeName);
         }
     }
 }

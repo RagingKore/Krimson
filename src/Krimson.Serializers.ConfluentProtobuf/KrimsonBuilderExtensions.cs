@@ -13,7 +13,7 @@ public static class KrimsonBuilderExtensions {
     static KrimsonBuilder AddProtobufDeserializer(this KrimsonBuilder builder, Action<ProtobufDeserializerConfig>? configureDeserializer = null) =>
         builder.AddDeserializer(registry => new ProtobufDynamicDeserializer(registry, ProtobufDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))));
 
-    public static KrimsonBuilder AddProtobuf(
+    public static KrimsonBuilder UseProtobuf(
         this KrimsonBuilder builder,
         Action<ProtobufDeserializerConfig>? configureDeserializer = null,
         Action<ProtobufSerializerConfig>? configureSerializer = null

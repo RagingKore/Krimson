@@ -36,6 +36,7 @@ public static class ServicesExtensions {
     }
 }
 
+[PublicAPI]
 public static class WebApplicationExtensions {
     public static WebApplication UseKrimsonWebhookSourceConnectors(this WebApplication app) {
         foreach (var connector in app.Services.GetServices<WebhookSourceConnector>()) {
@@ -53,5 +54,6 @@ public static class WebApplicationExtensions {
             (WebhookPathAttribute?)Attribute.GetCustomAttribute(type, typeof(WebhookPathAttribute)) ?? "";
     }
 
-    public static WebApplication UseKrimsonWebhooks(this WebApplication app) => app.UseKrimsonWebhookSourceConnectors();
+    public static WebApplication UseKrimsonWebhooks(this WebApplication app) => 
+        app.UseKrimsonWebhookSourceConnectors();
 }

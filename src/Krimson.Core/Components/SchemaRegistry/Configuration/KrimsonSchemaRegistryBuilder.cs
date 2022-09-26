@@ -26,20 +26,14 @@ public record KrimsonSchemaRegistryBuilder {
             }
         );
     }
-
-    // // not sure...
-    // public SchemaRegistryBuilder LoggerFactory(ILoggerFactory loggerFactory) {
-    //     KrimsonLogger.Use(loggerFactory);
-    //     return this;
-    // }
-
+    
     public KrimsonSchemaRegistryBuilder ReadSettings(IConfiguration configuration) {
         Ensure.NotNull(configuration, nameof(configuration));
 
         return Connection(
-            configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url),
-            configuration.GetValue("Krimson:SchemaRegistry:ApiKey", ""),
-            configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")
+            configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url)!,
+            configuration.GetValue("Krimson:SchemaRegistry:ApiKey", "")!,
+            configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")!
         );
     }
 

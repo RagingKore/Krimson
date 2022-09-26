@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using System.Runtime.Serialization;
+using System.Text.Json;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.SchemaRegistry;
+using Krimson.Serializers.ConfluentJson.NJsonSchema;
 using NJsonSchema.Generation;
 
 namespace Krimson.Serializers.ConfluentJson;
@@ -12,45 +14,44 @@ namespace Krimson.Serializers.ConfluentJson;
 public class JsonDynamicDeserializer : IDynamicDeserializer {
     static readonly Type ConfluentDeserializerType = typeof(JsonDeserializer<>);
 
-    public static readonly JsonDeserializerConfig      DefaultConfig            = new();
-    public static readonly JsonSchemaGeneratorSettings DefaultGeneratorSettings = new();
-    
-    public JsonDynamicDeserializer(
-        ISchemaRegistryClient registryClient,
-        Func<MessageSchema, Type> resolveMessageType,
-        JsonDeserializerConfig deserializerConfig
-    ) {
-        ResolveMessageType = resolveMessageType;
-        Deserializers      = new ConcurrentDictionary<Type, dynamic>();
+    public static readonly JsonDeserializerConfig DefaultConfig = new();
 
+    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, Func<MessageSchema, Type>? resolveMessageType = null, JsonDeserializerConfig? config = null, JsonSchemaGeneratorSettings? generatorSettings = null) {
+        ResolveMessageType = resolveMessageType ?? (schema => {
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(a => a.GetType(schema.ClrTypeName))
+                .FirstOrDefault(x => x is not null)!;
+        });
+
+        Deserializers = new();
+
+        var args = ( 
+            Config: config ?? DefaultConfig,
+            GeneratorSettings: generatorSettings.ConfigureDefaults()
+        );
+        
         GetDeserializer = messageType => Deserializers.GetOrAdd(
             messageType,
-            static (type, config) => Activator.CreateInstance(ConfluentDeserializerType.MakeGenericType(type), config)!,
-            deserializerConfig
+            static (type, ctx) => Activator.CreateInstance(
+                ConfluentDeserializerType.MakeGenericType(type),
+                ctx.Config, ctx.GeneratorSettings
+            )!, 
+            args
         );
         
         GetMessageSchema = registryClient.GetJsonMessageSchema; 
     }
-
-    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, Func<MessageSchema, Type> resolveMessageType)
-        : this(registryClient, resolveMessageType, DefaultConfig) { }
-
-    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient)
-        : this(registryClient, schema => {
-            return AppDomain.CurrentDomain
-                .GetAssemblies()
-                .Select(a => a.GetType(schema.ClrTypeName))
-                .FirstOrDefault(x => x != null)!;
-        }, DefaultConfig) { }
-
-    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonDeserializerConfig deserializerConfig)
-        : this(registryClient, schema => {
-            return AppDomain.CurrentDomain
-                .GetAssemblies()
-                .Select(a => a.GetType(schema.ClrTypeName))
-                .FirstOrDefault(x => x != null)!;
-        }, deserializerConfig) { }
     
+    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonDeserializerConfig config)
+        : this(registryClient, null, config) { }
+    
+    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSchemaGeneratorSettings generatorSettings)
+        : this(registryClient, null, null, generatorSettings) { }
+    
+    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSerializerOptions serializerOptions)
+        : this(registryClient, null, null, new JsonSchemaGeneratorSettings().ConfigureDefaults(serializerOptions)) { }
+
     Func<ReadOnlyMemory<byte>, MessageSchema> GetMessageSchema   { get; }
     Func<MessageSchema, Type>                 ResolveMessageType { get; }
     Func<Type, dynamic>                       GetDeserializer    { get; }
@@ -80,6 +81,6 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
     }
 
     public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
-        => DeserializeAsync(new ReadOnlyMemory<byte>(data.ToArray()), isNull, context)
+        => DeserializeAsync(new(data.ToArray()), isNull, context)
             .ConfigureAwait(false).GetAwaiter().GetResult();
 }

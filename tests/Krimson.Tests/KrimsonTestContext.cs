@@ -7,6 +7,7 @@ using Krimson.OpenTelemetry;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
+using Krimson.Serializers.ConfluentJson;
 using Krimson.Serializers.ConfluentProtobuf;
 using Krimson.Tests.Messages;
 using Microsoft.Extensions.Configuration;
@@ -34,7 +35,7 @@ public class KrimsonTestContext : TestContext {
         ClientConnection = null!;
         AdminClient      = null!;
         SchemaRegistry   = null!;
-        CreatedTopics    = new List<string>();
+        CreatedTopics    = new();
 
         TracerProvider = Sdk.CreateTracerProviderBuilder()
             .AddSource("Krimson.Tests")
@@ -73,17 +74,17 @@ public class KrimsonTestContext : TestContext {
             .Build();
 
         WithConnection(
-            configuration.GetValue("Krimson:Connection:BootstrapServers", DefaultConfigs.DefaultConsumerConfig.BootstrapServers),
-            configuration.GetValue("Krimson:Connection:Username", DefaultConfigs.DefaultConsumerConfig.SaslUsername),
-            configuration.GetValue("Krimson:Connection:Password", DefaultConfigs.DefaultConsumerConfig.SaslPassword),
+            configuration.GetValue("Krimson:Connection:BootstrapServers", DefaultConfigs.DefaultConsumerConfig.BootstrapServers)!,
+            configuration.GetValue("Krimson:Connection:Username", DefaultConfigs.DefaultConsumerConfig.SaslUsername)!,
+            configuration.GetValue("Krimson:Connection:Password", DefaultConfigs.DefaultConsumerConfig.SaslPassword)!,
             configuration.GetValue("Krimson:Connection:SecurityProtocol", DefaultConfigs.DefaultConsumerConfig.SecurityProtocol!.Value),
             configuration.GetValue("Krimson:Connection:SaslMechanism", DefaultConfigs.DefaultConsumerConfig.SaslMechanism!.Value)
         );
 
         WithSchemaRegistry(
-            configuration.GetValue("Krimson:SchemaRegistry:Url",  DefaultConfigs.DefaultSchemaRegistryConfig.Url),
-            configuration.GetValue("Krimson:SchemaRegistry:ApiKey", ""),
-            configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")
+            configuration.GetValue("Krimson:SchemaRegistry:Url",  DefaultConfigs.DefaultSchemaRegistryConfig.Url)!,
+            configuration.GetValue("Krimson:SchemaRegistry:ApiKey", "")!,
+            configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")!
         );
        
         
@@ -191,11 +192,12 @@ public class KrimsonTestContext : TestContext {
         
         await using var producer = KrimsonProducer.Builder
             .Connection(ClientConnection)
-            .UseProtobuf(SchemaRegistry)
+            //.UseProtobuf(SchemaRegistry)
+            .UseJson(SchemaRegistry)
             .ClientId(topic)
             .Topic(topic)
             //.EnableDebug()
-            .Intercept(new OpenTelemetryProducerInterceptor(nameof(Krimson.Tests)))
+            .Intercept(new OpenTelemetryProducerInterceptor("Krimson.Tests"))
             .Create();
 
         var requests = Enumerable.Range(1, numberOfMessages).Select(CreateMessage).ToArray();
@@ -227,10 +229,16 @@ public class KrimsonTestContext : TestContext {
         ProducerRequest CreateMessage(int order) {
             var id = Guid.NewGuid();
 
-            var msg = new KrimsonTestMessage {
+            // var msg = new KrimsonTestMessage {
+            //     Id        = id.ToString(),
+            //     Order     = order,
+            //     Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            // };
+            
+            var msg = new KrimsonTestRecord {
                 Id        = id.ToString(),
                 Order     = order,
-                Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
+                Timestamp = DateTimeOffset.UtcNow
             };
             
             return ProducerRequest.Builder
@@ -256,13 +264,13 @@ public class KrimsonTestContext : TestContext {
         var cancellator = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
         var processed   = new List<KrimsonRecord>();
 
-        void TestMessageHandler(KrimsonTestMessage msg, KrimsonProcessorContext ctx) {
+        void TestMessageHandler(KrimsonTestRecord msg, KrimsonProcessorContext ctx) {
             ctx.CancellationToken.ThrowIfCancellationRequested();
 
             processed.Add(ctx.Record);
 
             if (produceOutput) {
-                ctx.Output(msg, ctx.Record.Key!);
+                ctx.Output(msg, ctx.Record.Key);
 
                 if (processed.Count == numberOfMessages)
                     cancellator.CancelAfter(TimeSpan.FromSeconds(3));
@@ -275,8 +283,8 @@ public class KrimsonTestContext : TestContext {
             await using var processor = KrimsonProcessor.Builder
                 .With(buildProcessor)
                 .Connection(ClientConnection)
-                .UseProtobuf(SchemaRegistry)
-                .Process<KrimsonTestMessage>(TestMessageHandler)
+                .UseJson(SchemaRegistry)
+                .Process<KrimsonTestRecord>(TestMessageHandler)
                 .Intercept(new OpenTelemetryProcessorInterceptor("Krimson.Tests"))
                 .Create();
 

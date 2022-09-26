@@ -5,6 +5,7 @@ using static System.TimeSpan;
 
 namespace Krimson;
 
+[PublicAPI]
 public static class ConfluentConsumerExtensions {
     static readonly TimeSpan DefaultRequestTimeout = FromSeconds(10);
 

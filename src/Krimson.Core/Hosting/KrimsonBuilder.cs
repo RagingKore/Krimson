@@ -18,7 +18,7 @@ public class KrimsonBuilder {
 
     internal IServiceCollection Services { get; }
     internal string?            ClientId { get; }
-
+    
     public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
         Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret));
         return this;

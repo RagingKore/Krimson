@@ -1,4 +1,3 @@
-using Serilog;
 using static Serilog.Core.Constants;
 
 namespace Krimson.Interceptors;

@@ -1,6 +1,7 @@
 using System.Text;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
+using Krimson.SchemaRegistry;
 
 namespace Krimson;
 
@@ -64,4 +65,7 @@ public static class HeadersExtensions {
 
     public static Headers AddSchemaType(this Headers headers, SchemaType schemaType) => 
         headers.Add(HeaderKeys.SchemaType, schemaType.ToString().ToLower());
+    
+    public static Headers AddSchemaId(this Headers headers, byte[] bytes) => 
+        headers.Add(HeaderKeys.SchemaId, KrimsonSchemaRegistry.ParseSchemaId(bytes).ToString());
 }

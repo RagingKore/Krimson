@@ -2,9 +2,7 @@ syntax = "proto3";
 
 package krimson.tests;
 
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
 
 option csharp_namespace = "Krimson.Tests.Messages";
 

@@ -46,7 +46,7 @@ class PowerMetersSourceConnector : PullSourceConnector {
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(PullSourceContext context) {
         for (var i = 1; i <= 500; i++) {
             counter += i;
-
+      
             yield return new() {
                 Key       = counter,
                 Value     = Struct.Parser.ParseJson(@"{""success"": ""true""}"),

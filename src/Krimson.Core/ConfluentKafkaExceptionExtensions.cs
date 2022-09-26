@@ -2,6 +2,7 @@ using Confluent.Kafka;
 
 namespace Krimson;
 
+[PublicAPI]
 public static class ConfluentKafkaExceptionExtensions {
     public static bool IsUseless(this KafkaException exception)   => exception.Error.IsUseless();
     public static bool IsTerminal(this KafkaException exception)  => exception.Error.IsTerminal();

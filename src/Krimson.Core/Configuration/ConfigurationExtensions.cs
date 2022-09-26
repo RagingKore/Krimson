@@ -5,9 +5,9 @@ namespace Krimson;
 
 static class ConfigurationExtensions {
     public static string[] Values(this IConfiguration configuration, string key, char separator = ',') {
-        if (IsNullOrWhiteSpace(key)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
-
-        var value = configuration.GetValue<string>(key, "");
+        Ensure.NotNullOrWhiteSpace(key, nameof(key));
+        
+        var value = configuration.GetValue(key, Empty);
         
         return IsNullOrWhiteSpace(value)
             ? Array.Empty<string>()
@@ -17,8 +17,7 @@ static class ConfigurationExtensions {
     }
     
     public static T Value<T>(this IConfiguration configuration, string key, T defaultValue) {
-        if (IsNullOrWhiteSpace(key)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(key));
-
+        Ensure.NotNullOrWhiteSpace(key, nameof(key));
         return configuration.GetValue(key, defaultValue)!;
     }
 }

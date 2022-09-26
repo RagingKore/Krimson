@@ -38,7 +38,7 @@ public class MongoStateStore : IStateStore {
     public async ValueTask<T?> Get<T>(object key, CancellationToken cancellationToken = default) {
         if (key is null) throw new ArgumentNullException(nameof(key));
 
-        var stateKey = key.ToString();
+        var stateKey = key?.ToString();
         
         return await Database
             .GetCollection<MongoState<T>>(CollectionName)

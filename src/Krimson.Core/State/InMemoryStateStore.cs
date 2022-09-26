@@ -22,9 +22,8 @@ public class InMemoryStateStore : IStateStore {
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask<T?> Get<T>(object key, CancellationToken cancellationToken = default) {
-        return ValueTask.FromResult(Cache.Get<T?>(key));
-    }
+    public ValueTask<T?> Get<T>(object key, CancellationToken cancellationToken = default) => 
+        ValueTask.FromResult(Cache.Get<T?>(key));
 
     public ValueTask Delete<T>(object key, CancellationToken cancellationToken = default) {
         Cache.Remove(key);

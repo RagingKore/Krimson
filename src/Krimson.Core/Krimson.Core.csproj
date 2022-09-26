@@ -4,6 +4,10 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Confluent.Kafka" Version="1.9.3" />
     <PackageReference Include="Confluent.SchemaRegistry" Version="1.9.3" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0-rc.1.22426.10" />

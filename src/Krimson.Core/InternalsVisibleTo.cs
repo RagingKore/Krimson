@@ -5,7 +5,6 @@
 [assembly: InternalsVisibleTo("Krimson.Tests")]
 
 [assembly: InternalsVisibleTo("Krimson")]
-[assembly: InternalsVisibleTo("Krimson.Hosting")]
 [assembly: InternalsVisibleTo("Krimson.OpenTelemetry")]
 [assembly: InternalsVisibleTo("Krimson.Connectors")]
 [assembly: InternalsVisibleTo("Krimson.IO")]
