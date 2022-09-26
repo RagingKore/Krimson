@@ -112,15 +112,15 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         await Task.Yield();
 
         try {
-            await foreach (var record in Consumer.Records(position => Intercept(new PartitionEndReached(this, position)), Cancellator.Token))
-                await ProcessRecord(record, Cancellator.Token);
+            await foreach (var record in Consumer.Records(position => Intercept(new PartitionEndReached(this, position)), Cancellator.Token).ConfigureAwait(false))
+                await ProcessRecord(record, Cancellator.Token).ConfigureAwait(false);
         }
         catch (Exception ex) {
-            await Terminate(ex);
+            await Terminate(ex).ConfigureAwait(false);
         }
         finally {
             if (Status == KrimsonProcessorStatus.Activated)
-                await Terminate();
+                await Terminate().ConfigureAwait(false);
         }
     }
 

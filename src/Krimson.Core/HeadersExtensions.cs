@@ -68,4 +68,7 @@ public static class HeadersExtensions {
     
     public static Headers AddSchemaId(this Headers headers, byte[] bytes) => 
         headers.Add(HeaderKeys.SchemaId, KrimsonSchemaRegistry.ParseSchemaId(bytes).ToString());
+    
+    public static Headers AddSchemaInfo(this Headers headers, SchemaType schemaType, byte[] bytes) => 
+        headers.AddSchemaType(schemaType).AddSchemaId(bytes);
 }

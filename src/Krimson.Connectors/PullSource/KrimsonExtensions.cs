@@ -1,7 +1,7 @@
 namespace Krimson.Connectors;
 
 [PublicAPI]
-public static class ServicesExtensions {
+public static partial class ServiceCollectionExtensions {
     public static IServiceCollection AddKrimsonPullSourceConnector<T>(this IServiceCollection services, TimeSpan? backoffTime = null) where T : PullSourceConnector {
         services.AddKrimsonReader();
 
@@ -17,5 +17,18 @@ public static class ServicesExtensions {
         return backoffTime is null
             ? services.AddHostedService<PullSourceConnectorHost<T>>()
             : services.AddHostedService(ctx => new PullSourceConnectorHost<T>(ctx.GetRequiredService<T>(), ctx, backoffTime));
+    }
+
+}
+
+public static partial class KrimsonBuilderExtensions {
+    public static KrimsonBuilder AddPullSourceConnector<T>(this KrimsonBuilder builder, TimeSpan? backoffTime = null) where T : PullSourceConnector {
+        builder.Services.AddKrimsonPullSourceConnector<T>(backoffTime);
+        return builder;
+    }
+    
+    public static KrimsonBuilder AddPullSource<T>(this KrimsonBuilder builder, TimeSpan? backoffTime = null) where T : PullSourceConnector {
+        builder.Services.AddKrimsonPullSourceConnector<T>(backoffTime);
+        return builder;
     }
 }

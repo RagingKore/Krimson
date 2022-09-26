@@ -7,5 +7,5 @@
 [assembly: InternalsVisibleTo("Krimson")]
 [assembly: InternalsVisibleTo("Krimson.OpenTelemetry")]
 [assembly: InternalsVisibleTo("Krimson.Connectors")]
-[assembly: InternalsVisibleTo("Krimson.IO")]
+[assembly: InternalsVisibleTo("Krimson.State.MongoDB")]
 [assembly: InternalsVisibleTo("Sherlock")]

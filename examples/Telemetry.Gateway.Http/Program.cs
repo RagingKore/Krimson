@@ -11,7 +11,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProducer(pdx => pdx
         .ClientId("telemetry-gateway")
         .Topic("telemetry")

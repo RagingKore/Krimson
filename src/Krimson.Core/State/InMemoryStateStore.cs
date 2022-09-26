@@ -31,5 +31,5 @@ public class InMemoryStateStore : IStateStore {
     }
 
     public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T>> factory, CancellationToken cancellationToken = default) => 
-        await Cache.GetOrCreateAsync(key, async _ => await factory().ConfigureAwait(false));
+        await Cache.GetOrCreateAsync(key, async _ => await factory().ConfigureAwait(false)).ConfigureAwait(false);
 }

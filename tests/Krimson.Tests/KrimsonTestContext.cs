@@ -192,8 +192,8 @@ public class KrimsonTestContext : TestContext {
         
         await using var producer = KrimsonProducer.Builder
             .Connection(ClientConnection)
-            //.UseProtobuf(SchemaRegistry)
-            .UseJson(SchemaRegistry)
+            // .UseProtobuf(SchemaRegistry)
+            .UseConfluentJson(SchemaRegistry)
             .ClientId(topic)
             .Topic(topic)
             //.EnableDebug()
@@ -283,9 +283,9 @@ public class KrimsonTestContext : TestContext {
             await using var processor = KrimsonProcessor.Builder
                 .With(buildProcessor)
                 .Connection(ClientConnection)
-                .UseJson(SchemaRegistry)
+                .UseConfluentJson(SchemaRegistry)
+                .AddOpenTelemetry("Krimson.Tests")
                 .Process<KrimsonTestRecord>(TestMessageHandler)
-                .Intercept(new OpenTelemetryProcessorInterceptor("Krimson.Tests"))
                 .Create();
 
             var gap = await processor

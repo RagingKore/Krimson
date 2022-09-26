@@ -11,14 +11,14 @@ namespace Krimson;
 
 [PublicAPI]
 public class KrimsonBuilder {
-    public KrimsonBuilder(IServiceCollection services, string?  clientId) {
+    public KrimsonBuilder(IServiceCollection services, string? clientId) {
         Services = services;
         ClientId = clientId;
     }
 
     internal IServiceCollection Services { get; }
     internal string?            ClientId { get; }
-    
+
     public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
         Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret));
         return this;
@@ -69,27 +69,27 @@ public class KrimsonBuilder {
     }
 
     public KrimsonBuilder AddProducer(Func<IServiceProvider, KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
-        Services.AddKrimsonProducer(build);
+        Services.AddKrimsonProducer((ctx, builder) => build(ctx, ClientId is null ? builder : builder.ClientId(ClientId)));
         return this;
     }
 
     public KrimsonBuilder AddProducer(Func<KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
-        Services.AddKrimsonProducer(build);
+        Services.AddKrimsonProducer(builder => build(ClientId is null ? builder : builder.ClientId(ClientId)));
         return this;
     }
 
     public KrimsonBuilder AddReader(Func<IServiceProvider, KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
-        Services.AddKrimsonReader(build);
+        Services.AddKrimsonReader((ctx, builder) => build(ctx, ClientId is null ? builder : builder.ClientId(ClientId)));
         return this;
     }
 
     public KrimsonBuilder AddReader(Func<KrimsonReaderBuilder, KrimsonReaderBuilder> build) {
-        Services.AddKrimsonReader((_, builder) => build(builder));
+        Services.AddKrimsonReader((_, builder) => build(ClientId is null ? builder : builder.ClientId(ClientId)));
         return this;
     }
 
     public KrimsonBuilder AddReader() {
-        Services.AddKrimsonReader();
+        Services.AddKrimsonReader((_, builder) => ClientId is null ? builder : builder.ClientId(ClientId));
         return this;
     }
 

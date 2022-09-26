@@ -5,7 +5,7 @@ using Krimson.Processors;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProcessor(
         prx => prx
             .ClientId("telemetry-processor")

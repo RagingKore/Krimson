@@ -77,8 +77,7 @@ public class JsonDynamicSerializer : IDynamicSerializer {
                 .SerializeAsync((dynamic)data, context)
                 .ConfigureAwait(false);
 
-            context.Headers.AddSchemaId(bytes);
-            context.Headers.AddSchemaType(SchemaType.Json);
+            context.Headers.AddSchemaInfo(SchemaType.Json, bytes);
 
             return bytes;
         }

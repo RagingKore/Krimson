@@ -14,24 +14,25 @@ public static class KrimsonProcessorExtensions {
 
                 return Task.CompletedTask;
             }
-        );
+        ).ConfigureAwait(false);
 
-        return await tcs.Task;
+        return await tcs.Task.ConfigureAwait(false);
     }
     
     public static async Task RunUntilCompletion(this KrimsonProcessor processor, OnProcessorTerminated? onTerminated, CancellationToken stoppingToken) {
         var tcs = new TaskCompletionSource<bool>();
 
-        await processor.Activate(
-            stoppingToken, async  (proc, gaps, ex) => {
-                if (onTerminated is not null) 
-                    await onTerminated(proc, gaps, ex).ConfigureAwait(false);
-                
-                tcs.SetResult(true);
-            }
-        );
+        await processor
+            .Activate(
+                stoppingToken, async (proc, gaps, ex) => {
+                    if (onTerminated is not null)
+                        await onTerminated(proc, gaps, ex).ConfigureAwait(false);
 
-        await tcs.Task;
+                    tcs.SetResult(true);
+                }
+            ).ConfigureAwait(false);
+
+        await tcs.Task.ConfigureAwait(false);
     }
 
     public static Task RunUntilCompletion(this KrimsonProcessor processor, Action<IReadOnlyCollection<SubscriptionTopicGap>, Exception?>? onTerminated, CancellationToken stoppingToken) =>

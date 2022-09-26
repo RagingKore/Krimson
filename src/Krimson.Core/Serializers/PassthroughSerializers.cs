@@ -18,7 +18,7 @@ public class PassThroughUtf8Serializer : IDynamicDeserializer, IDynamicSerialize
         Deserializer.Deserialize(data, isNull, context);
     
     public byte[] Serialize(object? data, SerializationContext context) =>
-        Serializer.Serialize(data.As<string>() ?? Empty, context);
+        Serializer.Serialize(data.MaybeAs<string>() ?? Empty, context);
 }
 
 public class PassThroughBytesSerializer : IDynamicDeserializer, IDynamicSerializer {
@@ -34,7 +34,7 @@ public class PassThroughBytesSerializer : IDynamicDeserializer, IDynamicSerializ
         Deserializer.Deserialize(data, isNull, context);
 
     public byte[] Serialize(object? data, SerializationContext context) => 
-        Serializer.Serialize(data.As<byte[]>() ?? Array.Empty<byte>(), context);
+        Serializer.Serialize(data.MaybeAs<byte[]>() ?? Array.Empty<byte>(), context);
 }
 
 public static class ProducerBuilderExtensions {

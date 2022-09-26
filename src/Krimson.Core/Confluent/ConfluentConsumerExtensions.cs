@@ -69,8 +69,8 @@ public static class ConfluentConsumerExtensions {
     public static async IAsyncEnumerable<TopicPartitionOffset> GetTopicLatestPositions<TKey, TValue>(
         this IConsumer<TKey, TValue> consumer, string topic, [EnumeratorCancellation] CancellationToken cancellationToken = default
     ) {
-        foreach (var partition in await GetPartitions())
-            yield return await GetLatestPartitionOffset(partition);
+        foreach (var partition in await GetPartitions().ConfigureAwait(false))
+            yield return await GetLatestPartitionOffset(partition).ConfigureAwait(false);
 
         Task<TopicPartition[]> GetPartitions() =>
             Task.Run(
@@ -91,9 +91,7 @@ public static class ConfluentConsumerExtensions {
             );
     }
 
-    public static async Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGap<TKey, TValue>(
-        this IConsumer<TKey, TValue> consumer, CancellationToken cancellationToken = default
-    ) {
+    public static async Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGap<TKey, TValue>(this IConsumer<TKey, TValue> consumer, CancellationToken cancellationToken = default) {
         if (consumer.Subscription.None())
             return Array.Empty<SubscriptionTopicGap>();
 
@@ -103,7 +101,7 @@ public static class ConfluentConsumerExtensions {
                 .Committed(DefaultRequestTimeout)
                 .ToDictionary(x => x.TopicPartition, x => x.Offset.Value),
             cancellationToken
-        );
+        ).ConfigureAwait(false);
 
         return consumer.Assignment
             .GroupBy(x => x.Topic)

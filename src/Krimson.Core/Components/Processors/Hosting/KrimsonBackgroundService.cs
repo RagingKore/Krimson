@@ -37,7 +37,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
         // execute the real initialization routine
         try {
             Logger.Verbose("{ProcessorName} Initializing...", ClientId);
-            await Initialize(cancellationToken);
+            await Initialize(cancellationToken).ConfigureAwait(false);
             Logger.Debug("{ProcessorName} Initialization complete", ClientId);
         }
         catch (OperationCanceledException) {
@@ -62,7 +62,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
                 ExecutingTask = Start(Cancellator.Token);
 
                 try {
-                    await ExecutingTask;
+                    await ExecutingTask.ConfigureAwait(false);
                 }
                 catch (Exception ex) {
                     Logger.Fatal(ex, "{ProcessorName} Failed to execute!", ClientId);
@@ -76,8 +76,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
         Logger.Verbose("{ProcessorName} Disposing...", ClientId);
 
         try {
-            await Dispose()
-                .ConfigureAwait(false);
+            await Dispose().ConfigureAwait(false);
             
             Cancellator.Dispose();
             //Gatekeeper.Dispose();
@@ -116,9 +115,11 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
             }
 
             // Wait until the task completes or the stop token triggers
-            await Task.WhenAny(ExecutingTask, Task.Delay(Timeout.Infinite, cancellationToken));
+            await Task
+                .WhenAny(ExecutingTask, Task.Delay(Timeout.Infinite, cancellationToken))
+                .ConfigureAwait(false);
 
-            await Stop(cancellationToken);
+            await Stop(cancellationToken).ConfigureAwait(false);
 
             Logger.Information("{ProcessorName} Stopped", ClientId);
         }

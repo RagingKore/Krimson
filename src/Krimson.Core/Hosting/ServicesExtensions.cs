@@ -1,3 +1,5 @@
+// ReSharper disable CheckNamespace
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Krimson;
@@ -9,6 +11,11 @@ public static class ServicesExtensions {
     
     public static IServiceCollection AddKrimson(this IServiceCollection services, Action<KrimsonBuilder> configure) {
         configure(AddKrimson(services));
+        return services;
+    }
+    
+    public static IServiceCollection AddKrimson(this IServiceCollection services, string clientId, Action<KrimsonBuilder> configure) {
+        configure(AddKrimson(services, clientId));
         return services;
     }
 }

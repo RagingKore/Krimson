@@ -17,10 +17,10 @@ sealed class AsyncPeriodicTimer : IAsyncDisposable {
 
         await Task.Yield();
 
-        while (await Timer.WaitForNextTickAsync(stoppingToken))
-            await OnTick(false, stoppingToken);
+        while (await Timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
+            await OnTick(false, stoppingToken).ConfigureAwait(false);
 
-        await OnTick(true, stoppingToken);
+        await OnTick(true, stoppingToken).ConfigureAwait(false);
     }
 
     public ValueTask DisposeAsync() {

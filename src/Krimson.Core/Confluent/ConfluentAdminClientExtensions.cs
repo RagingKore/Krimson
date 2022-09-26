@@ -47,7 +47,7 @@ public static class ConfluentAdminClientExtensions {
                 return await CreateTopic(
                     client, topicName, partitions,
                     reportedReplicationFactor, configs
-                );
+                ).ConfigureAwait(false);
             }
 
             if (ex.Results.Select(r => r.Error.Code).Any(err => err != ErrorCode.TopicAlreadyExists && err != ErrorCode.NoError))
@@ -57,12 +57,12 @@ public static class ConfluentAdminClientExtensions {
         using var cts = new CancellationTokenSource(DefaultRequestTimeout);
 
         while (!cts.IsCancellationRequested) {
-            entries = await DescribeTopic(client, topicName);
+            entries = await DescribeTopic(client, topicName).ConfigureAwait(false);
 
             if (entries is not null)
                 return true;
 
-            await Tasks.SafeDelay(FromMilliseconds(250), cts.Token);
+            await Tasks.SafeDelay(FromMilliseconds(250), cts.Token).ConfigureAwait(false);
         }
 
         return false;
@@ -110,7 +110,7 @@ public static class ConfluentAdminClientExtensions {
                         Type = ResourceType.Topic
                     }
                 }
-            );
+            ).ConfigureAwait(false);
 
             return result[0].Entries;
         }

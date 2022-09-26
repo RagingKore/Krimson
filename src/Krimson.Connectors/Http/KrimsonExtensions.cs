@@ -1,6 +1,8 @@
-namespace Krimson.Connectors.Http;
+using Krimson.Connectors.Http;
 
-public static class ServicesExtensions {
+namespace Krimson.Connectors;
+
+public static partial class ServiceCollectionExtensions {
     public static IServiceCollection AddKrimsonWebhookSourceConnectors(this IServiceCollection services) {
         services.AddKrimsonReader();
 
@@ -56,4 +58,27 @@ public static class WebApplicationExtensions {
 
     public static WebApplication UseKrimsonWebhooks(this WebApplication app) => 
         app.UseKrimsonWebhookSourceConnectors();
+}
+
+[PublicAPI]
+public static partial class KrimsonBuilderExtensions {
+    public static KrimsonBuilder AddWebhookSourceConnector<T>(this KrimsonBuilder builder) where T : WebhookSourceConnector {
+        builder.Services.AddKrimsonWebhookSourceConnector<T>();
+        return builder;
+    }
+
+    public static KrimsonBuilder AddWebhookSourceConnectors(this KrimsonBuilder builder) {
+        builder.Services.AddKrimsonWebhookSourceConnectors();
+        return builder;
+    }
+    
+    public static KrimsonBuilder AddWebhookSource<T>(this KrimsonBuilder builder) where T : WebhookSourceConnector {
+        builder.Services.AddKrimsonWebhookSourceConnector<T>();
+        return builder;
+    }
+
+    public static KrimsonBuilder AddWebhookSources(this KrimsonBuilder builder) {
+        builder.Services.AddKrimsonWebhookSourceConnectors();
+        return builder;
+    }
 }

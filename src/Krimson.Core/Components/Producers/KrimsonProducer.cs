@@ -188,8 +188,8 @@ public class KrimsonProducer : IAsyncDisposable {
         // actually locks forever. must investigate further...
         using var cancellator = new CancellationTokenSource(DisposeTimeout);
 
-        await Task.Run(() => Flush(cancellator.Token), cancellator.Token);
-        await Task.Run(() => Client.Dispose(), cancellator.Token);
+        await Task.Run(() => Flush(cancellator!.Token), cancellator.Token).ConfigureAwait(false);
+        await Task.Run(() => Client.Dispose(), cancellator.Token).ConfigureAwait(false);
     }
 
     public static Message<byte[], object?> CreateKafkaMessage(ProducerRequest request, string producerName) {

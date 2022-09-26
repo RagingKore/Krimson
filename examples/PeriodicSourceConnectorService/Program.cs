@@ -23,8 +23,8 @@ var host = Host
     .ConfigureServices(
         (ctx, services) => {
             services
-                .AddKrimson()
-                .AddProtobuf()
+                .AddKrimson("power-meters-cnx")
+                .UseProtobuf()
                 .AddProducer(pdr => pdr.ClientId("power-meters-cnx").Topic("foo.bar.baz"))
                 .AddReader(rdr => rdr.ClientId("power-meters-cnx"))
                 .AddPullSourceConnector<PowerMetersSourceConnector>();

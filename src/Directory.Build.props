@@ -7,6 +7,7 @@
     <Deterministic>true</Deterministic>
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <NoWarn>8618</NoWarn>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -38,6 +39,10 @@
     <PackageReference Include="MinVer" Version="4.1.0" PrivateAssets="All"/>
     <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" PrivateAssets="All"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <!--    <None Include="$(RepoRoot)\e-logo.png" Pack="true" PackagePath="\"/>-->
   </ItemGroup>
 
