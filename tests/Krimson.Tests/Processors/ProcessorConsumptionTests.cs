@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
+using Google.Protobuf;
 using Krimson.Fixie;
 using Krimson.Serializers.ConfluentJson;
 using Krimson.Tests.Messages;
@@ -31,7 +32,7 @@ public class ProcessorConsumptionTests : TestFixture<KrimsonTestContext> {
         var clientId          = Context.GenerateUniqueProcessorName();
         var inputTopic        = await Context.CreateInputTopic(clientId, partitions);
         var producedRecordIds = await Context.ProduceTestMessages(inputTopic, numberOfMessages);
-        
+
         // Act
         var (processedRecords, subscriptionGap) = await Context.ProcessMessages(
             proc => proc

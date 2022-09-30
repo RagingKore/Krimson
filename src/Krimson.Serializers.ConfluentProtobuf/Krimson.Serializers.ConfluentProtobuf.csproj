@@ -2,6 +2,7 @@
   <ItemGroup>
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Protobuf" Version="1.9.3" />
     <PackageReference Include="Google.Protobuf" Version="3.21.6" />
+    <PackageReference Include="ImTools" Version="4.0.0" />
   </ItemGroup>
   
   <ItemGroup>

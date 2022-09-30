@@ -11,7 +11,7 @@ namespace Krimson.Serializers.ConfluentProtobuf;
 [PublicAPI]
 public class ProtobufDynamicSerializer : IDynamicSerializer {
     static readonly Type ConfluentSerializerType = typeof(ProtobufSerializer<>);
-    
+
     public static readonly ProtobufSerializerConfig DefaultConfig = new() {
         SubjectNameStrategy = SubjectNameStrategy.Record,
         AutoRegisterSchemas = true

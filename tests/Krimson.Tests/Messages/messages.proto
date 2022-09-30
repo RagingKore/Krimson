@@ -6,6 +6,18 @@ import "google/protobuf/timestamp.proto";
 
 option csharp_namespace = "Krimson.Tests.Messages";
 
+message CrazyFookedKrimsonTestMessage {
+    string id = 1;
+    int32 order = 2;
+    google.protobuf.Timestamp timestamp = 4;
+}
+
+message FookedKrimsonTestMessage {
+    string id = 1;
+    int32 order = 2;
+    google.protobuf.Timestamp timestamp = 4;
+}
+
 message KrimsonTestMessage {
   string id = 1;
   int32 order = 2;

@@ -13,7 +13,7 @@ sealed class AsyncPeriodicTimer : IAsyncDisposable {
     PeriodicTimer?      Timer  { get; set; }
 
     public async Task Start(CancellationToken stoppingToken = default) {
-        Timer = new PeriodicTimer(Period);
+        Timer = new(Period);
 
         await Task.Yield();
 

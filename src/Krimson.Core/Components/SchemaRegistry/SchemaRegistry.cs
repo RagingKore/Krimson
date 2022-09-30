@@ -20,9 +20,7 @@ public class KrimsonSchemaRegistry {
             throw new SerializationException("Failed to parse Confluent Platform Schema Id!", ex);
         }
     }
-}
-
-public static class Constants {
+    
     /// <summary>
     ///     Magic byte that identifies a message with Confluent Platform framing.
     /// </summary>

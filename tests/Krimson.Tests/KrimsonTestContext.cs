@@ -95,6 +95,8 @@ public class KrimsonTestContext : TestContext {
         await AdminClient
             .DeleteTestTopics(topic => topic.StartsWith("tst.") || topic.EndsWith(".tst"))
             .ConfigureAwait(false);
+
+        // await SchemaRegistry.RegisterMessage<KrimsonTestMessage>();
     }
 
     protected override ValueTask CleanUp() {
@@ -192,8 +194,8 @@ public class KrimsonTestContext : TestContext {
         
         await using var producer = KrimsonProducer.Builder
             .Connection(ClientConnection)
-            // .UseProtobuf(SchemaRegistry)
-            .UseConfluentJson(SchemaRegistry)
+            .UseProtobuf(SchemaRegistry)
+            //.UseConfluentJson(SchemaRegistry)
             .ClientId(topic)
             .Topic(topic)
             //.EnableDebug()
@@ -229,17 +231,17 @@ public class KrimsonTestContext : TestContext {
         ProducerRequest CreateMessage(int order) {
             var id = Guid.NewGuid();
 
-            // var msg = new KrimsonTestMessage {
-            //     Id        = id.ToString(),
-            //     Order     = order,
-            //     Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
-            // };
-            
-            var msg = new KrimsonTestRecord {
+            var msg = new KrimsonTestMessage {
                 Id        = id.ToString(),
                 Order     = order,
-                Timestamp = DateTimeOffset.UtcNow
+                Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
             };
+            
+            // var msg = new KrimsonTestRecord {
+            //     Id        = id.ToString(),
+            //     Order     = order,
+            //     Timestamp = DateTimeOffset.UtcNow
+            // };
             
             return ProducerRequest.Builder
                 .Message(msg)
@@ -283,7 +285,8 @@ public class KrimsonTestContext : TestContext {
             await using var processor = KrimsonProcessor.Builder
                 .With(buildProcessor)
                 .Connection(ClientConnection)
-                .UseConfluentJson(SchemaRegistry)
+                .UseProtobuf(SchemaRegistry)
+                //.UseConfluentJson(SchemaRegistry)
                 .AddOpenTelemetry("Krimson.Tests")
                 .Process<KrimsonTestRecord>(TestMessageHandler)
                 .Create();

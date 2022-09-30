@@ -55,12 +55,12 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
     ConcurrentDictionary<Type, dynamic>       Deserializers      { get; }
 
     public async Task<object?> DeserializeAsync(ReadOnlyMemory<byte> data, bool isNull, SerializationContext context) {
-        if (isNull)
+        if (isNull || data.IsEmpty)
             return null;
-
-        if (data.IsEmpty)
-            return null;
-
+        
+        if (data.Length < 6)
+            throw new InvalidDataException($"Expecting data framing of length 6 bytes or more but total data size is {data.Length} bytes");
+        
         try {
             var messageSchema = GetMessageSchema(data);
             var messageType   = ResolveMessageType(messageSchema);
