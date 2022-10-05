@@ -55,21 +55,6 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         if (data is null)
             return Empty<byte>();
 
-        // if I want to add extra props I would need to register the schema 
-        // before calling the confluent serializer
-        //
-        // var cachedType = data.GetType().ToCachedType();
-        // var jsonSchema = JsonSchema.FromType(cachedType.Type);
-        //
-        // jsonSchema.ExtensionData = new Dictionary<string, object> {
-        //     {"id", cachedType.Type.FullName! },
-        //     {"clrTypeName", cachedType.Type.FullName! }
-        // };
-        //
-        // await RegistryClient
-        //     .RegisterSchemaAsync(cachedType.Type.FullName, new Schema(jsonSchema.ToJson(), EmptyReferencesList, SchemaType.Json))
-        //     .ConfigureAwait(false);
-        
         try {
             var serializer = GetSerializer(data.GetType());
 
@@ -77,7 +62,7 @@ public class JsonDynamicSerializer : IDynamicSerializer {
                 .SerializeAsync((dynamic)data, context)
                 .ConfigureAwait(false);
 
-            context.Headers.AddSchemaInfo(SchemaType.Json, bytes);
+            context.Headers.AddSchemaInfo(SchemaType.Json, bytes, GetType());
 
             return bytes;
         }

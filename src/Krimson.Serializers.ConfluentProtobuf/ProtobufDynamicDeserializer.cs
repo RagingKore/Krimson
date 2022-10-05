@@ -13,13 +13,9 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
 
     public static readonly ProtobufDeserializerConfig DefaultConfig = new();
 
-    public ProtobufDynamicDeserializer(
-        ISchemaRegistryClient registryClient,
-        Func<MessageSchema, Type> resolveMessageType,
-        ProtobufDeserializerConfig deserializerConfig
-    ) {
+    public ProtobufDynamicDeserializer(ISchemaRegistryClient registryClient, Func<MessageSchema, Type> resolveMessageType, ProtobufDeserializerConfig deserializerConfig) {
         ResolveMessageType = resolveMessageType;
-        Deserializers      = new ConcurrentDictionary<Type, dynamic>();
+        Deserializers      = new();
 
         GetDeserializer = messageType => Deserializers.GetOrAdd(
             messageType,
@@ -48,7 +44,7 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
                 .Select(a => a.GetType(schema.ClrTypeName))
                 .FirstOrDefault(x => x != null)!;
         }, deserializerConfig) { }
-    
+
     Func<ReadOnlyMemory<byte>, MessageSchema> GetMessageSchema   { get; }
     Func<MessageSchema, Type>                 ResolveMessageType { get; }
     Func<Type, dynamic>                       GetDeserializer    { get; }
@@ -77,9 +73,6 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
         }
     }
 
-    public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context) {
-        var bytes = data.ToArray();
-        return DeserializeAsync(new ReadOnlyMemory<byte>(bytes), isNull, context)
-            .ConfigureAwait(false).GetAwaiter().GetResult();
-    }
+    public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context) =>
+        DeserializeAsync(new(data.ToArray()), isNull, context).ConfigureAwait(false).GetAwaiter().GetResult();
 }

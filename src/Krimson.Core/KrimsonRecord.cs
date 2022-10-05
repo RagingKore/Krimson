@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using static System.String;
 
 namespace Krimson;
 
@@ -18,12 +19,14 @@ public record KrimsonRecord {
     public Partition Partition => Id.Position.Partition;
     public Offset    Offset    => Id.Position.Offset;
 
-    public string RequestId    => Headers.TryGetValue(HeaderKeys.RequestId, out var value) ? value! : "";
-    public string ProducerName => Headers.TryGetValue(HeaderKeys.ProducerName, out var value) ? value! : "";
-    
+    public string RequestId    => Headers.TryGetValue(HeaderKeys.RequestId, out var value) ? value! : Empty;
+    public string ProducerName => Headers.TryGetValue(HeaderKeys.ProducerName, out var value) ? value! : Empty;
+    public int    SchemaId     => Headers.TryGetValue(HeaderKeys.SchemaId, out var value) ? int.Parse(value ?? Empty) : -1;
+
     public bool HasKey          => Key != MessageKey.None;
-    public bool HasRequestId    => RequestId != "";
-    public bool HasProducerName => ProducerName != "";
+    public bool HasRequestId    => RequestId != Empty;
+    public bool HasProducerName => ProducerName != string.Empty;
+    public bool HasSchemaId     => SchemaId > -1;
     
     public override string ToString() => $"{Topic}:{Partition.Value}@{Offset}";
 

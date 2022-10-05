@@ -10,7 +10,7 @@ namespace Krimson.Serializers.ConfluentProtobuf;
 [PublicAPI]
 public static class SchemaRegistryClientExtensions {
     static readonly SemaphoreSlim                                 RegisterMutex      = new(1);
-    public static readonly ConcurrentDictionary<string, MessageSchema>   RegisteredSubjects = new();
+    static readonly ConcurrentDictionary<string, MessageSchema>   RegisteredSubjects = new();
     static readonly ConcurrentDictionary<Type, MessageDescriptor> DescriptorsCache   = new();
     
     static readonly SubjectNameStrategyDelegate          GetSubjectNameAsRecord  = SubjectNameStrategy.Record.ToDelegate();
@@ -23,7 +23,7 @@ public static class SchemaRegistryClientExtensions {
         GetSubjectNameAsRecord(new(), message.Descriptor.FullName);
 
     public static async Task<MessageSchema> RegisterMessage(this ISchemaRegistryClient client, MessageDescriptor descriptor, string? subjectName = null) {
-        subjectName ??= GetSubjectNameAsRecord(new SerializationContext(), descriptor.FullName);
+        subjectName ??= GetSubjectNameAsRecord(new(), descriptor.FullName);
 
         if (RegisteredSubjects.TryGetValue(subjectName, out var messageSchema))
             return messageSchema;

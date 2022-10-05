@@ -9,6 +9,51 @@ namespace Krimson;
 public static class ConfluentAdminClientExtensions {
     static readonly TimeSpan DefaultRequestTimeout = FromSeconds(10);
 
+    public static async Task<bool> TryCreateTopic(this IAdminClient client, TopicSpecification topic, CancellationToken cancellationToken) {
+        Ensure.NotNull(topic, nameof(topic));
+        Ensure.NotNullOrWhiteSpace(topic.Name, nameof(topic.Name));
+        Ensure.Positive(topic.NumPartitions, nameof(topic.NumPartitions));
+        Ensure.Positive(topic.ReplicationFactor, nameof(topic.ReplicationFactor));
+
+        var entries = await DescribeTopic(client, topic.Name).ConfigureAwait(false);
+
+        if (entries is not null)
+            return true;
+
+        try {
+            await client
+                .CreateTopicsAsync(new[] { topic })
+                .ConfigureAwait(false);
+        }
+        catch (CreateTopicsException ex) {
+            if (ex.Error.Code is ErrorCode.Local_Partial && ex.Message.Contains("Topic replication factor must be")) {
+                var reportedReplicationFactor = short.Parse(
+                    ex.Results.FirstOrDefault()?.Error.Reason.Replace("Topic replication factor must be", Empty).Trim() ?? "1"
+                );
+
+                topic.ReplicationFactor = reportedReplicationFactor;
+                
+                return await TryCreateTopic(client, topic, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (ex.Results.Select(r => r.Error.Code).Any(err => err != ErrorCode.TopicAlreadyExists && err != ErrorCode.NoError))
+                throw;
+        }
+
+        using var cts = new CancellationTokenSource(DefaultRequestTimeout);
+
+        while (!cts.IsCancellationRequested) {
+            entries = await DescribeTopic(client, topic.Name).ConfigureAwait(false);
+
+            if (entries is not null)
+                return true;
+
+            await Tasks.SafeDelay(FromMilliseconds(250), cts.Token).ConfigureAwait(false);
+        }
+
+        return false;
+    }
+    
     public static async Task<bool> CreateTopic(
         this IAdminClient client,
         string topicName,
@@ -72,6 +117,25 @@ public static class ConfluentAdminClientExtensions {
         CreateTopic(
             client, topicName, partitions, replicationFactor, 
             new() { { "cleanup.policy", "compact" } }
+        );
+    
+    public static Task<bool> CreateInfiniteCompactedTopic(this IAdminClient client, string topicName, int partitions, short replicationFactor) =>
+        CreateTopic(
+            client, topicName, partitions, replicationFactor, 
+            new() {
+                { "cleanup.policy", "compact" },
+                { "retention.bytes", "-1" },
+                { "retention.ms", "-1" },
+            }
+        );
+    
+    public static Task<bool> CreateInfiniteTopic(this IAdminClient client, string topicName, int partitions, short replicationFactor) =>
+        CreateTopic(
+            client, topicName, partitions, replicationFactor, 
+            new() {
+                { "retention.bytes", "-1" },
+                { "retention.ms", "-1" },
+            }
         );
 
     public static Task<bool[]> CreateTopics(

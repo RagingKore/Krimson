@@ -253,7 +253,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
             Consumer.Dispose();
         }
         catch (Exception vex) {
-            vex = new Exception($"{ClientId} terminated violently! {vex.Message}", vex);
+            vex = new($"{ClientId} terminated violently! {vex.Message}", vex);
             exception = exception is not null
                 ? new AggregateException(exception, vex).Flatten()
                 : vex;

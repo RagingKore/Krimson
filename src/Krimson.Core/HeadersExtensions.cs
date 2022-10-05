@@ -20,7 +20,7 @@ public static class HeadersExtensions {
                 return headers.With(x=> x.Add(entry.Key, encode(entry.Value).ToArray()));
             }
             catch (Exception ex) {
-                throw new Exception($"Failed to encode header [{entry.Key}]", ex);
+                throw new($"Failed to encode header [{entry.Key}]", ex);
             }
         });
     }
@@ -40,7 +40,7 @@ public static class HeadersExtensions {
                     return headers.With(x => x.Add(entry.Key, decode(entry.GetValueBytes())));
                 }
                 catch (Exception ex) {
-                    throw new Exception($"Failed to decode header [{entry.Key}]", ex);
+                    throw new($"Failed to decode header [{entry.Key}]", ex);
                 }
             }
         );
@@ -59,16 +59,26 @@ public static class HeadersExtensions {
             return headers;
         }
         catch (Exception ex) {
-            throw new Exception($"Failed to encode header [{key}]", ex);
+            throw new($"Failed to encode header [{key}]", ex);
         }
     }
 
+    public static Headers Add(this Headers headers, string key, int value)   => Add(headers, key, value.ToString());
+    public static Headers Add(this Headers headers, string key, long value)  => Add(headers, key, value.ToString());
+    public static Headers Add(this Headers headers, string key, short value) => Add(headers, key, value.ToString());
+    
+    public static Headers AddSchemaId(this Headers headers, ReadOnlyMemory<byte> bytes) => 
+        headers.Add(HeaderKeys.SchemaId, KrimsonSchemaRegistry.ParseSchemaId(bytes));
+    
+    public static Headers AddSchemaId(this Headers headers, byte[] bytes) => 
+        headers.Add(HeaderKeys.SchemaId, KrimsonSchemaRegistry.ParseSchemaId(bytes));
+    
     public static Headers AddSchemaType(this Headers headers, SchemaType schemaType) => 
         headers.Add(HeaderKeys.SchemaType, schemaType.ToString().ToLower());
     
-    public static Headers AddSchemaId(this Headers headers, byte[] bytes) => 
-        headers.Add(HeaderKeys.SchemaId, KrimsonSchemaRegistry.ParseSchemaId(bytes).ToString());
+    public static Headers AddSchemaMessageType(this Headers headers, Type messageType) => 
+        headers.Add(HeaderKeys.SchemaMessageType, messageType.FullName);
     
-    public static Headers AddSchemaInfo(this Headers headers, SchemaType schemaType, byte[] bytes) => 
-        headers.AddSchemaType(schemaType).AddSchemaId(bytes);
+    public static Headers AddSchemaInfo(this Headers headers, SchemaType schemaType, byte[] bytes, Type messageType) => 
+        headers.AddSchemaId(bytes).AddSchemaType(schemaType).AddSchemaMessageType(messageType);
 }

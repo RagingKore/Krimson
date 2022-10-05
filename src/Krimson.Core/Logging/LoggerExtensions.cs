@@ -11,7 +11,8 @@ static class LoggerExtensions {
             new PropertyEnricher("krimson.record.position.partition", record.Position.Partition.Value),
             new PropertyEnricher("krimson.record.position.offset", record.Position.Offset.Value),
             new PropertyEnricher("krimson.record.timestamp", record.Timestamp),
-            new PropertyEnricher("krimson.record.producer", record.Id, true),
+            new PropertyEnricher("krimson.record.producer", record.ProducerName),
+            new PropertyEnricher("krimson.record.schema-id", record.SchemaId)
         };
         
         return logger.ForContext(info);

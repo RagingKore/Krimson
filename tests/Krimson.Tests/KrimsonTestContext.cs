@@ -95,8 +95,6 @@ public class KrimsonTestContext : TestContext {
         await AdminClient
             .DeleteTestTopics(topic => topic.StartsWith("tst.") || topic.EndsWith(".tst"))
             .ConfigureAwait(false);
-
-        // await SchemaRegistry.RegisterMessage<KrimsonTestMessage>();
     }
 
     protected override ValueTask CleanUp() {
@@ -266,7 +264,7 @@ public class KrimsonTestContext : TestContext {
         var cancellator = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
         var processed   = new List<KrimsonRecord>();
 
-        void TestMessageHandler(KrimsonTestRecord msg, KrimsonProcessorContext ctx) {
+        void TestMessageHandler(KrimsonTestMessage msg, KrimsonProcessorContext ctx) {
             ctx.CancellationToken.ThrowIfCancellationRequested();
 
             processed.Add(ctx.Record);
@@ -288,7 +286,7 @@ public class KrimsonTestContext : TestContext {
                 .UseProtobuf(SchemaRegistry)
                 //.UseConfluentJson(SchemaRegistry)
                 .AddOpenTelemetry("Krimson.Tests")
-                .Process<KrimsonTestRecord>(TestMessageHandler)
+                .Process<KrimsonTestMessage>(TestMessageHandler)
                 .Create();
 
             var gap = await processor

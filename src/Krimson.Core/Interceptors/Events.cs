@@ -17,3 +17,7 @@ public record ConfluentConsumerLog(string ConsumerName, string ClientInstanceId,
 public record ConfluentProducerError(string ProducerName, string ClientInstanceId, Error Error) : InterceptorEvent;
 
 public record ConfluentProducerLog(string ProducerName, string ClientInstanceId, LogMessage LogMessage) : InterceptorEvent;
+
+public record ConfluentAdminClientError(string ClientName, string ClientInstanceId, Error Error) : InterceptorEvent;
+
+public record ConfluentAdminClientLog(string ClientName, string ClientInstanceId, LogMessage LogMessage) : InterceptorEvent;

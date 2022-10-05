@@ -39,13 +39,14 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
             return Empty<byte>();
 
         try {
-            var serializer = GetSerializer(data.GetType());
+            var messageType = data.GetType();
+            var serializer  = GetSerializer(messageType);
 
             byte[] bytes = await serializer
                 .SerializeAsync((dynamic)data, context)
                 .ConfigureAwait(false);
 
-            context.Headers.AddSchemaInfo(SchemaType.Protobuf, bytes);
+            context.Headers.AddSchemaInfo(SchemaType.Protobuf, bytes, messageType);
 
             return bytes;
         }

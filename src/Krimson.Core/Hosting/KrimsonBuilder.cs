@@ -1,6 +1,7 @@
 // ReSharper disable CheckNamespace
 
 using Confluent.SchemaRegistry;
+using Krimson.Client.Configuration;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;
@@ -93,6 +94,16 @@ public class KrimsonBuilder {
         return this;
     }
 
+    public KrimsonBuilder AddClient(Func<KrimsonClientBuilder, KrimsonClientBuilder> build) {
+        Services.AddKrimsonClient((_, builder) => build(ClientId is null ? builder : builder.ClientId(ClientId)));
+        return this;
+    }
+
+    public KrimsonBuilder AddClient() {
+        Services.AddKrimsonClient((_, builder) => ClientId is null ? builder : builder.ClientId(ClientId));
+        return this;
+    }
+    
     public KrimsonBuilder AddSerializer(Func<ISchemaRegistryClient, IDynamicSerializer> getSerializer) {
         Services.AddSingleton(ctx => getSerializer(ctx.GetRequiredService<ISchemaRegistryClient>()));
         return this;

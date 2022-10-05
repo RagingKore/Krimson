@@ -1,19 +1,7 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using FluentAssertions;
-using Google.Protobuf;
 using Krimson.Fixie;
-using Krimson.Serializers.ConfluentJson;
-using Krimson.Tests.Messages;
-using Namotion.Reflection;
-using NJsonSchema;
-using NJsonSchema.Annotations;
-using NJsonSchema.Generation;
 
 namespace Krimson.Tests; 
-
-
-
 
 public class ProcessorConsumptionTests : TestFixture<KrimsonTestContext> {
     public ProcessorConsumptionTests(KrimsonTestContext context) : base(context) { }
