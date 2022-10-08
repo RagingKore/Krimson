@@ -22,8 +22,7 @@ public static class KrimsonBuilderExtensions {
 
 public static class ProcessorBuilderExtensions {
     public static KrimsonProcessorBuilder UseProtobuf(
-        this KrimsonProcessorBuilder builder,
-        ISchemaRegistryClient registry,
+        this KrimsonProcessorBuilder builder, ISchemaRegistryClient registry,
         Action<ProtobufDeserializerConfig>? configureDeserializer = null, 
         Action<ProtobufSerializerConfig>? configureSerializer = null
     ) =>

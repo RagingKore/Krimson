@@ -58,8 +58,16 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
             throw new InvalidDataException($"Expecting data framing of length 6 bytes or more but total data size is {data.Length} bytes");
         
         try {
+            var headers = context.Headers.Decode();
+
+            var messageTypeFromHeader = AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(a => a.GetType(headers[HeaderKeys.SchemaMessageType]!))
+                .FirstOrDefault(x => x != null)!;
+            
             var messageSchema = GetMessageSchema(data);
             var messageType   = ResolveMessageType(messageSchema);
+            
             var deserializer  = GetDeserializer(messageType);
 
             var message = await deserializer
