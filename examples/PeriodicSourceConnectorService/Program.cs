@@ -25,8 +25,8 @@ var host = Host
             services
                 .AddKrimson("power-meters-cnx")
                 .UseProtobuf()
-                .AddProducer(pdr => pdr.ClientId("power-meters-cnx").Topic("foo.bar.baz"))
-                .AddReader(rdr => rdr.ClientId("power-meters-cnx"))
+                .AddProducer(pdr => pdr.Topic("foo.bar.baz"))
+                .AddReader()
                 .AddPullSourceConnector<PowerMetersSourceConnector>();
         }
     )
@@ -41,6 +41,11 @@ interface IPowerMetersClient {
 
 [BackOffTimeSeconds(1)]
 class PowerMetersSourceConnector : PullSourceConnector {
+
+    public PowerMetersSourceConnector() {
+        CheckpointStrategy = DataSourceCheckpointStrategy.Batch;
+    }
+    
     int counter;
 
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(PullSourceContext context) {

@@ -7,7 +7,7 @@ networks:
 services:
   
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.1.2
+    image: confluentinc/cp-zookeeper:7.2.2
     container_name: zookeeper
     hostname: zookeeper
     ports:
@@ -17,7 +17,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
 
   kafka:
-    image: confluentinc/cp-kafka:7.1.2
+    image: confluentinc/cp-kafka:7.2.2
     container_name: kafka
     hostname: kafka
     depends_on:
@@ -52,7 +52,7 @@ services:
 #      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.1.2
+    image: confluentinc/cp-schema-registry:7.2.2
     container_name: schema-registry
     hostname: schema-registry
     depends_on:
@@ -66,34 +66,3 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
 #      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
 #      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:v0.4.0
-    container_name: kafka-ui
-    hostname: kafka-ui
-    ports:
-      - '8080:8080'
-    depends_on:
-      - zookeeper
-      - kafka
-      - schema-registry
-    environment:
-      KAFKA_CLUSTERS_0_NAME: Krimson
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-      KAFKA_CLUSTERS_0_JMXPORT: 9997
-      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
-  
-#  kouncil:
-#    image: consdata/kouncil:latest
-#    container_name: kouncil
-#    hostname: kouncil
-#    ports:
-#      - '7070:8080'
-#    depends_on:
-#      - zookeeper
-#      - kafka
-#      - schema-registry
-#    environment:
-#      bootstrapServers: kafka:29092
-#      schemaRegistryUrl: http://schema-registry:8081

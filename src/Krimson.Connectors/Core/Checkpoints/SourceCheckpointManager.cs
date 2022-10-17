@@ -26,7 +26,7 @@ public class SourceCheckpointManager {
     LoadCheckPoint                       LoadCheckPoint { get; }
     Dictionary<string, SourceCheckpoint> Checkpoints    { get; }
 
-    public async ValueTask<SourceCheckpoint> GetCheckpoint(string topic, CancellationToken cancellationToken) {
+    public async ValueTask<SourceCheckpoint> GetCheckpoint(string topic, CancellationToken cancellationToken = default) {
         if (Checkpoints.TryGetValue(topic, out var checkpoint))
             return checkpoint;
         
