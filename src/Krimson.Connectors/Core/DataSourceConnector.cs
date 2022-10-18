@@ -99,7 +99,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             
             if (CheckpointStrategy == DataSourceCheckpointStrategy.Batch) 
                 Checkpoints.TrackCheckpoint(checkpoint);
-
+            
             await OnSuccessInternal().ConfigureAwait(false);
         }
         catch (Exception ex) {
@@ -112,12 +112,15 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
             foreach (var (topic, count) in context.Counter) 
                 Log.Information("{RecordsCount} record(s) processed >> {Topic}", count, topic);
-            
+
             try {
                 await OnSuccessHandler(context).ConfigureAwait(false);
             }
             catch (Exception ex) {
                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
+            }
+            finally {
+                context.Counter.Reset();
             }
         }
 
@@ -131,6 +134,9 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             }
             catch (Exception ex) {
                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnError), ex.Message);
+            }
+            finally {
+                context.Counter.Reset();
             }
         }
     }

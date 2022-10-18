@@ -11,7 +11,8 @@ public class Counter : IEnumerable<(string Topic, int Count)> {
 
     public void IncrementSkipped()               => CountPerTopic.AddOrUpdate(Empty, 1, (_, count) => ++count);
     public void IncrementProcessed(string topic) => CountPerTopic.AddOrUpdate(topic, 1, (_, count) => ++count);
-
+    public void Reset()                          => CountPerTopic.Clear();
+    
     public IEnumerator<(string Topic, int Count)> GetEnumerator() =>
         CountPerTopic
             .Where(x => x.Key != "")
