@@ -40,8 +40,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     protected KrimsonProducer              Producer           { get; private set; }
     protected SourceCheckpointManager      Checkpoints        { get; private set; }
     protected bool                         Synchronous        { get; private set; }
-
-  
+    
     OnSuccess<TContext> OnSuccessHandler { get; set; }
     OnError<TContext>   OnErrorHandler   { get; set; }
 
@@ -148,11 +147,13 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         if (!record.HasDestinationTopic)
             throw new($"{record.Source} Found record with missing destination topic!");
 
-        var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
+        if (CheckpointStrategy != DataSourceCheckpointStrategy.Manual) {
+            var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
 
-        if (!isUnseen) {
-            skip();
-            return;
+            if (!isUnseen) {
+                skip();
+                return;
+            }    
         }
         
         var request = ProducerRequest.Builder
