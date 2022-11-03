@@ -40,4 +40,26 @@ public record KrimsonRecord {
             MessageType = result.Message.Value!.GetType()
         };
     }
+    
+    public static KrimsonRecord From(RecordId id, MessageKey key, object value, Timestamp timestamp, Headers headers) {
+        return new() {
+            Id          = id,
+            Key         = key,
+            Value       = value,
+            Timestamp   = timestamp,
+            Headers     = headers.Decode(),
+            MessageType = value.GetType()
+        };
+    }
+    
+    public static KrimsonRecord From(RecordId id, MessageKey key, object value, DateTimeOffset timestamp, IDictionary<string, string?> headers) {
+        return new() {
+            Id          = id,
+            Key         = key,
+            Value       = value,
+            Timestamp   = new(timestamp),
+            Headers     = headers,
+            MessageType = value.GetType()
+        };
+    }
 }

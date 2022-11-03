@@ -13,6 +13,15 @@ public class KrimsonProcessorContext {
         MessageQueue      = new();
         QueueLocked       = new();
     }
+    
+    public KrimsonProcessorContext(KrimsonRecord record, CancellationToken cancellationToken = default) {
+        Record            = record;
+        Logger            = Log.Logger;
+        State             = new InMemoryStateStore();
+        CancellationToken = cancellationToken;
+        MessageQueue      = new();
+        QueueLocked       = new();
+    }
 
     public KrimsonRecord     Record            { get; }
     public ILogger           Logger            { get; }
