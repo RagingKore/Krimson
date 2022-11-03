@@ -7,8 +7,6 @@ using Krimson.OpenTelemetry;
 using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
-using Krimson.Serializers.ConfluentJson;
-using Krimson.Serializers.ConfluentProtobuf;
 using Krimson.Tests.Messages;
 using Microsoft.Extensions.Configuration;
 using OpenTelemetry;
@@ -187,7 +185,7 @@ public class KrimsonTestContext : TestContext {
     public ValueTask<string> CreateOutputTopic(string testProcessorName, int partitions) =>
         CreateTestTopic(GetOutputTopicName(testProcessorName), partitions);
 
-    public async Task<List<RecordId>> ProduceTestMessages(string topic, int numberOfMessages = 1000) {
+    public async Task<List<RecordId>> ProduceTest3Messages(string topic, int numberOfMessages = 1000) {
         var start = MicroProfiler.GetTimestamp();
         
         await using var producer = KrimsonProducer.Builder
@@ -256,6 +254,130 @@ public class KrimsonTestContext : TestContext {
             //     .Create();
         }
     }
+    
+    public async Task<List<RecordId>> ProduceTestMessages(string topic, int numberOfMessages = 1000) {
+        var start = MicroProfiler.GetTimestamp();
+        
+        await using var producer = KrimsonProducer.Builder
+            .Connection(ClientConnection)
+            .UseProtobuf(SchemaRegistry)
+            //.UseConfluentJson(SchemaRegistry)
+            .ClientId(topic)
+            .Topic(topic)
+            //.EnableDebug()
+            .Intercept(new OpenTelemetryProducerInterceptor("Krimson.Tests"))
+            .Create();
+
+        var requests = Enumerable.Range(1, numberOfMessages).Select(CreateMessage).ToArray().Concat(Enumerable.Range(1, numberOfMessages).Select(CreateMessage2).ToArray()).ToArray();
+        var ids      = new ConcurrentBag<RecordId>();
+        var failed   = false;
+        
+        foreach (var message in requests) {
+            producer.Produce(message, result => {
+                if (result.Success)
+                    ids.Add(result.RecordId);
+                else
+                    failed = true;
+            });
+        }
+
+        producer.Flush();
+
+        // if(failed || ids.Count != numberOfMessages) {
+        //     throw new($"only sent {ids.Count}/{numberOfMessages} test messages in: {MicroProfiler.GetElapsedHumanReadable(start)}");
+        // }
+
+        Log.Debug(
+            "sent {NumberOfMessages} test messages in: {Elapsed}",
+            ids.Count, MicroProfiler.GetElapsedHumanReadable(start)
+        );
+
+        return ids.ToList();
+
+        ProducerRequest CreateMessage(int order) {
+            var id = Guid.NewGuid();
+            
+            // // var msg = new AddContact {
+            // //     ContactId = id.ToString(),
+            // //     Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            // // };
+            //
+            // var msg = new CreateCustomer {
+            //     CustomerId                = id.ToString(),
+            //     HousingAssociationDetails = new() { HousingUnits = 1 },
+            //     Timestamp                 = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            // };
+            
+            
+            var msg = new KrimsonTestMessage {
+                Id        = id.ToString(),
+                Order     = order,
+                Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            };
+            
+            // var msg = new KrimsonTestRecord {
+            //     Id        = id.ToString(),
+            //     Order     = order,
+            //     Timestamp = DateTimeOffset.UtcNow
+            // };
+            
+            return ProducerRequest.Builder
+                .Message(msg)
+                .Key(id)
+                .RequestId(id)
+                .Create();
+            //
+            // return msg.ToProduceRequest(msg.Order, id);
+            //
+            // return msg
+            //     .ProduceRequest()
+            //     .Key(msg.Order)
+            //     .RequestId(id)
+            //     .Create();
+        }
+        
+        ProducerRequest CreateMessage2(int order) {
+            var id = Guid.NewGuid();
+            
+            // var msg = new AddContact {
+            //     ContactId = id.ToString(),
+            //     Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            // };
+
+            // var msg = new CreateCustomer {
+            //     CustomerId                = id.ToString(),
+            //     HousingAssociationDetails = new() { HousingUnits = 1 },
+            //     Timestamp                 = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            // };
+            
+            
+            var msg = new KrimsonTestMessage {
+                Id        = id.ToString(),
+                Order     = order,
+                Timestamp = FromDateTimeOffset(DateTimeOffset.UtcNow)
+            };
+            
+            // var msg = new KrimsonTestRecord {
+            //     Id        = id.ToString(),
+            //     Order     = order,
+            //     Timestamp = DateTimeOffset.UtcNow
+            // };
+            
+            return ProducerRequest.Builder
+                .Message(msg)
+                .Key(id)
+                .RequestId(id)
+                .Create();
+            //
+            // return msg.ToProduceRequest(msg.Order, id);
+            //
+            // return msg
+            //     .ProduceRequest()
+            //     .Key(msg.Order)
+            //     .RequestId(id)
+            //     .Create();
+        }
+    }
 
     public async Task<(IReadOnlyCollection<KrimsonRecord> ProcessedRecords, IReadOnlyCollection<SubscriptionTopicGap> SubscriptionGap)> ProcessMessages(
         Func<KrimsonProcessorBuilder, KrimsonProcessorBuilder> buildProcessor, 
@@ -264,7 +386,22 @@ public class KrimsonTestContext : TestContext {
         var cancellator = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
         var processed   = new List<KrimsonRecord>();
 
-        void TestMessageHandler(KrimsonTestMessage msg, KrimsonProcessorContext ctx) {
+        // void TestMessageHandler(KrimsonTestMessage msg, KrimsonProcessorContext ctx) {
+        //     ctx.CancellationToken.ThrowIfCancellationRequested();
+        //
+        //     processed.Add(ctx.Record);
+        //
+        //     if (produceOutput) {
+        //         ctx.Output(msg, ctx.Record.Key);
+        //
+        //         if (processed.Count == numberOfMessages)
+        //             cancellator.CancelAfter(TimeSpan.FromSeconds(3));
+        //     }
+        //     else if (processed.Count == numberOfMessages)
+        //         cancellator.Cancel();
+        // }
+        
+        void TestMessageHandler<T>(T msg, KrimsonProcessorContext ctx) {
             ctx.CancellationToken.ThrowIfCancellationRequested();
 
             processed.Add(ctx.Record);
@@ -272,10 +409,10 @@ public class KrimsonTestContext : TestContext {
             if (produceOutput) {
                 ctx.Output(msg, ctx.Record.Key);
 
-                if (processed.Count == numberOfMessages)
+                if (processed.Count == numberOfMessages*2)
                     cancellator.CancelAfter(TimeSpan.FromSeconds(3));
             }
-            else if (processed.Count == numberOfMessages)
+            else if (processed.Count == numberOfMessages*2)
                 cancellator.Cancel();
         }
 
