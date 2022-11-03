@@ -26,6 +26,8 @@ public abstract class WebhookSourceConnector : DataSourceConnector<WebhookSource
     OnValidate OnValidateHandler { get; set; }
 
     public override async Task Process(WebhookSourceContext context) {
+        Initialize(context.Http.RequestServices);
+        
         try {
             var isValid = await OnValidateHandler(context).ConfigureAwait(false);
 

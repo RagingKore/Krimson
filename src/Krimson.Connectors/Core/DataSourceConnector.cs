@@ -179,6 +179,9 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         });
 
         async ValueTask<bool> IsRecordUnseen() {
+            if (record == SourceRecord.Empty)
+                return false;
+            
             var checkpoint = await Checkpoints
                 .GetCheckpoint(record.DestinationTopic!, CancellationToken.None)
                 .ConfigureAwait(false);
@@ -186,7 +189,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             var unseenRecord = record.EventTime > checkpoint.Timestamp;
 
             if (!unseenRecord)
-                Log.Warning(
+                Log.Debug(
                     "{SourceName} Record already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
                     record.Source, record.EventTime, checkpoint.Timestamp
                 );

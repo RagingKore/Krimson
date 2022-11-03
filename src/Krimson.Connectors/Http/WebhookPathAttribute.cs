@@ -7,4 +7,7 @@ public class WebhookPathAttribute : Attribute {
     string Value { get; }
 
     public static implicit operator string(WebhookPathAttribute self) => self.Value;
+    
+    public static string GetValue(object source) => 
+        (WebhookPathAttribute?)GetCustomAttribute(source.GetType(), typeof(WebhookPathAttribute)) ?? "";
 }

@@ -14,7 +14,7 @@ abstract class KrimsonBackgroundService : IHostedService, IAsyncDisposable {
     
     protected KrimsonBackgroundService(IHostApplicationLifetime applicationLifetime, string clientId) {
         ApplicationLifetime = applicationLifetime;
-        ClientId              = clientId;
+        ClientId            = clientId;
         Cancellator         = new();
         Gatekeeper          = new(false);
 

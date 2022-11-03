@@ -42,7 +42,7 @@ public static partial class ServiceCollectionExtensions {
 public static class WebApplicationExtensions {
     public static WebApplication UseKrimsonWebhookSourceConnectors(this WebApplication app) {
         foreach (var connector in app.Services.GetServices<WebhookSourceConnector>()) {
-            var webhookPath = GetWebhookPath(connector.GetType());
+            var webhookPath = WebhookPathAttribute.GetValue(connector);
             
             if (string.IsNullOrWhiteSpace(webhookPath))
                 throw new($"{connector.GetType().Name} webhook path is missing or undefined");
@@ -51,9 +51,6 @@ public static class WebApplicationExtensions {
         }
         
         return app;
-        
-        static string GetWebhookPath(Type type) => 
-            (WebhookPathAttribute?)Attribute.GetCustomAttribute(type, typeof(WebhookPathAttribute)) ?? "";
     }
 
     public static WebApplication UseKrimsonWebhooks(this WebApplication app) => 
