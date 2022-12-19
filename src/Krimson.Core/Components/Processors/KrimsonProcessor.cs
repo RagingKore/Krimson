@@ -150,7 +150,7 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
 
         var context = new KrimsonProcessorContext(
             record, Logger.ForContext("krimson.processor.name", ClientId).WithRecordInfo(record), 
-            StateStore, cancellationToken
+            StateStore, GetSubscriptionGap, cancellationToken
         );
 
         try {

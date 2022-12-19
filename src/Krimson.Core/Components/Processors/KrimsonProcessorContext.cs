@@ -3,33 +3,44 @@ using Krimson.State;
 
 namespace Krimson.Processors;
 
+public delegate Task<IReadOnlyCollection<SubscriptionTopicGap>> GetSubscriptionGaps();
+
 [PublicAPI]
 public class KrimsonProcessorContext {
-    public KrimsonProcessorContext(KrimsonRecord record, ILogger logger, IStateStore state, CancellationToken cancellationToken) {
-        Record            = record;
-        Logger            = logger;
-        State             = state;
-        CancellationToken = cancellationToken;
-        MessageQueue      = new();
-        QueueLocked       = new();
+    public KrimsonProcessorContext(KrimsonRecord record, ILogger logger, IStateStore state, GetSubscriptionGaps getSubscriptionGaps, CancellationToken cancellationToken) {
+        Record              = record;
+        Logger              = logger;
+        State               = state;
+        GetSubscriptionGaps = getSubscriptionGaps;
+        CancellationToken   = cancellationToken;
+
+        MessageQueue = new();
+        QueueLocked  = new();
     }
     
-    public KrimsonProcessorContext(KrimsonRecord record, CancellationToken cancellationToken = default) {
-        Record            = record;
-        Logger            = Log.Logger;
-        State             = new InMemoryStateStore();
-        CancellationToken = cancellationToken;
-        MessageQueue      = new();
-        QueueLocked       = new();
-    }
+    // public KrimsonProcessorContext(KrimsonRecord record, CancellationToken cancellationToken = default) {
+    //     Record              = record;
+    //     Logger              = Log.Logger;
+    //     State               = new InMemoryStateStore();
+    //     CancellationToken   = cancellationToken;
+    //     MessageQueue        = new();
+    //     QueueLocked         = new();
+    //     GetSubscriptionGaps = () => Task.FromResult<IReadOnlyCollection<SubscriptionTopicGap>>(null!);
+    // }
 
-    public KrimsonRecord     Record            { get; }
-    public ILogger           Logger            { get; }
-    public IStateStore       State             { get; }
-    public CancellationToken CancellationToken { get; }
+    public KrimsonRecord       Record              { get; }
+    public ILogger             Logger              { get; }
+    public IStateStore         State               { get; }
+    public CancellationToken   CancellationToken   { get; }
+    public GetSubscriptionGaps GetSubscriptionGaps { get; }
 
     Queue<ProducerRequest> MessageQueue { get; }
     InterlockedBoolean     QueueLocked  { get; }
+
+    public async Task<bool> HasCaughtUp() {
+        var gaps = await GetSubscriptionGaps();
+        return gaps.All(x => x.CaughtUp);
+    }
 
     /// <summary>
     /// Enqueues message to be sent on exit
