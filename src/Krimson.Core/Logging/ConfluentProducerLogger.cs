@@ -11,9 +11,12 @@ public sealed class ConfluentProducerLogger : InterceptorModule {
     public ConfluentProducerLogger() {
         On<ConfluentProducerLog>(
             evt => {
+                // [thrd:app]: Configuration property `sasl.mechanism` set to `PLAIN` but `security.protocol` is not configured for SASL: recommend setting `security.protocol` to SASL_SSL or SASL_PLAINTEXT
+                //evt.LogMessage.Message.StartsWith("[thrd:app]: Configuration property `sasl.mechanism` set to `PLAIN`")
+
                 Logger.Write(
-                    evt.LogMessage.GetLogLevel(), 
-                    $"{{ClientInstanceId}} | {{Source}} {evt.LogMessage.Message}", 
+                    evt.LogMessage.GetLogLevel(),
+                    $"{{ClientInstanceId}} | {{Source}} {evt.LogMessage.Message}",
                     evt.ClientInstanceId, evt.LogMessage.Facility
                 );
             }

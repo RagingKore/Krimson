@@ -5,6 +5,7 @@ using Krimson.Connectors;
 using Refit;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
+#pragma warning disable CS1998
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -45,15 +46,15 @@ class PowerMetersSourceConnector : PullSourceConnector {
     public PowerMetersSourceConnector() {
         CheckpointStrategy = DataSourceCheckpointStrategy.Batch;
     }
-    
-    int counter;
+
+    int Counter { get; set; }
 
     public override async IAsyncEnumerable<SourceRecord> ParseRecords(PullSourceContext context) {
         for (var i = 1; i <= 500; i++) {
-            counter += i;
+            Counter += i;
       
             yield return new() {
-                Key       = counter,
+                Key       = Counter,
                 Value     = Struct.Parser.ParseJson(@"{""success"": ""true""}"),
                 EventTime = DateTimeOffset.UtcNow.AddMinutes(60).ToUnixTimeMilliseconds(),
                 EventType = "powerMeterChanged"

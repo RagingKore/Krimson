@@ -28,10 +28,11 @@ public sealed class KrimsonProcessor : IKrimsonProcessor {
         GroupId          = options.ConsumerConfiguration.GroupId;
         Topics           = options.InputTopics;
         BootstrapServers = options.ConsumerConfiguration.BootstrapServers;
-        Router           = options.Router;
         StateStore       = options.StateStoreFactory();
         Logger           = Log.ForContext(SourceContextPropertyName, ClientId);
-        
+        Router           = new KrimsonMasterRouter().WithModules(options.ModuleFactories.Select(getModule => getModule()));
+
+
         RoutingKeys = Router.Modules.SelectMany(
             x => {
                 var name = x.GetType().Name;

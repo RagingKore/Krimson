@@ -21,6 +21,9 @@ public record KrimsonProcessorBuilder {
         };
     }
 
+    public KrimsonProcessorBuilder DisableAutoCommit() =>
+        OverrideConsumerConfiguration(x => x.EnableAutoCommit = false);
+
     public KrimsonProcessorBuilder OverrideProducerConfiguration(Action<ProducerConfig> configureProducer) {
         Ensure.NotNull(configureProducer, nameof(configureProducer));
 
@@ -133,26 +136,30 @@ public record KrimsonProcessorBuilder {
         };
     }
 
+    public KrimsonProcessorBuilder Module(Func<KrimsonProcessorModule> getModule) {
+        Ensure.NotNull(getModule, nameof(getModule));
+        return this with {
+            Options = Options with {
+                ModuleFactories = Options.ModuleFactories.With(x => x.Add(getModule))
+            }
+        };
+    }
+
     public KrimsonProcessorBuilder Module(KrimsonProcessorModule module) {
         return this with {
             Options = Options with {
-                Router = Options.Router.WithModule(module)
+                ModuleFactories = Options.ModuleFactories.With(x => x.Add(() => module))
             }
         };
     }
-    
+
     public KrimsonProcessorBuilder Modules(IEnumerable<KrimsonProcessorModule> modules) {
         return this with {
             Options = Options with {
-                Router = Options.Router.WithModules(modules)
+                ModuleFactories = Options.ModuleFactories
+                    .With(x => x.AddRange(modules.Select(module => { return new Func<KrimsonProcessorModule>(() => module); })))
             }
         };
-    }
-    
-    public KrimsonProcessorBuilder Module(Func<KrimsonProcessorModule?> getModule) {
-        Ensure.NotNull(getModule, nameof(getModule));
-        var module = getModule();
-        return module is not null ? Module(module) : this;
     }
 
     public KrimsonProcessorBuilder Process<T>(ProcessMessageAsync<T> handler) {
@@ -269,7 +276,7 @@ public record KrimsonProcessorBuilder {
         Ensure.NotNullOrEmpty(Options.InputTopics, nameof(InputTopic));
         Ensure.NotNull(Options.SerializerFactory, nameof(Serializer));
         Ensure.NotNull(Options.DeserializerFactory, nameof(Deserializer));
-        Ensure.Valid(Options.Router, nameof(Options.Router), router => router.HasRoutes);
+        Ensure.Valid(Options.ModuleFactories, nameof(Modules), x => x.Any());
 
         return new(Options with { });
     }

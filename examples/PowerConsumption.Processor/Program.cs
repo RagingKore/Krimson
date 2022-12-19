@@ -7,10 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddKrimson()
     .UseProtobuf()
     .AddProcessor(
-        prx => prx
+        (ctx, prx) => prx
             .ClientId("telemetry-processor")
             .InputTopic("telemetry")
             .OutputTopic("telemetry.power-consumption")
+            .Module(ctx.GetRequiredService<TelemetryModule>())
     );
 
 builder.Build().Run();

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Hosting;
 
-namespace Krimson.Processors.Hosting; 
+namespace Krimson.Processors.Hosting;
 
 /// <summary>
 /// Generic service host with clear separation between

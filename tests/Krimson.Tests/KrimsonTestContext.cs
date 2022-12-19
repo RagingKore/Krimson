@@ -25,7 +25,7 @@ public class KrimsonTestContext : TestContext {
 
     static KrimsonTestContext() {
         // Sdk.CreateTracerProviderBuilder()
-        //     .AddSource(nameof(Krimson.Tests))
+        //     .AddSource(nameof(Krimson))
         //     .AddConsoleExporter();
     }
 
@@ -36,7 +36,7 @@ public class KrimsonTestContext : TestContext {
         CreatedTopics    = new();
 
         TracerProvider = Sdk.CreateTracerProviderBuilder()
-            .AddSource("Krimson.Tests")
+            .AddKrimsonSource()
             .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName: "Krimson.Tests"))
             .AddConsoleExporter()
             .AddInMemoryExporter(InMemoryActivities)
@@ -44,7 +44,7 @@ public class KrimsonTestContext : TestContext {
                 options => {
                     options.Protocol = OtlpExportProtocol.Grpc;
                 })
-            .Build();
+            .Build()!;
 
         // TestListener = new ActivityListener {
         //     ShouldListenTo  = source => source.Name.StartsWith("Krimson"),
@@ -53,7 +53,7 @@ public class KrimsonTestContext : TestContext {
         // };
         //
         // ActivitySource.AddActivityListener(TestListener);
-
+        //
         // static ActivitySamplingResult SampleAll(ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
     }
 
@@ -195,7 +195,7 @@ public class KrimsonTestContext : TestContext {
             .ClientId(topic)
             .Topic(topic)
             //.EnableDebug()
-            .Intercept(new OpenTelemetryProducerInterceptor("Krimson.Tests"))
+            .AddOpenTelemetry()
             .Create();
 
         var requests = Enumerable.Range(1, numberOfMessages).Select(CreateMessage).ToArray();
@@ -265,7 +265,7 @@ public class KrimsonTestContext : TestContext {
             .ClientId(topic)
             .Topic(topic)
             //.EnableDebug()
-            .Intercept(new OpenTelemetryProducerInterceptor("Krimson.Tests"))
+            .AddOpenTelemetry()
             .Create();
 
         var requests = Enumerable.Range(1, numberOfMessages).Select(CreateMessage).ToArray().Concat(Enumerable.Range(1, numberOfMessages).Select(CreateMessage2).ToArray()).ToArray();
@@ -422,7 +422,7 @@ public class KrimsonTestContext : TestContext {
                 .Connection(ClientConnection)
                 .UseProtobuf(SchemaRegistry)
                 //.UseConfluentJson(SchemaRegistry)
-                .AddOpenTelemetry("Krimson.Tests")
+                .AddOpenTelemetry()
                 .Process<KrimsonTestMessage>(TestMessageHandler)
                 .Create();
 

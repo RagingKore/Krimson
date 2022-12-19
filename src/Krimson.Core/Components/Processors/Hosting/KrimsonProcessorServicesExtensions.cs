@@ -5,6 +5,7 @@ using Krimson.Serializers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Scrutor;
 
 namespace Krimson;
 
@@ -22,7 +23,7 @@ public static class KrimsonProcessorServicesExtensions {
         Ensure.Positive(tasks, nameof(tasks));
 
         services.AddKrimsonModules();
-        
+
         for (var i = 1; i <= tasks; i++) {
             var order = i;
             services.AddSingleton(ctx => AddWorker(ctx, order));
@@ -34,13 +35,11 @@ public static class KrimsonProcessorServicesExtensions {
             var configuration  = ctx.GetRequiredService<IConfiguration>();
             var serializer     = ctx.GetRequiredService<IDynamicSerializer>();
             var deserializer   = ctx.GetRequiredService<IDynamicDeserializer>();
-            var modules        = ctx.GetServices<KrimsonProcessorModule>();
-            
+
             var builder = KrimsonProcessor.Builder
                 .ReadSettings(configuration)
                 .Serializer(() => serializer)
                 .Deserializer(() => deserializer)
-                .Modules(modules)
                 .With(x => build(ctx, x));
 
             if (tasks > 1) {
@@ -50,13 +49,13 @@ public static class KrimsonProcessorServicesExtensions {
             }
 
             var processor = builder.Create();
-        
+
             return new KrimsonWorkerService(
                 processor, ctx, ct => initialize?.Invoke(ctx, ct) ?? Task.CompletedTask
             );
         }
     }
-    
+
     public static IServiceCollection AddKrimsonProcessor(
         this IServiceCollection services,
         int tasks,
@@ -90,6 +89,7 @@ public static class KrimsonProcessorServicesExtensions {
                     .AssignableTo<KrimsonProcessorModule>()
                     .NotInNamespaceOf<KrimsonProcessorModule>()
                 )
+                .UsingRegistrationStrategy(RegistrationStrategy.Skip)
                 .As<KrimsonProcessorModule>()
                 .AsImplementedInterfaces()
                 .WithSingletonLifetime()
