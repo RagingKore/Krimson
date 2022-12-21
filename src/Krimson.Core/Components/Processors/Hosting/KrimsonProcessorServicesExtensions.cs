@@ -82,7 +82,7 @@ public static class KrimsonProcessorServicesExtensions {
         Func<IServiceProvider, CancellationToken, Task>? initialize = null
     ) => AddKrimsonProcessor(services, (_, builder) => build(builder), 1, initialize);
 
-    static IServiceCollection AddKrimsonModules(this IServiceCollection services) =>
+    public static IServiceCollection AddKrimsonModules(this IServiceCollection services) =>
         services.Scan(
             scan => scan.FromApplicationDependencies()
                 .AddClasses(classes => classes
