@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Krimson</RootNamespace>
   </PropertyGroup>
@@ -25,5 +25,9 @@
 
   <ItemGroup>
     <None Remove="Krimson.Core.csproj.DotSettings" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="OneOf"/>
   </ItemGroup>
 </Project>

@@ -1,38 +1,48 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Core", "src\Krimson.Core\Krimson.Core.csproj", "{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33205.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Core", "src\Krimson.Core\Krimson.Core.csproj", "{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{FD0B593F-A9F9-42A1-97D9-8B96521B47D8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telemetry.Contracts", "examples\Telemetry.Contracts\Telemetry.Contracts.csproj", "{5E36A5F6-7D2C-4BAB-B475-ADA69B429948}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.Contracts", "examples\Telemetry.Contracts\Telemetry.Contracts.csproj", "{5E36A5F6-7D2C-4BAB-B475-ADA69B429948}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerConsumption.Processor", "examples\PowerConsumption.Processor\PowerConsumption.Processor.csproj", "{3D22849C-B31B-4601-94CB-0BFB736F6518}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PowerConsumption.Processor", "examples\PowerConsumption.Processor\PowerConsumption.Processor.csproj", "{3D22849C-B31B-4601-94CB-0BFB736F6518}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telemetry.Gateway.Http", "examples\Telemetry.Gateway.Http\Telemetry.Gateway.Http.csproj", "{9FA3482F-833F-466E-A0E1-D8B944801A89}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.Gateway.Http", "examples\Telemetry.Gateway.Http\Telemetry.Gateway.Http.csproj", "{9FA3482F-833F-466E-A0E1-D8B944801A89}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Serializers.ConfluentJson", "src\Krimson.Serializers.ConfluentJson\Krimson.Serializers.ConfluentJson.csproj", "{836D0480-0EE0-4ED2-A32C-8F78E50ABB03}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Serializers.ConfluentJson", "src\Krimson.Serializers.ConfluentJson\Krimson.Serializers.ConfluentJson.csproj", "{836D0480-0EE0-4ED2-A32C-8F78E50ABB03}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Tests", "tests\Krimson.Tests\Krimson.Tests.csproj", "{A541316F-B5F2-4AC5-92AD-00EF58B0BF7E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Tests", "tests\Krimson.Tests\Krimson.Tests.csproj", "{A541316F-B5F2-4AC5-92AD-00EF58B0BF7E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{DCF9B742-A173-473E-8F1E-AFD9BD48F87E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Fixie", "tests\Krimson.Fixie\Krimson.Fixie.csproj", "{3AD4C050-0925-40A9-B36C-022524191745}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Fixie", "tests\Krimson.Fixie\Krimson.Fixie.csproj", "{3AD4C050-0925-40A9-B36C-022524191745}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Serializers.ConfluentProtobuf", "src\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj", "{9C53E320-75A2-442C-9E00-62AE7F1654BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Serializers.ConfluentProtobuf", "src\Krimson.Serializers.ConfluentProtobuf\Krimson.Serializers.ConfluentProtobuf.csproj", "{9C53E320-75A2-442C-9E00-62AE7F1654BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson", "src\Krimson\Krimson.csproj", "{44815E2C-AB98-43D7-A60F-8C0D497C857A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson", "src\Krimson\Krimson.csproj", "{44815E2C-AB98-43D7-A60F-8C0D497C857A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sherlock", "examples\Sherlock\Sherlock.csproj", "{F44B1931-0BA3-41C2-9A4E-4A68FC32038F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sherlock", "examples\Sherlock\Sherlock.csproj", "{F44B1931-0BA3-41C2-9A4E-4A68FC32038F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.OpenTelemetry", "src\Krimson.OpenTelemetry\Krimson.OpenTelemetry.csproj", "{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.OpenTelemetry", "src\Krimson.OpenTelemetry\Krimson.OpenTelemetry.csproj", "{5E8D971D-11EE-4B23-9974-6FDE6C1C3A68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Connectors", "src\Krimson.Connectors\Krimson.Connectors.csproj", "{9D80E356-D4D1-4358-87EF-73407353387F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Connectors", "src\Krimson.Connectors\Krimson.Connectors.csproj", "{9D80E356-D4D1-4358-87EF-73407353387F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Webhooks", "examples\Webhooks\Webhooks.csproj", "{CD322FDC-B1B3-40DD-87FF-8E720D276F7E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Webhooks", "examples\Webhooks\Webhooks.csproj", "{CD322FDC-B1B3-40DD-87FF-8E720D276F7E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeriodicSourceConnectorService", "examples\PeriodicSourceConnectorService\PeriodicSourceConnectorService.csproj", "{B14B2B69-C33B-4316-B628-47969B57EF07}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PeriodicSourceConnectorService", "examples\PeriodicSourceConnectorService\PeriodicSourceConnectorService.csproj", "{B14B2B69-C33B-4316-B628-47969B57EF07}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.State.MongoDB", "src\Krimson.State.MongoDB\Krimson.State.MongoDB.csproj", "{946FD627-1350-4328-A18E-163BF30E908C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.State.MongoDB", "src\Krimson.State.MongoDB\Krimson.State.MongoDB.csproj", "{946FD627-1350-4328-A18E-163BF30E908C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Krimson.Connectors.AspNet", "src\Krimson.Connectors.AspNet\Krimson.Connectors.AspNet.csproj", "{55BD566D-FB9F-456C-A5D9-DEB9EEFC7DA8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C45063D3-B08D-4A6C-BDB8-FF84B8C740B5}"
+	ProjectSection(SolutionItems) = preProject
+		src\Directory.Build.props = src\Directory.Build.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,14 +50,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CE3FA9B2-5C1D-4EEA-AABE-F5CB8296B0CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5F00BC14-6BA3-48B0-BF44-463C04D68F53}.Release|Any CPU.Build.0 = Release|Any CPU
 		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{588BD4EE-8451-4207-AF0F-1C8CE1CEBEF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -108,6 +110,13 @@ Global
 		{946FD627-1350-4328-A18E-163BF30E908C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{946FD627-1350-4328-A18E-163BF30E908C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{946FD627-1350-4328-A18E-163BF30E908C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55BD566D-FB9F-456C-A5D9-DEB9EEFC7DA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55BD566D-FB9F-456C-A5D9-DEB9EEFC7DA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55BD566D-FB9F-456C-A5D9-DEB9EEFC7DA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55BD566D-FB9F-456C-A5D9-DEB9EEFC7DA8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5E36A5F6-7D2C-4BAB-B475-ADA69B429948} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
@@ -118,5 +127,8 @@ Global
 		{F44B1931-0BA3-41C2-9A4E-4A68FC32038F} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
 		{CD322FDC-B1B3-40DD-87FF-8E720D276F7E} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
 		{B14B2B69-C33B-4316-B628-47969B57EF07} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {02D814A0-9018-4E74-A135-EAAAB8AC564A}
 	EndGlobalSection
 EndGlobal

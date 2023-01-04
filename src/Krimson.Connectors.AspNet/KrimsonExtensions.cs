@@ -1,5 +1,8 @@
 using Krimson.Connectors.Http;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
+// ReSharper disable once CheckNamespace
 namespace Krimson.Connectors;
 
 public static partial class ServiceCollectionExtensions {

@@ -2,6 +2,7 @@ using Confluent.Kafka;
 using Krimson.Connectors.Checkpoints;
 using Krimson.Producers;
 using Krimson.Readers;
+using Microsoft.Extensions.DependencyInjection;
 using static Serilog.Core.Constants;
 using static Serilog.Log;
 using ILogger = Serilog.ILogger;

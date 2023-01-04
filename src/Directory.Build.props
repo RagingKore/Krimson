@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     <NoWarn>8618</NoWarn>
+    <RootNamespace>$(ProjectName)</RootNamespace>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -51,6 +52,5 @@
     <Using Include="System.Threading"/>
     <Using Include="System.Threading.Tasks"/>
     <Using Include="JetBrains.Annotations"/>
-    <Using Include="OneOf"/>
   </ItemGroup>
 </Project>

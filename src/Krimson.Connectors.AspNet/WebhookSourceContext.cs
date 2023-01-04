@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace Krimson.Connectors.Http;
 
 [PublicAPI]

@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Krimson.Connectors.AspNet\Krimson.Connectors.AspNet.csproj" />
     <ProjectReference Include="..\..\src\Krimson\Krimson.csproj" />
   </ItemGroup>
 </Project>

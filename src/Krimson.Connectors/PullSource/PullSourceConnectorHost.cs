@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Hosting;
+
 namespace Krimson.Connectors;
 
 public class PullSourceConnectorHost<T> : BackgroundService where T : DataSourceConnector<PullSourceContext> {
