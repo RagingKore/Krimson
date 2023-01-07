@@ -464,3 +464,6 @@ processing-results/
 output/
 *.env
 .env
+tmp/
+kafka/
+zoo/

@@ -27,11 +27,11 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
 
         Deserializers = new();
 
-        generatorSettings ??= new() { SchemaNameGenerator = SchemaFullNameGenerator.Instance };
-
         var args = (
             Config: config ?? DefaultConfig,
-            GeneratorSettings: generatorSettings
+            GeneratorSettings: generatorSettings ?? new JsonSchemaGeneratorSettings {
+                SchemaNameGenerator = SchemaFullNameGenerator.Instance
+            }
         );
         
         GetDeserializer = messageType => Deserializers.GetOrAdd(

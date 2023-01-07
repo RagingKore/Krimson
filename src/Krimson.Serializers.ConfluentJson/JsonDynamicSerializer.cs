@@ -29,7 +29,9 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         var args = (
             Client: RegistryClient,
             Config: config ?? DefaultConfig,
-            GeneratorSettings: generatorSettings.ConfigureSystemJson()
+            GeneratorSettings: generatorSettings ?? new JsonSchemaGeneratorSettings {
+                SchemaNameGenerator = SchemaFullNameGenerator.Instance
+            }
         );
 
         GetSerializer = messageType => Serializers.GetOrAdd(
