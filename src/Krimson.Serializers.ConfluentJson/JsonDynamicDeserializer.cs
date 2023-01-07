@@ -6,6 +6,7 @@ using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.SchemaRegistry;
 using Krimson.Serializers.ConfluentJson.NJsonSchema;
+using Newtonsoft.Json;
 using NJsonSchema.Generation;
 
 namespace Krimson.Serializers.ConfluentJson;
@@ -26,9 +27,11 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
 
         Deserializers = new();
 
-        var args = ( 
+        generatorSettings ??= new() { SchemaNameGenerator = SchemaFullNameGenerator.Instance };
+
+        var args = (
             Config: config ?? DefaultConfig,
-            GeneratorSettings: generatorSettings.ConfigureDefaults()
+            GeneratorSettings: generatorSettings
         );
         
         GetDeserializer = messageType => Deserializers.GetOrAdd(
@@ -50,7 +53,10 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
         : this(registryClient, null, null, generatorSettings) { }
     
     public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSerializerOptions serializerOptions)
-        : this(registryClient, null, null, new JsonSchemaGeneratorSettings().ConfigureDefaults(serializerOptions)) { }
+        : this(registryClient, null, null, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
+
+    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSerializerSettings serializerSettings)
+        : this(registryClient, null, null, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
 
     Func<ReadOnlyMemory<byte>, MessageSchema> GetMessageSchema   { get; }
     Func<MessageSchema, Type>                 ResolveMessageType { get; }
@@ -76,7 +82,7 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
             return message;
         }
         catch (Exception ex) {
-            throw new SerializationException("Deserialization error!", ex);
+            throw new SerializationException($"Failed to deserialize message from json", ex);
         }
     }
 

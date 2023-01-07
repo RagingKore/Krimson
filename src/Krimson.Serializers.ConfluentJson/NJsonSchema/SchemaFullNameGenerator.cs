@@ -19,6 +19,6 @@ class SchemaFullNameGenerator : ISchemaNameGenerator {
         if (cachedType.Type.IsClass)
             return cachedType.Type.FullName!;
 
-        throw new InvalidOperationException("Type is not a class or record");
+        throw new InvalidOperationException($"Type {type.FullName} is not a class or record");
     }
 }

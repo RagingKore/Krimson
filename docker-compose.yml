@@ -15,6 +15,9 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - ./zoo/data:/var/lib/zookeeper/data
+      - ./zoo/log:/var/lib/zookeeper/log
 
   kafka:
     image: confluentinc/cp-kafka:7.2.2
@@ -42,7 +45,6 @@ services:
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'true'
       JMX_PORT: 9997
       KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka -Dcom.sun.management.jmxremote.rmi.port=9997
-
 #      KAFKA_JMX_PORT: 9101
 #      KAFKA_JMX_HOSTNAME: localhost
 #      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
@@ -50,6 +52,8 @@ services:
 #      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
 #      CONFLUENT_METRICS_ENABLE: 'true'
 #      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+    volumes:
+      - ./kafka/data:/var/lib/kafka/data
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.2.2

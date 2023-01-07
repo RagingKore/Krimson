@@ -5,6 +5,7 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.Serializers.ConfluentJson.NJsonSchema;
+using Newtonsoft.Json;
 using NJsonSchema.Generation;
 using static System.Activator;
 using static System.Array;
@@ -28,7 +29,7 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         var args = (
             Client: RegistryClient,
             Config: config ?? DefaultConfig,
-            GeneratorSettings: generatorSettings.ConfigureDefaults()
+            GeneratorSettings: generatorSettings.ConfigureSystemJson()
         );
 
         GetSerializer = messageType => Serializers.GetOrAdd(
@@ -45,7 +46,10 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         : this(registryClient, null, generatorSettings) { }
     
     public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerOptions serializerOptions)
-        : this(registryClient, null, new JsonSchemaGeneratorSettings().ConfigureDefaults(serializerOptions)) { }
+        : this(registryClient, null, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
+
+    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerSettings serializerSettings)
+        : this(registryClient, null, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
     
     ISchemaRegistryClient               RegistryClient { get; }
     Func<Type, dynamic>                 GetSerializer  { get; }
@@ -55,19 +59,21 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         if (data is null)
             return Empty<byte>();
 
+        var messageType = data.GetType();
+
         try {
-            var serializer = GetSerializer(data.GetType());
+            var serializer  = GetSerializer(messageType);
 
             byte[] bytes = await serializer
                 .SerializeAsync((dynamic)data, context)
                 .ConfigureAwait(false);
 
-            context.Headers.AddSchemaInfo(SchemaType.Json, bytes, GetType());
+            context.Headers.AddSchemaInfo(SchemaType.Json, bytes, messageType);
 
             return bytes;
         }
         catch (Exception ex) {
-            throw new SerializationException("Serialization error!", ex);
+            throw new SerializationException($"Failed to serialize message to json: {messageType.FullName}", ex);
         }
     }
 

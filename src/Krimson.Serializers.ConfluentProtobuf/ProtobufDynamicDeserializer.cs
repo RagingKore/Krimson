@@ -60,14 +60,13 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
         try {
             var headers = context.Headers.Decode();
 
-            var messageTypeFromHeader = AppDomain.CurrentDomain
-                .GetAssemblies()
-                .Select(a => a.GetType(headers[HeaderKeys.SchemaMessageType]!))
-                .FirstOrDefault(x => x != null)!;
+            // var messageTypeFromHeader = AppDomain.CurrentDomain
+            //     .GetAssemblies()
+            //     .Select(a => a.GetType(headers[HeaderKeys.SchemaMessageType]!))
+            //     .FirstOrDefault(x => x != null)!;
             
             var messageSchema = GetMessageSchema(data);
             var messageType   = ResolveMessageType(messageSchema);
-            
             var deserializer  = GetDeserializer(messageType);
 
             var message = await deserializer

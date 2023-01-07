@@ -13,7 +13,6 @@ public class PullSourceConnectorHost<T> : BackgroundService where T : DataSource
     T                Source      { get; }
     IServiceProvider Services    { get; }
     TimeSpan         BackoffTime { get; }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         var context = new PullSourceContext(Services, stoppingToken);
         while (!context.CancellationToken.IsCancellationRequested) {

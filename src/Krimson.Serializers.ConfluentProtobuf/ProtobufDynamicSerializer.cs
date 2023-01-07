@@ -38,8 +38,10 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
         if (data is null)
             return Empty<byte>();
 
+        var messageType = data.GetType();
+
         try {
-            var messageType = data.GetType();
+
             var serializer  = GetSerializer(messageType);
 
             byte[] bytes = await serializer
@@ -51,7 +53,7 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
             return bytes;
         }
         catch (Exception ex) {
-            throw new SerializationException("Protobuf serialization error!", ex);
+            throw new SerializationException($"Failed to serialize message to protobuf: {messageType.FullName}", ex);
         }
     }
 

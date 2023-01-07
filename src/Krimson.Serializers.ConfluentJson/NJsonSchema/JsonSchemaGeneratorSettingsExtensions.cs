@@ -1,36 +1,39 @@
 using System.Text.Json;
+using Newtonsoft.Json;
 using NJsonSchema.Generation;
 
 namespace Krimson.Serializers.ConfluentJson.NJsonSchema;
 
 [PublicAPI]
 public static class JsonSchemaGeneratorSettingsExtensions {
-    static readonly JsonSerializerOptions DefaultJsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    // public static JsonSchemaGeneratorSettings UseSystemJson(this JsonSchemaGeneratorSettings settings, JsonSerializerOptions? options = null) {
+    //     // disable Newtonsoft Json
+    //     settings.SerializerSettings = null;
+    //
+    //     // enable System Json
+    //     settings.SerializerOptions ??= options ?? KrimsonSystemJsonSerializerDefaults.General;
+    //
+    //     return settings;
+    // }
     
-    static readonly JsonSchemaGeneratorSettings DefaultGeneratorSettings = new JsonSchemaGeneratorSettings {
-        SerializerSettings  = null,
-        SerializerOptions   = DefaultJsonSerializerOptions,
-        SchemaNameGenerator = SchemaFullNameGenerator.Instance
-    };
+    public static JsonSchemaGeneratorSettings ConfigureSystemJson(this JsonSchemaGeneratorSettings? generatorSettings, JsonSerializerOptions? serializerOptions = null) {
+        generatorSettings ??= new() {
+            SchemaNameGenerator = SchemaFullNameGenerator.Instance,
+        };
 
-    public static JsonSchemaGeneratorSettings UseSystemJson(this JsonSchemaGeneratorSettings settings, JsonSerializerOptions? options = null) {
-        // disable Newtonsoft Json
-        settings.SerializerSettings = null;
-        
-        // enable System Json
-        settings.SerializerOptions ??= options ?? DefaultJsonSerializerOptions;
-        
-        return settings;
+        generatorSettings.SerializerSettings = null;
+        generatorSettings.SerializerOptions  = serializerOptions ?? KrimsonSystemJsonSerializerDefaults.General;
+
+        return generatorSettings;
     }
-    
-    public static JsonSchemaGeneratorSettings ConfigureDefaults(this JsonSchemaGeneratorSettings? settings, JsonSerializerOptions? options = null) {
-        if (settings is null)
-            settings = DefaultGeneratorSettings;
-        else {
-            settings.SchemaNameGenerator = SchemaFullNameGenerator.Instance;
-            settings.UseSystemJson(options);
-        }
-        
-        return settings;
+
+    public static JsonSchemaGeneratorSettings ConfigureNewtonsoftJson(this JsonSchemaGeneratorSettings? generatorSettings, JsonSerializerSettings? serializerSettings = null) {
+        generatorSettings ??= new() {
+            SchemaNameGenerator = SchemaFullNameGenerator.Instance
+        };
+
+        generatorSettings.SerializerSettings = serializerSettings ?? new JsonSerializerSettings();
+
+        return generatorSettings;
     }
 }
