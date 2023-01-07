@@ -10,8 +10,9 @@ public static class KrimsonSystemJsonSerializerDefaults {
         NumberHandling         = JsonNumberHandling.AllowReadingFromString,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = {
-            new JsonStringEnumConverter(),
-            new ObjectToInferredTypesConverter()
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
+            new ObjectToInferredTypesConverter(),
+            new DateTimeOffsetConverter()
         }
     };
 }
