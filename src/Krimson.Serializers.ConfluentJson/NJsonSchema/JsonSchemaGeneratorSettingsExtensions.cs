@@ -16,7 +16,8 @@ public static class JsonSchemaGeneratorSettingsExtensions {
 
     public static JsonSchemaGeneratorSettings ConfigureNewtonsoftJson(this JsonSchemaGeneratorSettings generatorSettings, JsonSerializerSettings? serializerSettings = null) {
         generatorSettings.SchemaNameGenerator = SchemaFullNameGenerator.Instance;
-        generatorSettings.SerializerSettings  = serializerSettings ?? new JsonSerializerSettings();
+        generatorSettings.SerializerOptions   = null;
+        generatorSettings.SerializerSettings  = serializerSettings ?? KrimsonNewtonsoftJsonSerializerDefaults.General;
 
         return generatorSettings;
     }

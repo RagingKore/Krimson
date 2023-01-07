@@ -17,7 +17,7 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
 
     public static readonly JsonDeserializerConfig DefaultConfig = new();
 
-    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, Func<MessageSchema, Type>? resolveMessageType = null, JsonDeserializerConfig? config = null, JsonSchemaGeneratorSettings? generatorSettings = null) {
+    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonDeserializerConfig config, JsonSchemaGeneratorSettings generatorSettings, Func<MessageSchema, Type>? resolveMessageType = null) {
         ResolveMessageType = resolveMessageType ?? (schema => {
             return AppDomain.CurrentDomain
                 .GetAssemblies()
@@ -28,10 +28,8 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
         Deserializers = new();
 
         var args = (
-            Config: config ?? DefaultConfig,
-            GeneratorSettings: generatorSettings ?? new JsonSchemaGeneratorSettings {
-                SchemaNameGenerator = SchemaFullNameGenerator.Instance
-            }
+            Config: config,
+            GeneratorSettings: generatorSettings
         );
         
         GetDeserializer = messageType => Deserializers.GetOrAdd(
@@ -45,18 +43,15 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
         
         GetMessageSchema = registryClient.GetJsonMessageSchema; 
     }
-    
-    public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonDeserializerConfig config)
-        : this(registryClient, null, config) { }
-    
+
     public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSchemaGeneratorSettings generatorSettings)
-        : this(registryClient, null, null, generatorSettings) { }
+        : this(registryClient, DefaultConfig, generatorSettings) { }
     
     public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSerializerOptions serializerOptions)
-        : this(registryClient, null, null, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
+        : this(registryClient, DefaultConfig, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
 
     public JsonDynamicDeserializer(ISchemaRegistryClient registryClient, JsonSerializerSettings serializerSettings)
-        : this(registryClient, null, null, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
+        : this(registryClient, DefaultConfig, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
 
     Func<ReadOnlyMemory<byte>, MessageSchema> GetMessageSchema   { get; }
     Func<MessageSchema, Type>                 ResolveMessageType { get; }

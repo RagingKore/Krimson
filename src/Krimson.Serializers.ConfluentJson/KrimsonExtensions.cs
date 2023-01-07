@@ -12,14 +12,14 @@ namespace Krimson;
 
 [PublicAPI]
 public static class KrimsonBuilderExtensions {
-    static KrimsonBuilder AddSerializer(this KrimsonBuilder builder, Action<JsonSerializerConfig>? configureSerializer = null) =>
-        builder.AddSerializer(registry => new JsonDynamicSerializer(registry, JsonDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
+    // static KrimsonBuilder AddSerializer(this KrimsonBuilder builder, Action<JsonSerializerConfig>? configureSerializer = null) =>
+    //     builder.AddSerializer(registry => new JsonDynamicSerializer(registry, JsonDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
+    //
+    // static KrimsonBuilder AddDeserializer(this KrimsonBuilder builder, Action<JsonDeserializerConfig>? configureDeserializer = null) =>
+    //     builder.AddDeserializer(registry => new JsonDynamicDeserializer(registry, JsonDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))));
 
-    static KrimsonBuilder AddDeserializer(this KrimsonBuilder builder, Action<JsonDeserializerConfig>? configureDeserializer = null) =>
-        builder.AddDeserializer(registry => new JsonDynamicDeserializer(registry, JsonDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))));
-
-    public static KrimsonBuilder UseConfluentJson(this KrimsonBuilder builder, Action<JsonDeserializerConfig>? configureDeserializer = null, Action<JsonSerializerConfig>? configureSerializer = null) =>
-        builder.AddDeserializer(configureDeserializer).AddSerializer(configureSerializer);
+    // public static KrimsonBuilder UseConfluentJson(this KrimsonBuilder builder, Action<JsonDeserializerConfig>? configureDeserializer = null, Action<JsonSerializerConfig>? configureSerializer = null) =>
+    //     builder.AddDeserializer(configureDeserializer).AddSerializer(configureSerializer);
 
      public static KrimsonBuilder UseConfluentSystemJson(this KrimsonBuilder builder, JsonSerializerOptions? serializerOptions = null) =>
         builder
@@ -28,15 +28,15 @@ public static class KrimsonBuilderExtensions {
 
      public static KrimsonBuilder UseConfluentNewtonsoftJson(this KrimsonBuilder builder, JsonSerializerSettings? serializerSettings = null) =>
          builder
-             .AddSerializer(registry => new JsonDynamicSerializer(registry, serializerSettings ?? new JsonSerializerSettings()))
-             .AddDeserializer(registry => new JsonDynamicDeserializer(registry, serializerSettings ?? new JsonSerializerSettings()));
+             .AddSerializer(registry => new JsonDynamicSerializer(registry, serializerSettings ?? KrimsonNewtonsoftJsonSerializerDefaults.General))
+             .AddDeserializer(registry => new JsonDynamicDeserializer(registry, serializerSettings ?? KrimsonNewtonsoftJsonSerializerDefaults.General));
 }
 
 public static class ProcessorBuilderExtensions {
-    public static KrimsonProcessorBuilder UseConfluentJson(this KrimsonProcessorBuilder builder, ISchemaRegistryClient registry, Action<JsonDeserializerConfig>? configureDeserializer = null, Action<JsonSerializerConfig>? configureSerializer = null) =>
-        builder
-            .Deserializer(() => new JsonDynamicDeserializer(registry, JsonDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))))
-            .Serializer(() => new JsonDynamicSerializer(registry, JsonDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
+    // public static KrimsonProcessorBuilder UseConfluentJson(this KrimsonProcessorBuilder builder, ISchemaRegistryClient registry, Action<JsonDeserializerConfig>? configureDeserializer = null, Action<JsonSerializerConfig>? configureSerializer = null) =>
+    //     builder
+    //         .Deserializer(() => new JsonDynamicDeserializer(registry, JsonDynamicDeserializer.DefaultConfig.With(x => configureDeserializer?.Invoke(x))))
+    //         .Serializer(() => new JsonDynamicSerializer(registry, JsonDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x)), new JsonSchemaGeneratorSettings()));
 
     public static KrimsonProcessorBuilder UseConfluentSystemJson(this KrimsonProcessorBuilder builder, ISchemaRegistryClient registry, JsonSerializerOptions serializerOptions) =>
         builder
@@ -50,8 +50,8 @@ public static class ProcessorBuilderExtensions {
 }
 
 public static class ProducerBuilderExtensions {
-    public static KrimsonProducerBuilder UseConfluentJson(this KrimsonProducerBuilder builder, ISchemaRegistryClient registry, Action<JsonSerializerConfig>? configureSerializer = null) =>
-        builder.Serializer(() => new JsonDynamicSerializer(registry, JsonDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
+    // public static KrimsonProducerBuilder UseConfluentJson(this KrimsonProducerBuilder builder, ISchemaRegistryClient registry, Action<JsonSerializerConfig>? configureSerializer = null) =>
+    //     builder.Serializer(() => new JsonDynamicSerializer(registry, JsonDynamicSerializer.DefaultConfig.With(x => configureSerializer?.Invoke(x))));
 
     public static KrimsonProducerBuilder UseConfluentSystemJson(this KrimsonProducerBuilder builder, ISchemaRegistryClient registry, JsonSerializerOptions serializerOptions) =>
         builder  .Serializer(() => new JsonDynamicSerializer(registry, serializerOptions));

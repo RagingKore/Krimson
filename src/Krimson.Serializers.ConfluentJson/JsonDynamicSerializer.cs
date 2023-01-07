@@ -22,16 +22,14 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         AutoRegisterSchemas = true
     };
 
-    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerConfig? config = null, JsonSchemaGeneratorSettings? generatorSettings = null) {
+    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerConfig config, JsonSchemaGeneratorSettings generatorSettings) {
         RegistryClient = registryClient;
         Serializers    = new();
 
         var args = (
             Client: RegistryClient,
-            Config: config ?? DefaultConfig,
-            GeneratorSettings: generatorSettings ?? new JsonSchemaGeneratorSettings {
-                SchemaNameGenerator = SchemaFullNameGenerator.Instance
-            }
+            Config: config,
+            GeneratorSettings: generatorSettings
         );
 
         GetSerializer = messageType => Serializers.GetOrAdd(
@@ -45,13 +43,13 @@ public class JsonDynamicSerializer : IDynamicSerializer {
     }
 
     public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSchemaGeneratorSettings generatorSettings)
-        : this(registryClient, null, generatorSettings) { }
+        : this(registryClient, DefaultConfig, generatorSettings) { }
     
     public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerOptions serializerOptions)
-        : this(registryClient, null, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
+        : this(registryClient, DefaultConfig, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
 
     public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerSettings serializerSettings)
-        : this(registryClient, null, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
+        : this(registryClient, DefaultConfig, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
     
     ISchemaRegistryClient               RegistryClient { get; }
     Func<Type, dynamic>                 GetSerializer  { get; }
