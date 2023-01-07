@@ -16,9 +16,9 @@ class SchemaFullNameGenerator : ISchemaNameGenerator {
         if (!IsNullOrEmpty(schemaAttribute?.Name))
             return schemaAttribute.Name;
 
-        if (cachedType.Type.IsClass)
+        if (cachedType.Type.IsClass || cachedType.Type.IsEnum)
             return cachedType.Type.FullName!;
 
-        throw new InvalidOperationException($"Type {type.FullName} is not a class or record");
+        throw new InvalidOperationException($"Type {type.FullName} is not a class, record or enum.");
     }
 }
