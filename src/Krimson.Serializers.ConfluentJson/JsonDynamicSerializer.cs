@@ -44,9 +44,6 @@ public class JsonDynamicSerializer : IDynamicSerializer {
 
     public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSchemaGeneratorSettings generatorSettings)
         : this(registryClient, DefaultConfig, generatorSettings) { }
-    
-    public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerOptions serializerOptions)
-        : this(registryClient, DefaultConfig, new JsonSchemaGeneratorSettings().ConfigureSystemJson(serializerOptions)) { }
 
     public JsonDynamicSerializer(ISchemaRegistryClient registryClient, JsonSerializerSettings serializerSettings)
         : this(registryClient, DefaultConfig, new JsonSchemaGeneratorSettings().ConfigureNewtonsoftJson(serializerSettings)) { }
