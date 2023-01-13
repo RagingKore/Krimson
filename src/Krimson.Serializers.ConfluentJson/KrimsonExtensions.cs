@@ -26,10 +26,10 @@ public static class KrimsonBuilderExtensions {
                 )
             );
 
-    public static KrimsonBuilder UseConfluentJson(this KrimsonBuilder builder, JsonSerializerSettings? serializerSettings = null) =>
+    public static KrimsonBuilder UseConfluentJson(this KrimsonBuilder builder) =>
         builder
-            .AddSerializer(registry => new JsonDynamicSerializer(registry, serializerSettings ?? KrimsonNewtonsoftJsonSerializerDefaults.General))
-            .AddDeserializer(registry => new JsonDynamicDeserializer(registry, serializerSettings ?? KrimsonNewtonsoftJsonSerializerDefaults.General));
+            .AddSerializer(registry => new JsonDynamicSerializer(registry, KrimsonNewtonsoftJsonSerializerDefaults.General))
+            .AddDeserializer(registry => new JsonDynamicDeserializer(registry, KrimsonNewtonsoftJsonSerializerDefaults.General));
 }
 
 public static class ProcessorBuilderExtensions {
