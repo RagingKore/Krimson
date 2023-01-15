@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Krimson.Producers;
 using Krimson.State;
 
@@ -34,8 +35,8 @@ public class KrimsonProcessorContext {
     public CancellationToken   CancellationToken   { get; }
     public GetSubscriptionGaps GetSubscriptionGaps { get; }
 
-    Queue<ProducerRequest> MessageQueue { get; }
-    InterlockedBoolean     QueueLocked  { get; }
+    ConcurrentQueue<ProducerRequest> MessageQueue { get; }
+    InterlockedBoolean               QueueLocked  { get; }
 
     public async Task<bool> HasCaughtUp() {
         var gaps = await GetSubscriptionGaps();
