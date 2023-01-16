@@ -16,7 +16,7 @@ public interface IHasCaughtUp {
     Task<bool> HasCaughtUp(string clientId);
 }
 
-public class KrimsonSubscriptionGapChecker : IHasCaughtUp {
+class KrimsonSubscriptionGapChecker : IHasCaughtUp {
     ConcurrentDictionary<string, Func<Task<bool>>> GapChecksByClientId { get; } = new ConcurrentDictionary<string, Func<Task<bool>>>();
 
     public void AddGapCheck(string clientId, GetSubscriptionGaps getSubscriptionGaps) {
