@@ -2,6 +2,7 @@
 
 using Confluent.SchemaRegistry;
 using Krimson.Client.Configuration;
+using Krimson.Processors;
 using Krimson.Processors.Configuration;
 using Krimson.Producers;
 using Krimson.Readers.Configuration;
@@ -15,6 +16,8 @@ public class KrimsonBuilder {
     public KrimsonBuilder(IServiceCollection services, string? clientId) {
         Services = services;
         ClientId = clientId;
+
+        Services.AddGapChecker();
     }
 
     public   IServiceCollection Services { get; }
