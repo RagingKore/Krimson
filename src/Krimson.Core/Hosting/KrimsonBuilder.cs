@@ -17,7 +17,7 @@ public class KrimsonBuilder {
         Services = services;
         ClientId = clientId;
 
-        Services.AddGapChecker();
+        Services.AddKrimsonSubscriptionGapTracker();
     }
 
     public   IServiceCollection Services { get; }
