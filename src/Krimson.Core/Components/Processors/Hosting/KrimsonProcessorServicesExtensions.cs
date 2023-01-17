@@ -32,9 +32,10 @@ public static class KrimsonProcessorServicesExtensions {
         return services;
 
         IHostedService AddWorker(IServiceProvider ctx, int order) {
-            var configuration  = ctx.GetRequiredService<IConfiguration>();
-            var serializer     = ctx.GetRequiredService<IDynamicSerializer>();
-            var deserializer   = ctx.GetRequiredService<IDynamicDeserializer>();
+            var configuration = ctx.GetRequiredService<IConfiguration>();
+            var serializer    = ctx.GetRequiredService<IDynamicSerializer>();
+            var deserializer  = ctx.GetRequiredService<IDynamicDeserializer>();
+            var gapTracker    = ctx.GetRequiredService<KrimsonSubscriptionGapTracker>();
 
             var builder = KrimsonProcessor.Builder
                 .ReadSettings(configuration)
@@ -49,6 +50,8 @@ public static class KrimsonProcessorServicesExtensions {
             }
 
             var processor = builder.Create();
+
+            gapTracker.Register(processor);
 
             return new KrimsonWorkerService(
                 processor, ctx, ct => initialize?.Invoke(ctx, ct) ?? Task.CompletedTask
