@@ -6,17 +6,17 @@ namespace Krimson.Processors;
 static class KrimsonGapCheckServicesExtensions {
     public static IServiceCollection AddGapChecker(this IServiceCollection services) {
         services.AddSingleton<KrimsonSubscriptionGapChecker>(new KrimsonSubscriptionGapChecker());
-        services.AddSingleton<IHasCaughtUp>(sp => sp.GetRequiredService<KrimsonSubscriptionGapChecker>());
+        services.AddSingleton<IGapChecker>(sp => sp.GetRequiredService<KrimsonSubscriptionGapChecker>());
 
         return services;
     }
 }
 
-public interface IHasCaughtUp {
+public interface IGapChecker {
     Task<bool> HasCaughtUp(string clientId);
 }
 
-class KrimsonSubscriptionGapChecker : IHasCaughtUp {
+class KrimsonSubscriptionGapChecker : IGapChecker {
     ConcurrentDictionary<string, Func<Task<bool>>> GapChecksByClientId { get; } = new ConcurrentDictionary<string, Func<Task<bool>>>();
 
     public void AddGapCheck(string clientId, GetSubscriptionGaps getSubscriptionGaps) {
