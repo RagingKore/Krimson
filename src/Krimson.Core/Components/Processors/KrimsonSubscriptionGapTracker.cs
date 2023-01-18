@@ -4,8 +4,13 @@ using System.Collections.Concurrent;
 namespace Krimson.Processors;
 
 static class KrimsonGapCheckServicesExtensions {
-    public static IServiceCollection AddKrimsonSubscriptionGapTracker(this IServiceCollection services) =>
-        services.AddSingleton<IKrimsonSubscriptionGapTracker>(new KrimsonSubscriptionGapTracker());
+    public static IServiceCollection AddKrimsonSubscriptionGapTracker(this IServiceCollection services) {
+        services.AddSingleton<KrimsonSubscriptionGapTracker>();
+        services.AddSingleton<IKrimsonSubscriptionGapTracker>(sp => sp.GetRequiredService<KrimsonSubscriptionGapTracker>());
+
+        return services;
+    }
+
 }
 
 public interface IKrimsonSubscriptionGapTracker {
