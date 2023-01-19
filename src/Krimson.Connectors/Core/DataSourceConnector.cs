@@ -8,7 +8,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Krimson.Connectors;
 
-public delegate ValueTask OnSuccess<in TContext>(TContext context);
+public delegate ValueTask OnSuccess<in TContext>(TContext context, SourceRecord lastProcessedRecord);
 
 public delegate ValueTask OnError<in TContext>(TContext context, Exception exception);
 
@@ -29,7 +29,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         Checkpoints        = null!;
         CheckpointStrategy = DataSourceCheckpointStrategy.Record;
 
-        OnSuccessHandler = _ => ValueTask.CompletedTask;
+        OnSuccessHandler = (_, _) => ValueTask.CompletedTask;
         OnErrorHandler   = (_, _) => ValueTask.CompletedTask;
     }
 
@@ -66,17 +66,19 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         Initialize(context.Services);
         
         try {
-            var checkpoint = SourceCheckpoint.None;
-            
+            var checkpoint          = SourceCheckpoint.None;
+            var lastProcessedRecord = SourceRecord.Empty;
+
             await foreach (var record in ParseRecords(context).WithCancellation(context.CancellationToken).ConfigureAwait(false)) {
                 await ProcessRecord(
                         record,
                         ack: recordId => {
                             record.Ack(recordId);
-                            
-                            checkpoint = SourceCheckpoint.From(record);
-                            
-                            if (CheckpointStrategy == DataSourceCheckpointStrategy.Record) 
+
+                            lastProcessedRecord = record;
+                            checkpoint          = SourceCheckpoint.From(record);
+
+                            if (CheckpointStrategy == DataSourceCheckpointStrategy.Record)
                                 Checkpoints.TrackCheckpoint(checkpoint);
 
                             context.Counter.IncrementProcessed(record.DestinationTopic!);
@@ -100,21 +102,21 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             if (CheckpointStrategy == DataSourceCheckpointStrategy.Batch) 
                 Checkpoints.TrackCheckpoint(checkpoint);
             
-            await OnSuccessInternal().ConfigureAwait(false);
+            await OnSuccessInternal(lastProcessedRecord).ConfigureAwait(false);
         }
         catch (Exception ex) {
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async ValueTask OnSuccessInternal() {
-            if (context.Counter.Skipped > 0) 
+        async ValueTask OnSuccessInternal(SourceRecord lastProcessedRecord) {
+            if (context.Counter.Skipped > 0)
                 Log.Information("{RecordsCount} record(s) skipped", context.Counter.Skipped);
 
             foreach (var (topic, count) in context.Counter) 
                 Log.Information("{RecordsCount} record(s) processed >> {Topic}", count, topic);
 
             try {
-                await OnSuccessHandler(context).ConfigureAwait(false);
+                await OnSuccessHandler(context, lastProcessedRecord).ConfigureAwait(false);
             }
             catch (Exception ex) {
                 Log.Error("{Event} User exception: {ErrorMessage}", nameof(OnSuccess), ex.Message);
