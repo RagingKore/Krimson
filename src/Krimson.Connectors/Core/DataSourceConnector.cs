@@ -82,15 +82,15 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                             context.TrackRecord(record);
                             context.Counter.IncrementProcessed(record.DestinationTopic!);
 
-                            Log.Verbose("{RequestId} record acknowledged", record.RequestId);
+                            //Log.Verbose("{RequestId} record acknowledged", record.RequestId);
                         },
                         nack: exception => {
                             record.Nak(exception);
-                            OnErrorInternal(exception).GetAwaiter().GetResult(); 
+                            OnErrorInternal(exception).AsTask().GetAwaiter().GetResult();
                         },
                         skip: () => {
+                            context.TrackRecord(record);
                             context.Counter.IncrementSkipped();
-                            Log.Verbose("{RequestId} record skipped", record.RequestId);
                         }
                     )
                     .ConfigureAwait(false);
@@ -146,6 +146,12 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
     public async ValueTask ProcessRecord(SourceRecord record, Action<RecordId> ack, Action<ProduceException<byte[], object?>> nack, Action skip) {
+        if (record.ProcessingSkipped) {
+            skip();
+            Log.Debug("{SourceName} {RequestId} record skipped by user", record.Source, record.RequestId);
+            return;
+        }
+        
         // ensure source connector name is set
         record.Source ??= Name;
         
@@ -153,7 +159,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         record.DestinationTopic ??= Producer.Topic;
 
         if (!record.HasDestinationTopic)
-            throw new($"{record.Source} Found record with missing destination topic!");
+            throw new($"{record.Source} {record.RequestId} record is missing destination topic!");
 
         if (CheckpointStrategy != DataSourceCheckpointStrategy.Manual) {
             var isUnseen = await IsRecordUnseen().ConfigureAwait(false);
@@ -192,8 +198,8 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
 
             if (!unseenRecord)
                 Log.Debug(
-                    "{SourceName} Record already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}", 
-                    record.Source, record.EventTime, checkpoint.Timestamp
+                    "{SourceName} {RequestId} record already processed at least once on {EventTime} | Current Checkpoint Timestamp: {CheckpointTimestamp}",
+                    record.Source, record.RequestId, record.EventTime, checkpoint.Timestamp
                 );
 
             return unseenRecord;

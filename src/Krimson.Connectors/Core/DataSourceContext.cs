@@ -15,12 +15,14 @@ public class DataSourceContext : IDataSourceContext {
         CancellationToken = Cancellator.Token;
     }
 
-    IServiceProvider        IDataSourceContext.Services { get; set; }
-    Counter                 IDataSourceContext.Counter  { get; set; }
-    List<SourceRecord>      IDataSourceContext.Records  { get; set; }
+    IServiceProvider   IDataSourceContext.Services { get; set; }
+    Counter            IDataSourceContext.Counter  { get; set; }
+    List<SourceRecord> IDataSourceContext.Records  { get; set; }
 
     public CancellationTokenSource     Cancellator       { get; }
     public IStateStore                 State             { get; }
     public CancellationToken           CancellationToken { get; }
 
+    public IAsyncEnumerable<SourceRecord> ProcessedRecords => this.As<IDataSourceContext>().Records.ToAsyncEnumerable();
+    public IAsyncEnumerable<SourceRecord> SkippedRecords   => ProcessedRecords.Where(record => record.ProcessingSkipped);
 }
