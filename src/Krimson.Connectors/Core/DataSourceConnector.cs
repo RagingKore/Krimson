@@ -146,17 +146,17 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
     public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
     public async ValueTask ProcessRecord(SourceRecord record, Action<RecordId> ack, Action<ProduceException<byte[], object?>> nack, Action skip) {
-        if (record.ProcessingSkipped) {
-            skip();
-            Log.Debug("{SourceName} {RequestId} record skipped by user", record.Source, record.RequestId);
-            return;
-        }
-        
         // ensure source connector name is set
         record.Source ??= Name;
         
         // ensure destination topic is set
         record.DestinationTopic ??= Producer.Topic;
+
+        if (record.ProcessingSkipped) {
+            skip();
+            Log.Debug("{SourceName} {RequestId} record skipped by user", record.Source, record.RequestId);
+            return;
+        }
 
         if (!record.HasDestinationTopic)
             throw new($"{record.Source} {record.RequestId} record is missing destination topic!");
