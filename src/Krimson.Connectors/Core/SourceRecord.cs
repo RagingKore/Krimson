@@ -32,7 +32,7 @@ public class SourceRecord {
     public Dictionary<string, string?> Headers          { get; set; }
     public Guid                        RequestId        { get; set; }
     public RecordId                    RecordId         { get; private set; }
- 
+
     public bool HasKey              => Key != MessageKey.None;
     public bool HasDestinationTopic => DestinationTopic is not null;
     
@@ -43,6 +43,11 @@ public class SourceRecord {
     public string? EventType {
         get => Headers.TryGetValue("krimson.connectors.source.record.event-type", out var value) ? value : null;
         set => Headers["krimson.connectors.source.record.event-type"] = value;
+    }
+
+    public string? EventId {
+        get => Headers.TryGetValue("krimson.connectors.source.record.event-id", out var value) ? value : null;
+        set => Headers["krimson.connectors.source.record.event-id"] = value;
     }
     
     public string? Source {
