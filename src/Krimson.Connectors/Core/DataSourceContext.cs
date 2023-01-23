@@ -6,18 +6,21 @@ namespace Krimson.Connectors;
 [PublicAPI]
 public class DataSourceContext : IDataSourceContext {
     public DataSourceContext(IServiceProvider services, CancellationToken cancellationToken) {
-        this.As<IDataSourceContext>().Services    = services;
-        this.As<IDataSourceContext>().Counter     = new();
-        this.As<IDataSourceContext>().Cancellator = CreateLinkedTokenSource(cancellationToken);
-        
+        this.As<IDataSourceContext>().Services = services;
+        this.As<IDataSourceContext>().Counter  = new();
+        this.As<IDataSourceContext>().Records  = new();
+
         State             = this.As<IDataSourceContext>().Services.GetService<IStateStore>() ?? new InMemoryStateStore();
-        CancellationToken = this.As<IDataSourceContext>().Cancellator.Token;
+        Cancellator       = CreateLinkedTokenSource(cancellationToken);
+        CancellationToken = Cancellator.Token;
     }
 
-    IServiceProvider        IDataSourceContext.Services    { get; set; }
-    Counter                 IDataSourceContext.Counter     { get; set; }
-    CancellationTokenSource IDataSourceContext.Cancellator { get; set; }
-    
-    public IStateStore       State             { get; }
-    public CancellationToken CancellationToken { get; }
+    IServiceProvider        IDataSourceContext.Services { get; set; }
+    Counter                 IDataSourceContext.Counter  { get; set; }
+    List<SourceRecord>      IDataSourceContext.Records  { get; set; }
+
+    public CancellationTokenSource     Cancellator       { get; }
+    public IStateStore                 State             { get; }
+    public CancellationToken           CancellationToken { get; }
+
 }

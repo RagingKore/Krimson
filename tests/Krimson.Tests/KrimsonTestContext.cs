@@ -407,7 +407,7 @@ public class KrimsonTestContext : TestContext {
             processed.Add(ctx.Record);
 
             if (produceOutput) {
-                ctx.Output(msg, ctx.Record.Key);
+                ctx.Output(msg!, ctx.Record.Key);
 
                 if (processed.Count == numberOfMessages*2)
                     cancellator.CancelAfter(TimeSpan.FromSeconds(3));

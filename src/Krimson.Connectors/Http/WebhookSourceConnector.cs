@@ -9,7 +9,7 @@ public abstract class WebhookSourceConnector : DataSourceConnector<WebhookSource
     protected WebhookSourceConnector() {
         OnValidateHandler = _ => ValueTask.FromResult(true);
         
-        OnSuccess((ctx, _) => ctx.SetResult(Results.Accepted()));
+        OnSuccess(ctx => ctx.SetResult(Results.Accepted()));
         
         OnError((ctx, ex) => {
             var problem = new ProblemDetails {

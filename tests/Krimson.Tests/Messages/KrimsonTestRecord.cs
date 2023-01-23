@@ -1,7 +1,7 @@
 namespace Krimson.Tests.Messages;
 
 public record KrimsonTestRecord {
-    public string         Id        { get; init; }
-    public int            Order     { get; init; }
-    public DateTimeOffset Timestamp { get; init; }
+    public required string         Id        { get; init; }
+    public required int            Order     { get; init; }
+    public required DateTimeOffset Timestamp { get; init; }
 }
