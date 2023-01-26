@@ -27,8 +27,8 @@ public sealed class ConfluentProducerLogger : InterceptorModule {
                 var logLevel = evt.Error.IsTerminal()
                     ? LogEventLevel.Fatal
                     : evt.Error.IsTransient()
-                        ? LogEventLevel.Information
-                        : LogEventLevel.Debug;
+                        ? LogEventLevel.Debug
+                        : LogEventLevel.Error;
 
                 var source = evt.Error.IsLocalError 
                     ? ConfluentKafkaErrorSource.Client 

@@ -6,18 +6,12 @@ namespace Krimson.OpenTelemetry;
 
 [PublicAPI]
 public static class OpenTelemetryExtensions {
-    public static KrimsonProcessorBuilder AddOpenTelemetry(this KrimsonProcessorBuilder builder, string? sourceName = null) {
+    public static KrimsonProcessorBuilder AddOpenTelemetry(this KrimsonProcessorBuilder builder, string? sourceName = null) =>
         builder.Intercept(new OpenTelemetryProcessorInterceptor(string.IsNullOrWhiteSpace(sourceName) ? nameof(Krimson) : sourceName));
-        return builder;
-    }
-    
-    public static KrimsonProducerBuilder AddOpenTelemetry(this KrimsonProducerBuilder builder, string? sourceName = null) {
-        builder.Intercept(new OpenTelemetryProducerInterceptor(string.IsNullOrWhiteSpace(sourceName) ? nameof(Krimson) : sourceName));
-        return builder;
-    }
 
-    public static TracerProviderBuilder AddKrimsonSource(this TracerProviderBuilder builder, string? sourceName = null) {
+    public static KrimsonProducerBuilder AddOpenTelemetry(this KrimsonProducerBuilder builder, string? sourceName = null) =>
+        builder.Intercept(new OpenTelemetryProducerInterceptor(string.IsNullOrWhiteSpace(sourceName) ? nameof(Krimson) : sourceName));
+
+    public static TracerProviderBuilder AddKrimsonSource(this TracerProviderBuilder builder, string? sourceName = null) =>
         builder.AddSource(string.IsNullOrWhiteSpace(sourceName) ? nameof(Krimson) : sourceName);
-        return builder;
-    }
 }
