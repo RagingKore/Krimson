@@ -2,13 +2,13 @@ using Krimson.Producers;
 
 namespace Krimson.Persistence.Outbox;
 
-public delegate Task<OutboxMessage> ProduceRequestToOutbox<in TTransactionScope>(ProducerRequest request, TTransactionScope transactionScope, CancellationToken cancellationToken = default);
+public delegate Task<OutboxMessage> ProduceRequestToOutbox<in T>(ProducerRequest request, T transactionScope, CancellationToken cancellationToken = default);
 
 /// <summary>
 ///     The context used by the <see cref="IOutbox{TOperationContext,TTransactionScope}"/> to push messages to the outbox.
 /// </summary>
-public record OutboxOperationContext<TTransactionScope>(TTransactionScope TransactionScope, CancellationToken CancellationToken) {
-    internal ProduceRequestToOutbox<TTransactionScope> ProduceRequestToOutbox { get; init; }
+public record OutboxOperationContext<T>(T TransactionScope, CancellationToken CancellationToken) {
+    internal ProduceRequestToOutbox<T> ProduceRequestToOutbox { get; init; }
 
     List<OutboxMessage> PersistedMessages { get; } = new();
 
