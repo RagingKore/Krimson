@@ -76,9 +76,14 @@ public static class HeadersExtensions {
     public static Headers AddSchemaType(this Headers headers, SchemaType schemaType) => 
         headers.Add(HeaderKeys.SchemaType, schemaType.ToString().ToLower());
     
-    public static Headers AddSchemaMessageType(this Headers headers, Type messageType) => 
-        headers.Add(HeaderKeys.SchemaMessageType, messageType.FullName);
-    
+    public static Headers AddSchemaMessageType(this Headers headers, Type messageType) =>
+        !headers.TryGetLastBytes(HeaderKeys.SchemaMessageType, out _)
+            ? headers.Add(HeaderKeys.SchemaMessageType, messageType.FullName)
+            : headers;
+
     public static Headers AddSchemaInfo(this Headers headers, SchemaType schemaType, byte[] bytes, Type messageType) => 
         headers.AddSchemaId(bytes).AddSchemaType(schemaType).AddSchemaMessageType(messageType);
+
+    public static bool IsBytesMessage(this Headers headers) =>
+        headers.TryGetLastBytes(HeaderKeys.SchemaMessageType, out var value) && Encoding.UTF8.GetString(value) == typeof(byte[]).FullName;
 }

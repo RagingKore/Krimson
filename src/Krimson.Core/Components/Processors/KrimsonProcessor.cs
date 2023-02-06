@@ -5,10 +5,10 @@ using Confluent.Kafka;
 using Krimson.Consumers.Interceptors;
 using Krimson.Interceptors;
 using Krimson.Logging;
+using Krimson.Persistence.State;
 using Krimson.Processors.Configuration;
 using Krimson.Processors.Interceptors;
 using Krimson.Producers;
-using Krimson.State;
 using static Serilog.Core.Constants;
 
 namespace Krimson.Processors;

@@ -32,7 +32,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Webhooks", "examples\Webhoo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeriodicSourceConnectorService", "examples\PeriodicSourceConnectorService\PeriodicSourceConnectorService.csproj", "{B14B2B69-C33B-4316-B628-47969B57EF07}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.State.MongoDB", "src\Krimson.State.MongoDB\Krimson.State.MongoDB.csproj", "{946FD627-1350-4328-A18E-163BF30E908C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Persistence.MongoDB", "src\Krimson.Persistence.MongoDB\Krimson.Persistence.MongoDB.csproj", "{946FD627-1350-4328-A18E-163BF30E908C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Krimson.Persistence.MongoDB.Tests", "tests\Krimson.Persistence.MongoDB.Tests\Krimson.Persistence.MongoDB.Tests.csproj", "{4E0CDA6E-04BE-46D3-BD4F-15A3BBF74B7A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -108,6 +110,10 @@ Global
 		{946FD627-1350-4328-A18E-163BF30E908C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{946FD627-1350-4328-A18E-163BF30E908C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{946FD627-1350-4328-A18E-163BF30E908C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E0CDA6E-04BE-46D3-BD4F-15A3BBF74B7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E0CDA6E-04BE-46D3-BD4F-15A3BBF74B7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E0CDA6E-04BE-46D3-BD4F-15A3BBF74B7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E0CDA6E-04BE-46D3-BD4F-15A3BBF74B7A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5E36A5F6-7D2C-4BAB-B475-ADA69B429948} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
@@ -118,5 +124,6 @@ Global
 		{F44B1931-0BA3-41C2-9A4E-4A68FC32038F} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
 		{CD322FDC-B1B3-40DD-87FF-8E720D276F7E} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
 		{B14B2B69-C33B-4316-B628-47969B57EF07} = {FD0B593F-A9F9-42A1-97D9-8B96521B47D8}
+		{4E0CDA6E-04BE-46D3-BD4F-15A3BBF74B7A} = {DCF9B742-A173-473E-8F1E-AFD9BD48F87E}
 	EndGlobalSection
 EndGlobal

@@ -1,4 +1,4 @@
-using Krimson.State;
+using Krimson.Persistence.State;
 
 namespace Krimson.Connectors;
 

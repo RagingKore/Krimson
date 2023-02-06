@@ -1,4 +1,4 @@
-using Krimson.State;
+using Krimson.Persistence.State;
 using static System.Threading.CancellationTokenSource;
 
 namespace Krimson.Connectors;

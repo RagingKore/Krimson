@@ -23,4 +23,7 @@ public static class ProducerServicesExtensions {
 
     public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, Func<KrimsonProducerBuilder, KrimsonProducerBuilder> build) =>
         AddKrimsonProducer(services, (_, builder) => build(builder));
+
+    public static IServiceCollection AddKrimsonProducer(this IServiceCollection services, KrimsonProducer producer) =>
+        services.AddSingleton(producer);
 }

@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using NJsonSchema.Generation;
 using static System.Activator;
 using static System.Array;
+using static Confluent.Kafka.Serializers;
 
 namespace Krimson.Serializers.ConfluentJson;
 
@@ -56,7 +57,24 @@ public class JsonDynamicSerializer : IDynamicSerializer {
         if (data is null)
             return Empty<byte>();
 
+        // bypass if data is already a byte array
         var messageType = data.GetType();
+
+        if (messageType == typeof(byte[])) {
+            // will add type if it's not already there
+            return ByteArray.Serialize(
+                data.As<byte[]>(),
+                context.With(x => x.Headers.AddSchemaMessageType(messageType))
+            );
+        }
+
+        if (messageType == typeof(ReadOnlyMemory<byte>)) {
+            // will add type if it's not already there
+            return ByteArray.Serialize(
+                data.As<ReadOnlyMemory<byte>>().ToArray(),
+                context.With(x => x.Headers.AddSchemaMessageType(messageType))
+            );
+        }
 
         try {
             var serializer  = GetSerializer(messageType);
@@ -70,7 +88,7 @@ public class JsonDynamicSerializer : IDynamicSerializer {
             return bytes;
         }
         catch (Exception ex) {
-            throw new SerializationException($"Failed to serialize message to json: {messageType.FullName}", ex);
+            throw new SerializationException($"Failed to serialize message as json: {messageType.FullName}", ex);
         }
     }
 

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
-namespace Krimson.State;
+namespace Krimson.Persistence.State;
 
 public class InMemoryStateStore : IStateStore {
     public InMemoryStateStore(MemoryCacheOptions cacheOptions, MemoryCacheEntryOptions entryOptions) {
@@ -30,6 +30,11 @@ public class InMemoryStateStore : IStateStore {
         return ValueTask.CompletedTask;
     }
 
-    public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T>> factory, CancellationToken cancellationToken = default) => 
-        await Cache.GetOrCreateAsync(key, async _ => await factory().ConfigureAwait(false)).ConfigureAwait(false);
+    public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T?>> factory, CancellationToken cancellationToken = default) =>
+        await Cache.GetOrCreateAsync(
+            key, async entry => {
+                var result = await factory().ConfigureAwait(false);
+                return result is not null ? result : (T)entry.Value!;
+            }
+        ).ConfigureAwait(false);
 }

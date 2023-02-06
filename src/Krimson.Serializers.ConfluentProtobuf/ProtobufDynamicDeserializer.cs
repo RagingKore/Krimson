@@ -4,6 +4,7 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.SchemaRegistry;
+using static Confluent.Kafka.Deserializers;
 
 namespace Krimson.Serializers.ConfluentProtobuf;
 
@@ -51,20 +52,20 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
     ConcurrentDictionary<Type, dynamic>       Deserializers      { get; }
 
     public async Task<object?> DeserializeAsync(ReadOnlyMemory<byte> data, bool isNull, SerializationContext context) {
+        // bypass if message is bytes
+        if (context.Headers.IsBytesMessage()) {
+            return isNull || data.IsEmpty
+                ? Array.Empty<byte>()
+                : ByteArray.Deserialize(data.ToArray(), isNull, context);
+        }
+
         if (isNull || data.IsEmpty)
             return null;
-        
+
         if (data.Length < 6)
             throw new InvalidDataException($"Expecting data framing of length 6 bytes or more but total data size is {data.Length} bytes");
         
         try {
-            var headers = context.Headers.Decode();
-
-            // var messageTypeFromHeader = AppDomain.CurrentDomain
-            //     .GetAssemblies()
-            //     .Select(a => a.GetType(headers[HeaderKeys.SchemaMessageType]!))
-            //     .FirstOrDefault(x => x != null)!;
-            
             var messageSchema = GetMessageSchema(data);
             var messageType   = ResolveMessageType(messageSchema);
             var deserializer  = GetDeserializer(messageType);
@@ -76,7 +77,7 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
             return message;
         }
         catch (Exception ex) {
-            throw new SerializationException("Deserialization error!", ex);
+            throw new SerializationException("Failed to deserialization protobuf message!", ex);
         }
     }
 

@@ -13,6 +13,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 using SerilogTimings;
 using SerilogTimings.Extensions;
 using static System.Activator;
+using static Serilog.Core.Constants;
 
 namespace Krimson.Fixie; 
 
@@ -24,7 +25,7 @@ public abstract class DefaultTestProject : ITestProject {
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .MinimumLevel.Override(nameof(Fixie), LogEventLevel.Verbose)
-            .Enrich.WithProperty("SourceContext", nameof(Fixie))
+            .Enrich.WithProperty(SourceContextPropertyName, nameof(Fixie))
             .Enrich.FromLogContext()
             .Enrich.WithThreadId()
             .Enrich.WithExceptionDetails()
@@ -42,7 +43,7 @@ public abstract class DefaultTestProject : ITestProject {
                     .MinimumLevel.Debug()
                     .MinimumLevel.Override(nameof(Fixie), LogEventLevel.Verbose)
             )
-            .Enrich.WithProperty("SourceContext", nameof(Fixie))
+            .Enrich.WithProperty(SourceContextPropertyName, nameof(Fixie))
             .Enrich.FromLogContext()
             .Enrich.WithThreadId()
             .Enrich.WithExceptionDetails()
@@ -63,7 +64,7 @@ public abstract class DefaultTestProject : ITestProject {
 }
 
 class KrimsonTestDiscovery : IDiscovery {
-    static readonly ILogger Logger = Log.ForContext("SourceContext", nameof(Fixie));
+    static readonly ILogger Logger = Log.ForContext(SourceContextPropertyName, nameof(Fixie));
     
     public IEnumerable<Type> TestClasses(IEnumerable<Type> concreteClasses) {
         return concreteClasses
@@ -84,7 +85,7 @@ class KrimsonTestDiscovery : IDiscovery {
 }
 
 class KrimsonTestExecution : IExecution {
-    static readonly ILogger Logger = Log.ForContext("SourceContext", nameof(Fixie));
+    static readonly ILogger Logger = Log.ForContext(SourceContextPropertyName, nameof(Fixie));
 
     public async Task Run(TestSuite testSuite) {
         var testRunId = Guid.NewGuid().ToString();
@@ -113,18 +114,16 @@ class KrimsonTestExecution : IExecution {
             var testCaseName = TestCaseName.From(test, parameters);
 
             try {
-          
                 Logger.Verbose("test {TestCaseName} {Operation}", testCaseName, "executing");
                 
                 ILogEventEnricher[] props = {
-                    new PropertyEnricher("SourceContext", testCaseName),
+                    new PropertyEnricher(SourceContextPropertyName, testCaseName),
                     new PropertyEnricher("TestFixture", testClass.Type.Name),
                     new PropertyEnricher("TestName", test.Name),
                     new PropertyEnricher("TestCaseName", testCaseName)
                 };
 
                 using (LogContext.Push(props)) {
-           
                     var operation = Logger
                         .OperationAt(LogEventLevel.Information, LogEventLevel.Error)
                         .Begin("test {TestCaseName}", testCaseName);
@@ -153,7 +152,7 @@ class KrimsonTestExecution : IExecution {
             }
             catch (Exception) {
                 // i do see the glitches in the matrix
-                Log.Fatal("test {TestCaseName} {Operation}", testCaseName, "fatal");
+                Logger.Fatal("test {TestCaseName} {Operation}", testCaseName, "fatal");
             }
         }
     }
@@ -194,7 +193,7 @@ class KrimsonTestExecution : IExecution {
             Logger.Verbose(template, testCaseName, contextDisplayName, "initialized");
         }
         catch (Exception ex) {
-            Logger.Verbose(ex, template, testCaseName, contextDisplayName, "failed");
+            Logger.Error(ex, template, testCaseName, contextDisplayName, "failed");
             throw;
         }
     }
@@ -209,7 +208,6 @@ class KrimsonTestExecution : IExecution {
         try {
             Logger.Verbose(template, testCaseName, contextDisplayName, "disposing");
 
-    
             if (fixture.TestContext is not null)
                 await fixture.TestContext
                     .DisposeAsync()
@@ -222,7 +220,7 @@ class KrimsonTestExecution : IExecution {
             Logger.Verbose(template, testCaseName, contextDisplayName, "disposed");
         }
         catch (Exception ex) {
-            Logger.Verbose(ex, template, testCaseName, contextDisplayName, "failed");
+            Logger.Error(ex, template, testCaseName, contextDisplayName, "failed");
             throw;
         }
     }

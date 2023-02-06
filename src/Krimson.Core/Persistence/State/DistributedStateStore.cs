@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace Krimson.State;
+namespace Krimson.Persistence.State;
 
 public class DistributedStateStore : IStateStore {
     static readonly ILogger Log = Serilog.Log.ForContext<DistributedStateStore>();
@@ -40,7 +40,7 @@ public class DistributedStateStore : IStateStore {
             .ConfigureAwait(false);
     }
 
-    public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T>> factory, CancellationToken cancellationToken = default) {
+    public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T?>> factory, CancellationToken cancellationToken = default) {
         if (key is null) throw new ArgumentNullException(nameof(key));
 
         var cacheKey = key.ToString()!;
@@ -58,7 +58,7 @@ public class DistributedStateStore : IStateStore {
             throw;
         }
 
-        T value;
+        T? value;
         
         try {
             value = await factory().ConfigureAwait(false);
@@ -68,14 +68,16 @@ public class DistributedStateStore : IStateStore {
             throw;
         }
 
-        try {
-            await Cache
-                .SetAsync(cacheKey, JsonSerializer.SerializeToUtf8Bytes(value), EntryOptions, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (Exception ex) {
-            Log.Warning(ex, "Failed to set value: {Key}", key);
-            throw;
+        if (value is not null) {
+            try {
+                await Cache
+                    .SetAsync(cacheKey, JsonSerializer.SerializeToUtf8Bytes(value), EntryOptions, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) {
+                Log.Warning(ex, "Failed to set value: {Key}", key);
+                throw;
+            }
         }
 
         return value;

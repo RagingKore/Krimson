@@ -1,3 +1,5 @@
+using JetBrains.Annotations;
+
 namespace Krimson.Fixie;
 
 public interface ITestFixture : IAsyncLifetime {
@@ -9,9 +11,7 @@ public interface ITestFixture<out T> : ITestFixture where T : ITestContext, new(
 }
 
 public abstract class TestFixture : AsyncLifetime, ITestFixture {
-    public TestFixture(ITestContext testContext) {
-        ((ITestFixture)this).TestContext = testContext;
-    }
+    protected TestFixture(ITestContext testContext) => ((ITestFixture)this).TestContext = testContext;
 
     ITestContext? ITestFixture.TestContext { get; set; }
 }

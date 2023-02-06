@@ -6,17 +6,6 @@ using static System.String;
 
 namespace Krimson.Producers;
 
-class InFlightMessageCounter {
-    long _count;
-
-    long Count => Interlocked.Read(ref _count);
-
-    public long Increment() => Interlocked.Increment(ref _count);
-    public long Decrement() => Interlocked.Decrement(ref _count);
-    
-    public static implicit operator long(InFlightMessageCounter self) => self.Count;
-}
-
 [PublicAPI]
 public class KrimsonProducer : IAsyncDisposable {
     public static KrimsonProducerBuilder Builder => new();
@@ -66,19 +55,17 @@ public class KrimsonProducer : IAsyncDisposable {
 
         InFlightMessageCounter = new();
     }
-    
 
-    IProducer<byte[], object?> Client { get; }
-
-    Intercept              Intercept              { get; }
-    InFlightMessageCounter InFlightMessageCounter { get; }
+    IProducer<byte[], object?> Client                 { get; }
+    Intercept                  Intercept              { get; }
+    InFlightMessageCounter     InFlightMessageCounter { get; }
 
     public string  ClientId { get; }
     public string? Topic    { get; }
 
     public long InFlightMessages => InFlightMessageCounter;
 
-    public void Produce(ProducerRequest request,  Action<ProducerResult> onResult) {
+    public void Produce(ProducerRequest request, Action<ProducerResult> onResult) {
         Ensure.NotNull(request = EnsureTopicIsSet(request, Topic), nameof(request));
         Ensure.NotNull(onResult, nameof(onResult));
 
@@ -166,9 +153,14 @@ public class KrimsonProducer : IAsyncDisposable {
     public long Flush(CancellationToken cancellationToken = default) {
         do {
             try {
-                var pending = Client.Flush(FlushTimeout);
+                // var pending = Client.Flush(FlushTimeout);
+                //
+                // if (pending == 0 && InFlightMessageCounter == 0)
+                //     break;
 
-                if (pending == 0 && InFlightMessageCounter == 0)
+                Client.Flush(FlushTimeout);
+
+                if (InFlightMessageCounter == 0)
                     break;
             }
             catch (OperationCanceledException) {
@@ -182,14 +174,17 @@ public class KrimsonProducer : IAsyncDisposable {
         return InFlightMessageCounter;
     }
 
-    public virtual async ValueTask DisposeAsync() {
+    public virtual ValueTask DisposeAsync() {
         // let's cancel after a default timeout as a failsafe
         // since sometimes and by unknown reasons disposing
         // actually locks forever. must investigate further...
         using var cancellator = new CancellationTokenSource(DisposeTimeout);
 
-        await Task.Run(() => Flush(cancellator!.Token), cancellator.Token).ConfigureAwait(false);
-        await Task.Run(() => Client.Dispose(), cancellator.Token).ConfigureAwait(false);
+        Flush(cancellator.Token);
+
+        Client.Dispose();
+
+        return ValueTask.CompletedTask;
     }
 
     public static Message<byte[], object?> CreateKafkaMessage(ProducerRequest request, string producerName) {

@@ -48,6 +48,7 @@ public class MessageKey : IEquatable<MessageKey> {
     public static implicit operator MessageKey(string value)               => From(value);
     public static implicit operator MessageKey(ReadOnlySpan<byte> value)   => From(new ReadOnlyMemory<byte>(value.ToArray()));
     public static implicit operator MessageKey(ReadOnlyMemory<byte> value) => From(value);
+    public static implicit operator MessageKey(byte[] value)               => From(value);
     public static implicit operator MessageKey(Guid value)                 => From(value.ToString());
     
     public static implicit operator string(MessageKey self)               => self.Value;

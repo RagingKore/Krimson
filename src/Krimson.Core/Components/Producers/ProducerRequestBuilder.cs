@@ -7,7 +7,7 @@ namespace Krimson.Producers;
 public record ProducerRequestBuilder {
     ProducerRequest Options { get; init; } = ProducerRequest.Empty with {
         RequestId = Guid.NewGuid(),
-        Headers   = new()
+        Headers   = new Dictionary<string, string?>()
     };
 
     public ProducerRequestBuilder Topic(string? topic) =>
@@ -36,7 +36,7 @@ public record ProducerRequestBuilder {
         };
     }
 
-    public ProducerRequestBuilder Headers(Dictionary<string, string?> headers) {
+    public ProducerRequestBuilder Headers(IDictionary<string, string?> headers) {
         Ensure.NotNull(headers, nameof(headers));
         
         return this with {
@@ -46,7 +46,7 @@ public record ProducerRequestBuilder {
         };
     }
 
-    public ProducerRequestBuilder Headers(Action<Dictionary<string, string?>> setHeaders) {
+    public ProducerRequestBuilder Headers(Action<IDictionary<string, string?>> setHeaders) {
         Ensure.NotNull(setHeaders, nameof(setHeaders));
         
         return this with {

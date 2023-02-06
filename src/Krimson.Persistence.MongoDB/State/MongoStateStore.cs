@@ -1,20 +1,19 @@
-﻿using MongoDB.Driver;
+﻿using Krimson.Persistence.State;
+using MongoDB.Driver;
 
-namespace Krimson.State.MongoDB;
+namespace Krimson.Persistence.MongoDB.State;
 
 public class MongoStateStore : IStateStore {
-    static readonly ReplaceOptions DefaultReplaceOptions = new ReplaceOptions {
+    static readonly ReplaceOptions DefaultReplaceOptions = new() {
         IsUpsert = true
     };
-    
-    static readonly TransactionOptions DefaultTransactionOptions = new TransactionOptions().With(
-        ReadConcern.Local,
-        ReadPreference.Primary,
-        WriteConcern.W1
-    );
 
     static readonly ClientSessionOptions DefaultClientSessionOptions =
-        new() { DefaultTransactionOptions = DefaultTransactionOptions };
+        new() { DefaultTransactionOptions = new TransactionOptions().With(
+            ReadConcern.Local,
+            ReadPreference.Primary,
+            WriteConcern.WMajority
+        ) };
 
     public MongoStateStore(IMongoDatabase database, string? collectionName = null) {
         Database       = database;
@@ -38,7 +37,7 @@ public class MongoStateStore : IStateStore {
     public async ValueTask<T?> Get<T>(object key, CancellationToken cancellationToken = default) {
         if (key is null) throw new ArgumentNullException(nameof(key));
 
-        var stateKey = key?.ToString();
+        var stateKey = key.ToString()!;
         
         return await Database
             .GetCollection<MongoState<T>>(CollectionName)
@@ -59,25 +58,28 @@ public class MongoStateStore : IStateStore {
             .ConfigureAwait(false);
     }
 
-    public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T>> factory, CancellationToken cancellationToken = default) {
+    public async ValueTask<T?> GetOrSet<T>(object key, Func<ValueTask<T?>> factory, CancellationToken cancellationToken = default) {
         using var session = await Database.Client
             .StartSessionAsync(DefaultClientSessionOptions, cancellationToken)
             .ConfigureAwait(false);
         
         return await session
-            .WithTransactionAsync(Execute(), cancellationToken: cancellationToken)
+            .WithTransactionAsync(Execute(), DefaultClientSessionOptions.DefaultTransactionOptions, cancellationToken)
             .ConfigureAwait(false);
 
-        Func<IClientSessionHandle, CancellationToken, Task<T>> Execute() =>
+        Func<IClientSessionHandle, CancellationToken, Task<T?>> Execute() =>
             async (_, ct) => {
                 var value = await Get<T>(key, ct).ConfigureAwait(false);
 
-                if (value is null) {
-                    value = await factory().ConfigureAwait(false);
-                    await Set(key, value, ct).ConfigureAwait(false);
-                }
-                    
-                return value;
+                if (value is not null) return value;
+
+                var newValue = await factory().ConfigureAwait(false);
+
+                if (newValue is null) return value;
+
+                await Set(key, newValue, ct).ConfigureAwait(false);
+
+                return newValue;
             };
     }
 }

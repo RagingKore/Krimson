@@ -5,6 +5,7 @@ using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using static System.Activator;
 using static System.Array;
+using static Confluent.Kafka.Serializers;
 
 namespace Krimson.Serializers.ConfluentProtobuf;
 
@@ -33,15 +34,31 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
     ISchemaRegistryClient               RegistryClient { get; }
     Func<Type, dynamic>                 GetSerializer  { get; }
     ConcurrentDictionary<Type, dynamic> Serializers    { get; }
-    
+
     public async Task<byte[]> SerializeAsync(object? data, SerializationContext context) {
         if (data is null)
             return Empty<byte>();
 
+        // bypass if data is already a byte array
         var messageType = data.GetType();
 
-        try {
+        if (messageType == typeof(byte[])) {
+            // will add type if it's not already there
+            return ByteArray.Serialize(
+                data.As<byte[]>(),
+                context.With(x => x.Headers.AddSchemaMessageType(messageType))
+            );
+        }
 
+        if (messageType == typeof(ReadOnlyMemory<byte>)) {
+            // will add type if it's not already there
+            return ByteArray.Serialize(
+                data.As<ReadOnlyMemory<byte>>().ToArray(),
+                context.With(x => x.Headers.AddSchemaMessageType(messageType))
+            );
+        }
+
+        try {
             var serializer  = GetSerializer(messageType);
 
             byte[] bytes = await serializer
@@ -53,7 +70,7 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
             return bytes;
         }
         catch (Exception ex) {
-            throw new SerializationException($"Failed to serialize message to protobuf: {messageType.FullName}", ex);
+            throw new SerializationException($"Failed to serialize message as protobuf: {messageType.FullName}", ex);
         }
     }
 

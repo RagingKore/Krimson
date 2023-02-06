@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
+using Krimson.Persistence.State;
 using Krimson.Producers;
-using Krimson.State;
 
 namespace Krimson.Processors;
 

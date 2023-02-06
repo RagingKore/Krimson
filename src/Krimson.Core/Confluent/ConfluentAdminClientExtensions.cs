@@ -235,4 +235,17 @@ public static class ConfluentAdminClientExtensions {
 
     public static IEnumerable<PartitionMetadata> GetTopicPartitions(this IAdminClient client, string topic) =>
         client.GetMetadata(topic, DefaultRequestTimeout).Topics.SingleOrDefault()?.Partitions ?? Enumerable.Empty<PartitionMetadata>();
+
+    public static async Task DeleteGroups(this IAdminClient client, params string[] groups) {
+        Ensure.NotNull(groups, nameof(groups));
+
+        try {
+            await client
+                .DeleteGroupsAsync(groups, new() { RequestTimeout = DefaultRequestTimeout })
+                .ConfigureAwait(false);
+        }
+        catch (DeleteGroupsException ex) {
+            throw new Exception("Unable to delete consumer groups", ex);
+        }
+    }
 }

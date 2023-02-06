@@ -1,8 +1,8 @@
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Krimson.Interceptors;
+using Krimson.Persistence.State;
 using Krimson.Serializers;
-using Krimson.State;
 
 namespace Krimson.Processors.Configuration;
 

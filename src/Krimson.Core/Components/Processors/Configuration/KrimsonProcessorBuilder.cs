@@ -1,7 +1,7 @@
 using Confluent.Kafka;
 using Krimson.Interceptors;
+using Krimson.Persistence.State;
 using Krimson.Serializers;
-using Krimson.State;
 using Microsoft.Extensions.Configuration;
 using static System.String;
 

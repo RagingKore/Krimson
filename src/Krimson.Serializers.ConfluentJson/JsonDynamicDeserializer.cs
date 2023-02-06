@@ -8,6 +8,7 @@ using Krimson.SchemaRegistry;
 using Krimson.Serializers.ConfluentJson.NJsonSchema;
 using Newtonsoft.Json;
 using NJsonSchema.Generation;
+using static Confluent.Kafka.Deserializers;
 
 namespace Krimson.Serializers.ConfluentJson;
 
@@ -56,10 +57,14 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
     ConcurrentDictionary<Type, dynamic>       Deserializers      { get; }
 
     public async Task<object?> DeserializeAsync(ReadOnlyMemory<byte> data, bool isNull, SerializationContext context) {
-        if (isNull)
-            return null;
+        // bypass if message is bytes
+        if (context.Headers.IsBytesMessage()) {
+            return isNull || data.IsEmpty
+                ? Array.Empty<byte>()
+                : ByteArray.Deserialize(data.ToArray(), isNull, context);
+        }
 
-        if (data.IsEmpty)
+        if (isNull || data.IsEmpty)
             return null;
 
         try {
@@ -74,11 +79,10 @@ public class JsonDynamicDeserializer : IDynamicDeserializer {
             return message;
         }
         catch (Exception ex) {
-            throw new SerializationException($"Failed to deserialize message from json", ex);
+            throw new SerializationException("Failed to deserialize json message!", ex);
         }
     }
 
-    public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
-        => DeserializeAsync(new(data.ToArray()), isNull, context)
-            .ConfigureAwait(false).GetAwaiter().GetResult();
+    public object? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context) =>
+        DeserializeAsync(new(data.ToArray()), isNull, context).ConfigureAwait(false).GetAwaiter().GetResult();
 }

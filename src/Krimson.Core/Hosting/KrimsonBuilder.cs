@@ -33,6 +33,11 @@ public class KrimsonBuilder {
         return this;
     }
 
+    public KrimsonBuilder AddSchemaRegistry(ISchemaRegistryClient schemaRegistryClient) {
+        Services.AddKrimsonSchemaRegistry(schemaRegistryClient);
+        return this;
+    }
+
     public KrimsonBuilder AddProcessor(
         int tasks,
         Func<IServiceProvider, KrimsonProcessorBuilder, KrimsonProcessorBuilder> build,
@@ -79,6 +84,11 @@ public class KrimsonBuilder {
 
     public KrimsonBuilder AddProducer(Func<KrimsonProducerBuilder, KrimsonProducerBuilder> build) {
         Services.AddKrimsonProducer(builder => build(ClientId is null ? builder : builder.ClientId(ClientId)));
+        return this;
+    }
+
+    public KrimsonBuilder AddProducer(KrimsonProducer producer) {
+        Services.AddKrimsonProducer(producer);
         return this;
     }
 
