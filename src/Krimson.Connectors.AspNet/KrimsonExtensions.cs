@@ -1,4 +1,4 @@
-using Krimson.Connectors.Http;
+using Krimson.Connectors.AspNet;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 

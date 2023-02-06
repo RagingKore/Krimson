@@ -2,7 +2,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Krimson;
 using Krimson.Connectors;
-using Krimson.Connectors.Http;
+using Krimson.Connectors.AspNet;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Krimson.Connectors.Http;
+namespace Krimson.Connectors.AspNet;
 
 public delegate ValueTask<bool> OnValidate(WebhookSourceContext context);
 

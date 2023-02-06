@@ -1,4 +1,4 @@
-namespace Krimson.Connectors.Http;
+namespace Krimson.Connectors.AspNet;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class WebhookPathAttribute : Attribute {

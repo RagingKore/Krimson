@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace Krimson.Connectors.Http;
+namespace Krimson.Connectors.AspNet;
 
 [PublicAPI]
 public class WebhookSourceContext : DataSourceContext {
