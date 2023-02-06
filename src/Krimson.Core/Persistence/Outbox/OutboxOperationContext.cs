@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Krimson.Producers;
 
 namespace Krimson.Persistence.Outbox;
@@ -10,19 +11,19 @@ public delegate Task<OutboxMessage> ProduceRequestToOutbox<in T>(ProducerRequest
 public record OutboxOperationContext<T>(T TransactionScope, CancellationToken CancellationToken) {
     internal ProduceRequestToOutbox<T> ProduceRequestToOutbox { get; init; }
 
-    List<OutboxMessage> PersistedMessages { get; } = new();
+    ConcurrentBag<OutboxItem> InternalItems { get; } = new();
 
     /// <summary>
-    ///     The messages that have been pushed to the outbox.
+    ///     The requests that have been persisted to the outbox along with their respective outbox message representation.
     /// </summary>
-    public IEnumerable<OutboxMessage> OutboxMessages => PersistedMessages;
+    public IEnumerable<OutboxItem> Items => InternalItems;
 
     /// <summary>
     ///     Pushes a single request to the outbox.
     /// </summary>
     public async Task<OutboxMessage> ProduceToOutbox(ProducerRequest request) {
         var msg = await ProduceRequestToOutbox(request, TransactionScope, CancellationToken).ConfigureAwait(false);
-        PersistedMessages.Add(msg);
+        InternalItems.Add(new(request, msg));
         return msg;
     }
 

@@ -1,4 +1,5 @@
 using Krimson.Producers;
+using OneOf.Types;
 
 namespace Krimson.Persistence.Outbox;
 
@@ -27,10 +28,44 @@ public interface IOutbox<out TOperationContext, TTransactionScope> : IOutbox<TTr
     /// <summary>
     ///     Executes the specified operation within a transaction.
     /// </summary>
-    Task<OutboxMessage[]> WithTransaction(Func<TOperationContext, Task> operation, Func<CancellationToken, Task<TTransactionScope>> transactionScopeFactory, CancellationToken cancellationToken = default);
+    Task<TResult> WithTransaction<TResult>(Func<TOperationContext, Task<TResult>> operation, Func<CancellationToken, Task<TTransactionScope>> transactionScopeFactory, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Executes the specified operation within a transaction.
     /// </summary>
-    Task<OutboxMessage[]> WithTransaction(Func<TOperationContext, Task> operation, CancellationToken cancellationToken = default);
+    Task<TResult> WithTransaction<TResult>(Func<TOperationContext, Task<TResult>> operation, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Executes the specified operation within a transaction and returns the result and the messages that were pushed to the outbox.
+    /// </summary>
+    Task<OutboxTransactionResult<TResult>> WithTransactionResult<TResult>(Func<TOperationContext, Task<TResult>> operation, Func<CancellationToken, Task<TTransactionScope>> transactionScopeFactory, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Executes the specified operation within a transaction and returns the result and the messages that were pushed to the outbox.
+    /// </summary>
+    Task<OutboxTransactionResult<TResult>> WithTransactionResult<TResult>(Func<TOperationContext, Task<TResult>> operation, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Executes the specified operation within a transaction and returns the messages that were pushed to the outbox.
+    /// </summary>
+    Task<OutboxTransactionResult<None>> WithTransactionResult(Func<TOperationContext, Task> operation, Func<CancellationToken, Task<TTransactionScope>> transactionScopeFactory, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Executes the specified operation within a transaction and returns the messages that were pushed to the outbox.
+    /// </summary>
+    Task<OutboxTransactionResult<None>> WithTransactionResult(Func<TOperationContext, Task> operation, CancellationToken cancellationToken = default);
 }
+
+public record OutboxTransactionResult<T>(T OperationResult, OutboxItem[] Items) {
+    /// <summary>
+    ///     The requests that have been persisted to the outbox.
+    /// </summary>
+    public IEnumerable<ProducerRequest> Requests => Items.Select(x => x.Request);
+
+    /// <summary>
+    ///     The messages that have been pushed to the outbox.
+    /// </summary>
+    public IEnumerable<OutboxMessage> OutboxMessages => Items.Select(x => x.OutboxMessage);
+};
+
+public record OutboxItem(ProducerRequest Request, OutboxMessage OutboxMessage);

@@ -4,6 +4,7 @@ using Krimson.Producers;
 using Krimson.Serializers;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using OneOf.Types;
 using Polly;
 
 namespace Krimson.Persistence.MongoDB.Outbox;
@@ -111,18 +112,16 @@ public class MongoOutbox : IOutbox<MongoOutboxOperationContext, IClientSessionHa
     }
 
     /// <inheritdoc />
-    public async Task<OutboxMessage[]> WithTransaction(Func<MongoOutboxOperationContext, Task> operation, Func<CancellationToken, Task<IClientSessionHandle>> transactionScopeFactory, CancellationToken cancellationToken) {
+    public async Task<TResult> WithTransaction<TResult>(Func<MongoOutboxOperationContext, Task<TResult>> operation, Func<CancellationToken, Task<IClientSessionHandle>> transactionScopeFactory, CancellationToken cancellationToken) {
         using var session = await transactionScopeFactory(cancellationToken);
 
-        return await session.WithTransactionAsync(
+        return await session.WithTransactionAsync<TResult>(
             async (clientSessionHandle, ct) => {
                 var ctx = new MongoOutboxOperationContext(Database, clientSessionHandle, ct) {
                     ProduceRequestToOutbox = ProduceToOutbox
                 };
 
-                await operation(ctx);
-
-                return ctx.OutboxMessages.ToArray();
+                return await operation(ctx);
             }
           , session.Options.DefaultTransactionOptions
           , cancellationToken
@@ -130,12 +129,48 @@ public class MongoOutbox : IOutbox<MongoOutboxOperationContext, IClientSessionHa
     }
 
     /// <inheritdoc />
-    public Task<OutboxMessage[]> WithTransaction(Func<MongoOutboxOperationContext, Task> operation, CancellationToken cancellationToken = default) =>
+    public Task<TResult> WithTransaction<TResult>(Func<MongoOutboxOperationContext, Task<TResult>> operation, CancellationToken cancellationToken = default) =>
         WithTransaction(operation, ct => Database.Client.StartSessionAsync(DefaultClientSessionOptions, ct), cancellationToken);
+
+    public async Task<OutboxTransactionResult<TResult>> WithTransactionResult<TResult>(Func<MongoOutboxOperationContext, Task<TResult>> operation, Func<CancellationToken, Task<IClientSessionHandle>> transactionScopeFactory, CancellationToken cancellationToken) {
+        using var session = await transactionScopeFactory(cancellationToken);
+
+
+        return await session.WithTransactionAsync<OutboxTransactionResult<TResult>>(
+            async (clientSessionHandle, ct) => {
+                var ctx = new MongoOutboxOperationContext(Database, clientSessionHandle, ct) {
+                    ProduceRequestToOutbox = ProduceToOutbox
+                };
+
+                var result = await operation(ctx);
+
+                return new(result, ctx.Items.ToArray());
+            }
+          , session.Options.DefaultTransactionOptions
+          , cancellationToken
+        );
+    }
+
+    public Task<OutboxTransactionResult<TResult>> WithTransactionResult<TResult>(Func<MongoOutboxOperationContext, Task<TResult>> operation, CancellationToken cancellationToken = default) =>
+        WithTransactionResult(operation, ct => Database.Client.StartSessionAsync(DefaultClientSessionOptions, ct), cancellationToken);
+
+    public Task<OutboxTransactionResult<None>> WithTransactionResult(Func<MongoOutboxOperationContext, Task> operation, Func<CancellationToken, Task<IClientSessionHandle>> transactionScopeFactory, CancellationToken cancellationToken) =>
+        WithTransactionResult(
+            async context => {
+                await operation(context);
+                return new None();
+            },
+            transactionScopeFactory,
+            cancellationToken
+        );
+
+    public Task<OutboxTransactionResult<None>> WithTransactionResult(Func<MongoOutboxOperationContext, Task> operation, CancellationToken cancellationToken = default) =>
+        WithTransactionResult(operation, ct => Database.Client.StartSessionAsync(DefaultClientSessionOptions, ct), cancellationToken);
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
+
 
 public static class ProducerRequestOutboxExtensions {
     /// <summary>
