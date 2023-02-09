@@ -40,14 +40,14 @@ public class MongoOutboxProcessor : IOutboxProcessor {
             ? ProcessOutbox(
                 OutboxMessages.AsQueryable()
                     .OrderBy(x => x.ClientId)
-                    .ThenBy(x => x.SequenceNumber)
+                    .ThenBy(x => x.Position)
                     .ToAsyncEnumerable(),
                 async outboxMessage => {
                     await OutboxErrorHandlingPolicy.ExecuteAsync(() => OutboxMessages.DeleteOneAsync(Builders<OutboxMessage>.Filter.Eq(x => x.Id, outboxMessage.Id)));
 
                     Logger.Debug(
                         "{ClientId} {RequestId} << ({Id}) @ {SequenceNumber} | strategy: {Strategy}",
-                        ClientId, outboxMessage.RequestId, outboxMessage.Id, outboxMessage.SequenceNumber, strategy
+                        ClientId, outboxMessage.RequestId, outboxMessage.Id, outboxMessage.Position, strategy
                     );
                 },
                 cancellator
@@ -56,7 +56,7 @@ public class MongoOutboxProcessor : IOutboxProcessor {
                 OutboxMessages.AsQueryable()
                     .Where(x => x.ProcessedOn == null)
                     .OrderBy(x => x.ClientId)
-                    .ThenBy(x => x.SequenceNumber)
+                    .ThenBy(x => x.Position)
                     .ToAsyncEnumerable(),
                 async outboxMessage => {
                     await OutboxErrorHandlingPolicy.ExecuteAsync(
@@ -68,7 +68,7 @@ public class MongoOutboxProcessor : IOutboxProcessor {
 
                     Logger.Debug(
                         "{ClientId} {RequestId} << ({Id}) @ {SequenceNumber} | strategy: {Strategy}",
-                        ClientId, outboxMessage.RequestId, outboxMessage.Id, outboxMessage.SequenceNumber, strategy
+                        ClientId, outboxMessage.RequestId, outboxMessage.Id, outboxMessage.Position, strategy
                     );
                 },
                 cancellator
@@ -123,14 +123,14 @@ public class MongoOutboxProcessor : IOutboxProcessor {
     public IAsyncEnumerable<OutboxMessage> LoadOutbox() =>
         OutboxMessages.AsQueryable()
             .OrderBy(x => x.ClientId)
-            .ThenBy(x => x.SequenceNumber)
+            .ThenBy(x => x.Position)
             .ToAsyncEnumerable();
 
     public IAsyncEnumerable<OutboxMessage> LoadOutbox(DateTimeOffset processedUpTo) =>
         OutboxMessages.AsQueryable()
             .Where(x => x.ProcessedOn != null || x.ProcessedOn <= processedUpTo)
             .OrderBy(x => x.ClientId)
-            .ThenBy(x => x.SequenceNumber)
+            .ThenBy(x => x.Position)
             .ToAsyncEnumerable();
 
     /// <inheritdoc />

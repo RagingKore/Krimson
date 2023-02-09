@@ -55,19 +55,20 @@ public class MongoOutbox : IOutbox<MongoOutboxOperationContext, IClientSessionHa
         Serializer                = serializer;
         OutboxMessages            = database.GetCollection<OutboxMessage>($"{clientId}-outbox");
         OutboxErrorHandlingPolicy = outboxErrorHandlingPolicy ?? DefaultOutboxErrorHandlingPolicy;
-        NextSequenceNumber        = _ => ValueTask.FromResult(DateTime.Now.Ticks);
+        NextPosition              = async session => await database.GetNextNumber(session, clientId);
     }
 
-    IMongoDatabase                              Database                  { get; }
     IDynamicSerializer                          Serializer                { get; }
     AsyncPolicy                                 OutboxErrorHandlingPolicy { get; }
     IMongoCollection<OutboxMessage>             OutboxMessages            { get; }
-    Func<IClientSessionHandle, ValueTask<long>> NextSequenceNumber        { get; }
+    Func<IClientSessionHandle, ValueTask<long>> NextPosition              { get; }
     string                                      ClientId                  { get; }
+
+    public IMongoDatabase Database { get; }
 
     /// <inheritdoc />
     public async Task<OutboxMessage> ProduceToOutbox(ProducerRequest request, IClientSessionHandle session, CancellationToken cancellationToken = default) {
-        var outboxMessage = request.ToOutboxMessage(ClientId, await NextSequenceNumber(session), Serializer);
+        var outboxMessage = request.ToOutboxMessage(ClientId, await NextPosition(session), Serializer);
 
         await OutboxErrorHandlingPolicy.ExecuteAsync(
             ct => OutboxMessages.InsertOneAsync(session, outboxMessage , DefaultInsertOneOptions, ct)
@@ -76,7 +77,7 @@ public class MongoOutbox : IOutbox<MongoOutboxOperationContext, IClientSessionHa
 
         Logger.Debug(
             "{ClientId} {RequestId} >> ({Id}) @ {SequenceNumber}",
-            ClientId, outboxMessage.RequestId, outboxMessage.Id, outboxMessage.SequenceNumber
+            ClientId, outboxMessage.RequestId, outboxMessage.Id, outboxMessage.Position
         );
 
         return outboxMessage;
@@ -89,13 +90,13 @@ public class MongoOutbox : IOutbox<MongoOutboxOperationContext, IClientSessionHa
         var inserts = requests
             .Select(
                 request => {
-                    var outboxMessage = request.ToOutboxMessage(ClientId, NextSequenceNumber(session).AsTask().GetAwaiter().GetResult(), Serializer);
+                    var outboxMessage = request.ToOutboxMessage(ClientId, NextPosition(session).AsTask().GetAwaiter().GetResult(), Serializer);
 
                     messages.Add(outboxMessage);
 
                     Logger.Debug(
                         "{ClientId} {RequestId} >> ({Id}) @ {SequenceNumber}",
-                        ClientId, outboxMessage.RequestId,  outboxMessage.Id, outboxMessage.SequenceNumber
+                        ClientId, outboxMessage.RequestId,  outboxMessage.Id, outboxMessage.Position
                     );
 
                     return new InsertOneModel<OutboxMessage>(outboxMessage);
@@ -171,7 +172,6 @@ public class MongoOutbox : IOutbox<MongoOutboxOperationContext, IClientSessionHa
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
-
 public static class ProducerRequestOutboxExtensions {
     /// <summary>
     ///     Converts an <see cref="ProducerRequest" /> to a <see cref="OutboxMessage" />.
@@ -191,7 +191,7 @@ public static class ProducerRequestOutboxExtensions {
         var outboxMessage = new OutboxMessage {
             Id               = ObjectId.GenerateNewId(),
             ClientId         = clientId,
-            SequenceNumber   = sequenceNumber,
+            Position   = sequenceNumber,
             Key              = request.Key,
             Data             = data,
             Headers          = context.Headers.Decode(),

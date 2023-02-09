@@ -26,7 +26,7 @@ public class MongoOutboxSystemTests : TestFixture<MongoDBTestContext> {
 
         var services = new ServiceCollection();
 
-        services.AddSingleton(new MongoClient("mongodb+srv://elaway:ZAXEONvJQs4od67j@staging.lqup2.mongodb.net/outbox?retryWrites=true&w=majority").GetDatabase("krimson"));
+        services.AddSingleton(new MongoClient("").GetDatabase("krimson"));
 
         services.AddKrimson()
             .AddSchemaRegistry(Context.SchemaRegistry)
@@ -70,7 +70,7 @@ public class MongoOutboxSystemTests : TestFixture<MongoDBTestContext> {
             .GetCollection<OutboxMessage>(outboxName)
             .AsQueryable()
             .OrderBy(x => x.ClientId)
-            .ThenBy(x => x.SequenceNumber)
+            .ThenBy(x => x.Position)
             .ToListAsync();
 
         outboxMessages.Should().HaveCount(numberOfMessages);
@@ -144,7 +144,7 @@ public class MongoOutboxSystemTests : TestFixture<MongoDBTestContext> {
             .GetCollection<OutboxMessage>(outboxName)
             .AsQueryable()
             .OrderBy(x => x.ClientId)
-            .ThenBy(x => x.SequenceNumber)
+            .ThenBy(x => x.Position)
             .ToListAsync(cancellator.Token);
 
         if (strategy == OutboxProcessingStrategy.Delete)

@@ -56,7 +56,7 @@ public static class MongoOutboxWireUpExtensions {
         services.AddHostedService<OutboxDeliveryService<MongoOutboxProcessor>>(
             ctx => new(
                 ctx.GetRequiredService<MongoOutboxProcessor>(),
-                backoffTime ?? TimeSpan.FromSeconds(10),
+                backoffTime ?? TimeSpan.FromSeconds(5),
                 strategy
             )
         );

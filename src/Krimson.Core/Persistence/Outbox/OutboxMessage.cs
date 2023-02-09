@@ -8,9 +8,9 @@ public record OutboxMessage {
     public object Id { get; init; }
 
     /// <summary>
-    ///     The sequence number of the outbox message. This is used to order the messages in the outbox.
+    ///     The position of the outbox message. This is used to order the messages in the outbox.
     /// </summary>
-    public long SequenceNumber { get; init; }
+    public long Position { get; init; }
 
     /// <summary>
     ///   The id of the client that sent the request message.
