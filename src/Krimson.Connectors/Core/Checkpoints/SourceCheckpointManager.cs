@@ -47,9 +47,7 @@ public class SourceCheckpointManager {
     }
     
     public SourceCheckpoint TrackCheckpoint(SourceCheckpoint checkpoint) {
-        var actualCheckpoint = Checkpoints[checkpoint.RecordId.Topic];
-
-        if (checkpoint == SourceCheckpoint.None || actualCheckpoint.Timestamp >= checkpoint.Timestamp) {
+        if (checkpoint == SourceCheckpoint.None || Checkpoints[checkpoint.RecordId.Topic].Timestamp >= checkpoint.Timestamp) {
             Log.Debug(
                 "Checkpoint ignored: {EventTime} {Topic} [{Partition}] @ {Offset}",
                 checkpoint.Timestamp, checkpoint.RecordId.Topic, 
