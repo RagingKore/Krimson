@@ -20,14 +20,14 @@ public enum DataSourceCheckpointStrategy {
 
 [PublicAPI]
 public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TContext> where TContext : IDataSourceContext {
-    protected DataSourceConnector() {
+    protected DataSourceConnector(DataSourceCheckpointStrategy checkpointStrategy = DataSourceCheckpointStrategy.Record) {
         Name = GetType().Name;
         Log  = ForContext(SourceContextPropertyName, Name);
         
         Initialized        = new();
         Producer           = null!;
         Checkpoints        = null!;
-        CheckpointStrategy = DataSourceCheckpointStrategy.Record;
+        CheckpointStrategy = checkpointStrategy;
 
         OnSuccessHandler = _ => ValueTask.CompletedTask;
         OnErrorHandler   = (_, _) => ValueTask.CompletedTask;
@@ -66,27 +66,23 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
         Initialize(context.Services);
         
         try {
-            var checkpoint = SourceCheckpoint.None;
-
             await foreach (var record in ParseRecords(context).WithCancellation(context.CancellationToken).ConfigureAwait(false)) {
-                await ProcessRecord(
+                await ProduceRecord(
                         record,
                         ack: recordId => {
                             record.Ack(recordId);
 
-                            checkpoint = SourceCheckpoint.From(record);
-
                             if (CheckpointStrategy == DataSourceCheckpointStrategy.Record)
-                                Checkpoints.TrackCheckpoint(checkpoint);
+                                Checkpoints.TrackCheckpoint(SourceCheckpoint.From(record));
 
                             context.TrackRecord(record);
                             context.Counter.IncrementProcessed(record.DestinationTopic!);
 
-                            //Log.Verbose("{RequestId} record acknowledged", record.RequestId);
+                            Log.Verbose("{RequestId} record processed & acknowledged", record.RequestId);
                         },
                         nack: exception => {
                             record.Nak(exception);
-                            OnErrorInternal(exception).AsTask().GetAwaiter().GetResult();
+                            OnErrorInternal(exception).GetAwaiter().GetResult();
                         },
                         skip: () => {
                             context.TrackRecord(record);
@@ -97,17 +93,25 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             }
 
             if (!Synchronous) Producer.Flush();
-            
-            if (CheckpointStrategy == DataSourceCheckpointStrategy.Batch) 
-                Checkpoints.TrackCheckpoint(checkpoint);
-            
+
+            if (context.Counter.Total != context.Records.Count) {
+                Log.Warning("Source data processing finished with {RecordsCount} record(s) unprocessed", context.Records.Count);
+            }
+
+            if (CheckpointStrategy == DataSourceCheckpointStrategy.Batch) {
+                var lastRecord = context.Records.LastOrDefault() ?? SourceRecord.Empty;
+                if (lastRecord != SourceRecord.Empty) {
+                    Checkpoints.TrackCheckpoint(SourceCheckpoint.From(lastRecord));
+                }
+            }
+
             await OnSuccessInternal().ConfigureAwait(false);
         }
         catch (Exception ex) {
             await OnErrorInternal(ex).ConfigureAwait(false);
         }
 
-        async ValueTask OnSuccessInternal() {
+        async Task OnSuccessInternal() {
             if (context.Counter.Skipped > 0)
                 Log.Information("{RecordsCount} record(s) skipped", context.Counter.Skipped);
 
@@ -126,10 +130,15 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             }
         }
 
-        async ValueTask OnErrorInternal(Exception exception) {
+        async Task OnErrorInternal(Exception exception) {
             context.Cancellator.Cancel();
-            
-            Log.Error(exception, "Failed to process source data!");
+
+            if (exception is OperationCanceledException) {
+                Log.Warning("Source data processing cancelled!");
+            }
+            else {
+                Log.Error(exception, "Source data processing failed!");
+            }
             
             try {
                 await OnErrorHandler(context, exception).ConfigureAwait(false);
@@ -145,7 +154,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
   
     public abstract IAsyncEnumerable<SourceRecord> ParseRecords(TContext context);
 
-    public async ValueTask ProcessRecord(SourceRecord record, Action<RecordId> ack, Action<ProduceException<byte[], object?>> nack, Action skip) {
+    public async ValueTask ProduceRecord(SourceRecord record, Action<RecordId> ack, Action<ProduceException<byte[], object?>> nack, Action skip) {
         // ensure source connector name is set
         record.Source ??= Name;
         

@@ -153,10 +153,10 @@ public class KrimsonProducer : IAsyncDisposable {
     public long Flush(CancellationToken cancellationToken = default) {
         do {
             try {
-                // var pending = Client.Flush(FlushTimeout);
-                //
-                // if (pending == 0 && InFlightMessageCounter == 0)
-                //     break;
+                var pending = Client.Flush(FlushTimeout);
+
+                if (pending == 0 && InFlightMessageCounter == 0)
+                    break;
 
                 Client.Flush(FlushTimeout);
 

@@ -15,7 +15,7 @@ public class Counter : IEnumerable<(string Topic, int Count)> {
     
     public IEnumerator<(string Topic, int Count)> GetEnumerator() =>
         CountPerTopic
-            .Where(x => x.Key != "")
+            .Where(x => x.Key != Empty)
             .Select(x => (x.Key, x.Value))
             .GetEnumerator();
 
