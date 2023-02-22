@@ -13,8 +13,8 @@ public abstract class InterceptorModule {
         Logger = Log.ForContext(SourceContextPropertyName, Name);
     }
 
-    public   string  Name   { get; private set; }
-    internal ILogger Logger { get; private set; }
+    public string  Name   { get; private set; }
+    public ILogger Logger { get; private set; }
     
     protected void On<T>(Func<T, CancellationToken, Task> handler) where T : InterceptorEvent {
         var key = typeof(T).FullName!;
