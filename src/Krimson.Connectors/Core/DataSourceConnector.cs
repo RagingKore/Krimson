@@ -85,7 +85,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
                             OnErrorInternal(exception).GetAwaiter().GetResult();
                         },
                         skip: () => {
-                            context.TrackRecord(record);
+                            context.TrackSkippedRecord(record);
                             context.Counter.IncrementSkipped();
                         }
                     )
@@ -99,7 +99,7 @@ public abstract class DataSourceConnector<TContext> : IDataSourceConnector<TCont
             }
 
             if (CheckpointStrategy == DataSourceCheckpointStrategy.Batch) {
-                var lastRecord = context.Records.LastOrDefault() ?? SourceRecord.Empty;
+                var lastRecord = context.Records.LastOrDefault(record => record.ProcessingSuccessful) ?? SourceRecord.Empty;
                 if (lastRecord != SourceRecord.Empty) {
                     Checkpoints.TrackCheckpoint(SourceCheckpoint.From(lastRecord));
                 }
