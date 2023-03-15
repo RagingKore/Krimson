@@ -248,4 +248,25 @@ public static class ConfluentAdminClientExtensions {
             throw new Exception("Unable to delete consumer groups", ex);
         }
     }
+
+    public static async Task DeleteRecords(this IAdminClient client, params TopicPartitionOffset[] offsets) {
+        Ensure.NotNull(offsets, nameof(offsets));
+
+        try {
+            await client
+                .DeleteRecordsAsync(offsets, new() { RequestTimeout = DefaultRequestTimeout })
+                .ConfigureAwait(false);
+        }
+        catch (DeleteGroupsException ex) {
+            throw new Exception("Unable to delete records", ex);
+        }
+    }
+
+    public static Task DeleteRecords(this IAdminClient client, string topic, int partitions) {
+        var offsets = Enumerable.Range(1, partitions)
+            .Select(partition => new TopicPartitionOffset(topic, new Partition(partition - 1), Offset.End))
+            .ToArray();
+
+        return DeleteRecords(client, offsets);
+    }
 }

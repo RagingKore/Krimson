@@ -95,6 +95,9 @@ public static class ConfluentConsumerExtensions {
         if (consumer.Subscription.None())
             return Array.Empty<SubscriptionTopicGap>();
 
+        // naturally, force commit any pending offsets
+        consumer.CommitAll();
+
         // because it's a blocking call...
         var committedOffsets = await Task.Run(
             () => consumer
@@ -111,17 +114,32 @@ public static class ConfluentConsumerExtensions {
         IReadOnlyCollection<SubscriptionPartitionGap> GetGaps(IEnumerable<TopicPartition> partitionsByTopic) {
             return partitionsByTopic.Select(
                 topicPartition => {
-                    var lastOffset = consumer.GetWatermarkOffsets(topicPartition).High;
+                    var offsets = consumer.GetWatermarkOffsets(topicPartition);
 
-                    if (lastOffset == 0)
-                        lastOffset = Offset.Unset;
+                    // last offset available for consumption.
+                    // in the case that the topic was cleared,
+                    // this will be the offset it had before.
+                    var lastOffset = offsets.High == 0 ? Offset.Unset : offsets.High;
 
                     if (!committedOffsets.TryGetValue(topicPartition, out var committedOffset)) {
                         var lastCommittedOffset = consumer.Position(topicPartition);
                         committedOffset = lastCommittedOffset == Offset.Unset ? 0 : lastCommittedOffset;
                     }
 
-                    return new SubscriptionPartitionGap(topicPartition.Partition, lastOffset, committedOffset);
+                    // the topic is empty.
+                    return offsets.Low == offsets.High
+                        ? new SubscriptionPartitionGap(
+                            topicPartition.Partition,
+                            lastOffset,
+                            committedOffset,
+                            0
+                        )
+                        : new SubscriptionPartitionGap(
+                            topicPartition.Partition,
+                            lastOffset,
+                            committedOffset,
+                            lastOffset.Value - committedOffset
+                        );
                 }
             ).ToArray();
         }
@@ -183,9 +201,14 @@ public record SubscriptionTopicGap(string Topic, IReadOnlyCollection<Subscriptio
     public bool CaughtUp => PartitionGaps.All(x => x.CaughtUp);
 }
 
+// [PublicAPI]
+// public record SubscriptionPartitionGap(Partition Partition, Offset LastPosition, Offset CommitPosition) {
+//     public long Gap { get; } = LastPosition.Value - CommitPosition.Value;
+//     
+//     public bool CaughtUp => Gap == 0;
+// }
+
 [PublicAPI]
-public record SubscriptionPartitionGap(Partition Partition, Offset LastPosition, Offset CommitPosition) {
-    public long Gap { get; } = LastPosition.Value - CommitPosition.Value;
-    
+public record SubscriptionPartitionGap(Partition Partition, Offset LastPosition, Offset CommitPosition, long Gap) {
     public bool CaughtUp => Gap == 0;
 }
