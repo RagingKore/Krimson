@@ -1,5 +1,3 @@
-using Confluent.Kafka;
-using Confluent.Kafka.Admin;
 using Krimson.Fixie;
 
 namespace Krimson.Tests.Processors;
@@ -29,10 +27,26 @@ public class ProcessorConsumptionTests : TestFixture<KrimsonTestContext> {
         var inputTopic = await Context.CreateInputTopic(clientId, partitions);
 
         await Context.ProduceTestMessages(inputTopic, numberOfMessages);
+        await Context.AdminClient.DeleteRecords(inputTopic, partitions);
 
-        await Context.AdminClient.DeleteRecordsAsync(
-            Enumerable.Range(1, partitions).Select(partition => new TopicPartitionOffset(inputTopic, new Partition(partition - 1), Offset.End))
-        );
+        // Act
+        var result = await Context.ProcessMessages(clientId, inputTopic, 0, timeout: 10);
+
+        // Assert
+        result.AssertAllTopicsCaughtUp();
+    }
+
+    [TestCase(10, 1)]
+    [TestCase(100, 3)]
+    public async Task Consumes_Empty_Cleaned_Twice_Topic(int numberOfMessages, int partitions) {
+        // Arrange
+        var clientId   = Context.GenerateUniqueProcessorName();
+        var inputTopic = await Context.CreateInputTopic(clientId, partitions);
+
+        await Context.ProduceTestMessages(inputTopic, numberOfMessages);
+        await Context.AdminClient.DeleteRecords(inputTopic, partitions);
+        await Context.ProduceTestMessages(inputTopic, numberOfMessages);
+        await Context.AdminClient.DeleteRecords(inputTopic, partitions);
 
         // Act
         var result = await Context.ProcessMessages(clientId, inputTopic, 0, timeout: 10);

@@ -455,7 +455,7 @@ public class KrimsonTestContext : TestContext {
     public IAdminClient          AdminClient        { get; private set; }
     public ISchemaRegistryClient SchemaRegistry     { get; private set; }
 
-    List<string>   CreatedTopics      { get; }
+    List<string> CreatedTopics { get; }
 
     protected override async ValueTask SetUp() {
         var configuration = new ConfigurationBuilder()
@@ -673,8 +673,6 @@ public class KrimsonTestContext : TestContext {
 
             return this;
         }
-
-
     }
 
     public async Task<ProcessMessagesResult> ProcessMessages(

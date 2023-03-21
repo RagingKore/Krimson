@@ -19,15 +19,15 @@ public class KrimsonProcessorContext {
         QueueLocked  = new();
     }
     
-    // public KrimsonProcessorContext(KrimsonRecord record, CancellationToken cancellationToken = default) {
-    //     Record              = record;
-    //     Logger              = Log.Logger;
-    //     State               = new InMemoryStateStore();
-    //     CancellationToken   = cancellationToken;
-    //     MessageQueue        = new();
-    //     QueueLocked         = new();
-    //     GetSubscriptionGaps = () => Task.FromResult<IReadOnlyCollection<SubscriptionTopicGap>>(null!);
-    // }
+    public KrimsonProcessorContext(KrimsonRecord record, CancellationToken cancellationToken = default) {
+        Record              = record;
+        Logger              = Log.Logger;
+        State               = new InMemoryStateStore();
+        CancellationToken   = cancellationToken;
+        MessageQueue        = new();
+        QueueLocked         = new();
+        GetSubscriptionGaps = () => Task.FromResult<IReadOnlyCollection<SubscriptionTopicGap>>(null!);
+    }
 
     public KrimsonRecord       Record              { get; }
     public ILogger             Logger              { get; }
