@@ -3,6 +3,8 @@ using System.Runtime.Serialization;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
+using Polly;
+using Polly.Retry;
 using static System.Activator;
 using static System.Array;
 using static Confluent.Kafka.Serializers;
@@ -26,14 +28,19 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
             messageType, static (type, ctx) => CreateInstance(ConfluentSerializerType.MakeGenericType(type), ctx.Client, ctx.Config)!,
             (Client: RegistryClient, Config: serializerConfig)
         );
+
+        SerializeRetryPolicy = Policy.Handle<TaskCanceledException>()
+            .OrResult<byte[]>(_ => false)
+            .RetryAsync(3);
     }
 
     public ProtobufDynamicSerializer(ISchemaRegistryClient registryClient)
         : this(registryClient, DefaultConfig) { }
 
-    ISchemaRegistryClient               RegistryClient { get; }
-    Func<Type, dynamic>                 GetSerializer  { get; }
-    ConcurrentDictionary<Type, dynamic> Serializers    { get; }
+    ISchemaRegistryClient               RegistryClient       { get; }
+    Func<Type, dynamic>                 GetSerializer        { get; }
+    ConcurrentDictionary<Type, dynamic> Serializers          { get; }
+    AsyncRetryPolicy<byte[]>                    SerializeRetryPolicy { get; }
 
     public async Task<byte[]> SerializeAsync(object? data, SerializationContext context) {
         if (data is null)
@@ -60,11 +67,13 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
 
         try {
             var serializer  = GetSerializer(messageType);
-
-            byte[] bytes = await serializer
-                .SerializeAsync((dynamic)data, context)
-                .ConfigureAwait(false);
-
+            
+            byte[] bytes = await SerializeRetryPolicy.ExecuteAsync(
+                async () => await serializer
+                    .SerializeAsync((dynamic)data, context)
+                    .ConfigureAwait(false)
+            );
+            
             context.Headers.AddSchemaInfo(SchemaType.Protobuf, bytes, messageType);
 
             return bytes;
