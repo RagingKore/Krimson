@@ -40,7 +40,7 @@ public class ProtobufDynamicSerializer : IDynamicSerializer {
     ISchemaRegistryClient               RegistryClient       { get; }
     Func<Type, dynamic>                 GetSerializer        { get; }
     ConcurrentDictionary<Type, dynamic> Serializers          { get; }
-    AsyncRetryPolicy<byte[]>                    SerializeRetryPolicy { get; }
+    AsyncRetryPolicy<byte[]>            SerializeRetryPolicy { get; }
 
     public async Task<byte[]> SerializeAsync(object? data, SerializationContext context) {
         if (data is null)
