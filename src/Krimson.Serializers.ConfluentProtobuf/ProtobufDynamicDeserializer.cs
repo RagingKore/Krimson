@@ -4,6 +4,8 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Krimson.SchemaRegistry;
+using Polly;
+using Polly.Retry;
 using static Confluent.Kafka.Deserializers;
 
 namespace Krimson.Serializers.ConfluentProtobuf;
@@ -13,7 +15,7 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
     static readonly Type ConfluentDeserializerType = typeof(ProtobufDeserializer<>);
 
     public static readonly ProtobufDeserializerConfig DefaultConfig = new();
-
+    
     public ProtobufDynamicDeserializer(ISchemaRegistryClient registryClient, Func<MessageSchema, Type> resolveMessageType, ProtobufDeserializerConfig deserializerConfig) {
         ResolveMessageType = resolveMessageType;
         Deserializers      = new();
@@ -24,7 +26,10 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
             deserializerConfig
         );
         
-        GetMessageSchema = registryClient.GetProtobufMessageSchema; 
+        GetMessageSchema = registryClient.GetProtobufMessageSchema;
+        DeserializeRetryPolicy = Policy.Handle<TaskCanceledException>()
+            .OrResult<dynamic>(_ => false)
+            .RetryAsync(3);
     }
 
     public ProtobufDynamicDeserializer(ISchemaRegistryClient registryClient, Func<MessageSchema, Type> resolveMessageType)
@@ -46,10 +51,11 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
                 .FirstOrDefault(x => x != null)!;
         }, deserializerConfig) { }
 
-    Func<ReadOnlyMemory<byte>, MessageSchema> GetMessageSchema   { get; }
-    Func<MessageSchema, Type>                 ResolveMessageType { get; }
-    Func<Type, dynamic>                       GetDeserializer    { get; }
-    ConcurrentDictionary<Type, dynamic>       Deserializers      { get; }
+    Func<ReadOnlyMemory<byte>, MessageSchema> GetMessageSchema       { get; }
+    Func<MessageSchema, Type>                 ResolveMessageType     { get; }
+    Func<Type, dynamic>                       GetDeserializer        { get; }
+    ConcurrentDictionary<Type, dynamic>       Deserializers          { get; }
+    AsyncPolicy<dynamic>                      DeserializeRetryPolicy { get; }
 
     public async Task<object?> DeserializeAsync(ReadOnlyMemory<byte> data, bool isNull, SerializationContext context) {
         // bypass if message is bytes
@@ -70,10 +76,12 @@ public class ProtobufDynamicDeserializer : IDynamicDeserializer {
             var messageType   = ResolveMessageType(messageSchema);
             var deserializer  = GetDeserializer(messageType);
 
-            var message = await deserializer
-                .DeserializeAsync(data, isNull, context)
-                .ConfigureAwait(false);
-
+            var message = await DeserializeRetryPolicy.ExecuteAsync(
+                async () => await deserializer
+                    .DeserializeAsync(data, isNull, context)
+                    .ConfigureAwait(false)
+            );
+            
             return message;
         }
         catch (Exception ex) {

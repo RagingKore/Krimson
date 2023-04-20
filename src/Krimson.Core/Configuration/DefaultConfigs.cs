@@ -52,5 +52,6 @@ public static class DefaultConfigs {
         new() {
             Url                        = "localhost:8081",               // ready for docker
             BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo, // default
+            RequestTimeoutMs = 500,
         };
 }
