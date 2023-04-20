@@ -17,12 +17,13 @@ public record KrimsonSchemaRegistryBuilder {
         return this with { Options = options };
     }
 
-    public KrimsonSchemaRegistryBuilder Connection(string url, string apiKey, string apiSecret) {
+    public KrimsonSchemaRegistryBuilder Connection(string url, string apiKey, string apiSecret, int requestTimeoutMs) {
         return OverrideConfig(
             cfg => {
                 cfg.Url                        = url;
                 cfg.BasicAuthUserInfo          = $"{apiKey}:{apiSecret}";
                 cfg.BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo;
+                cfg.RequestTimeoutMs           = requestTimeoutMs;
             }
         );
     }
@@ -33,7 +34,8 @@ public record KrimsonSchemaRegistryBuilder {
         return Connection(
             configuration.GetValue("Krimson:SchemaRegistry:Url", Options.RegistryConfiguration.Url)!,
             configuration.GetValue("Krimson:SchemaRegistry:ApiKey", "")!,
-            configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")!
+            configuration.GetValue("Krimson:SchemaRegistry:ApiSecret", "")!,
+            configuration.GetValue<int>("Krimson:SchemaRegistry:RequestTimeout", Options.RegistryConfiguration.RequestTimeoutMs.Value)!
         );
     }
 

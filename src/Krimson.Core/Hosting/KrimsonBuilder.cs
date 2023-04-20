@@ -23,8 +23,8 @@ public class KrimsonBuilder {
     public   IServiceCollection Services { get; }
     internal string?            ClientId { get; }
 
-    public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "") {
-        Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret));
+    public KrimsonBuilder AddSchemaRegistry(string url, string apiKey = "", string apiSecret = "", int requestTimeoutMs = 500) {
+        Services.AddKrimsonSchemaRegistry((_, builder) => builder.Connection(url, apiKey, apiSecret, requestTimeoutMs));
         return this;
     }
 
