@@ -33,7 +33,7 @@ class KrimsonClientLogger : InterceptorModule {
                         evt.Processor.ClientId, nameof(ProcessorTerminated)
                     );
                 else
-                    Logger.Error(
+                    Logger.Warning(
                         evt.Exception, "{ProcessorName} {Event} {ErrorMessage}",
                         evt.Processor.ClientId, "ProcessorViolentlyTerminated", evt.Exception.Message
                     );
