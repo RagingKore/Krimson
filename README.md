@@ -26,7 +26,7 @@ using Krimson.Processors;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProcessor(
         prx => prx
             .ClientId("telemetry-processor")
@@ -56,7 +56,7 @@ using Krimson.Processors;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProcessor(
         prx => prx
             .ClientId("telemetry-processor")
@@ -77,7 +77,7 @@ using Krimson.Processors;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProcessor(
         prx => prx
             .ClientId("telemetry-processor")
@@ -131,7 +131,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProducer(pdx => pdx
         .ClientId("telemetry-gateway")
         .Topic("telemetry")
@@ -176,7 +176,7 @@ using Krimson.Processors;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddKrimson()
-    .AddProtobuf()
+    .UseProtobuf()
     .AddProcessor(
         prx => prx
             .ClientId("telemetry-processor")
